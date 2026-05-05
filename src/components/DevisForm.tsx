@@ -27,19 +27,20 @@ interface FormData {
   // Travel Path (Voyage Organisé / Omrah)
   travelType?: "omrah" | "voyage";
   
-  // Omrah Configuration
-  omrahHotelType?: "4stars" | "5stars";
-  omrahDistance?: "close" | "medium";
-  omrahRoomType?: "double" | "triple" | "quad";
-  omrahRoomCount?: number;
-  omrahAdultsCount?: number;
-  omrahChildrenCount?: number;
-  omrahChildrenAges?: string;
-  omrahMealPlan?: "breakfast" | "half" | "full";
-  omrahNeedVisa?: boolean;
-  omrahFlightIncluded?: boolean;
-  omrahDepartureDate?: string;
-  omrahReturnDate?: string;
+  // Omrah Configuration - Synced with Admin
+  destination?: string;
+  hotel_type?: "4stars" | "5stars";
+  hotel_distance?: "close" | "medium" | "far";
+  room_type?: "double" | "triple" | "quad";
+  room_count?: number;
+  adults_count?: number;
+  children_count?: number;
+  children_ages?: string;
+  pension_type?: "none" | "breakfast" | "half" | "full";
+  visa_required?: boolean;
+  flight_included?: boolean;
+  departure_date?: string;
+  return_date?: string;
   
   // Voyage Organisé Configuration
   voyageDestination?: string;
@@ -138,42 +139,42 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
       
       if (formData.travelType === "omrah") {
         // Hotel Configuration
-        if (!formData.omrahHotelType) e.omrahHotelType = "Type d'hôtel requis.";
-        if (!formData.omrahDistance) e.omrahDistance = "Distance du Haram requise.";
-        if (!formData.omrahRoomType) e.omrahRoomType = "Type de chambre requis.";
-        if (!formData.omrahRoomCount || formData.omrahRoomCount < 1) {
-          e.omrahRoomCount = "Nombre de chambres requis.";
+        if (!formData.hotel_type) e.hotel_type = "Type d'hôtel requis.";
+        if (!formData.hotel_distance) e.hotel_distance = "Distance du Haram requise.";
+        if (!formData.room_type) e.room_type = "Type de chambre requis.";
+        if (!formData.room_count || formData.room_count < 1) {
+          e.room_count = "Nombre de chambres requis.";
         }
         
         // Passenger Management
-        if (!formData.omrahAdultsCount || formData.omrahAdultsCount < 1) {
-          e.omrahAdultsCount = "Nombre d'adultes requis.";
+        if (!formData.adults_count || formData.adults_count < 1) {
+          e.adults_count = "Nombre d'adultes requis.";
         }
-        if (formData.omrahChildrenCount && formData.omrahChildrenCount > 0) {
-          if (!formData.omrahChildrenAges?.trim()) {
-            e.omrahChildrenAges = "Veuillez indiquer l'âge des enfants.";
+        if (formData.children_count && formData.children_count > 0) {
+          if (!formData.children_ages?.trim()) {
+            e.children_ages = "Veuillez indiquer l'âge des enfants.";
           }
         }
         
         // Meal Plan
-        if (!formData.omrahMealPlan) e.omrahMealPlan = "Type de pension requis.";
+        if (!formData.pension_type) e.pension_type = "Type de pension requis.";
         
         // Logistics
-        if (formData.omrahNeedVisa === undefined) {
-          e.omrahNeedVisa = "Veuillez indiquer si vous avez besoin d'un visa.";
+        if (formData.visa_required === undefined) {
+          e.visa_required = "Veuillez indiquer si vous avez besoin d'un visa.";
         }
-        if (formData.omrahFlightIncluded === undefined) {
-          e.omrahFlightIncluded = "Veuillez indiquer si le vol est inclus.";
+        if (formData.flight_included === undefined) {
+          e.flight_included = "Veuillez indiquer si le vol est inclus.";
         }
         
         // Dates
-        if (!formData.omrahDepartureDate) e.omrahDepartureDate = "Date de départ requise.";
-        if (!formData.omrahReturnDate) e.omrahReturnDate = "Date de retour requise.";
+        if (!formData.departure_date) e.departure_date = "Date de départ requise.";
+        if (!formData.return_date) e.return_date = "Date de retour requise.";
         
         // Date logic validation
-        if (formData.omrahDepartureDate && formData.omrahReturnDate) {
-          if (new Date(formData.omrahReturnDate) <= new Date(formData.omrahDepartureDate)) {
-            e.omrahReturnDate = "La date de retour doit être après la date de départ.";
+        if (formData.departure_date && formData.return_date) {
+          if (new Date(formData.return_date) <= new Date(formData.departure_date)) {
+            e.return_date = "La date de retour doit être après la date de départ.";
           }
         }
       }
@@ -247,6 +248,35 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
       adminInbox.push(requestObject);
       localStorage.setItem("admin_inbox", JSON.stringify(adminInbox));
 
+      // Helper functions to format data
+      const formatHotelType = (type?: string) => {
+        if (type === "4stars") return "4 Étoiles";
+        if (type === "5stars") return "5 Étoiles";
+        return undefined;
+      };
+
+      const formatDistance = (dist?: string) => {
+        if (dist === "close") return "Proche (0-500m)";
+        if (dist === "medium") return "Moyenne (500m-1km)";
+        if (dist === "far") return "Plus de 1km";
+        return undefined;
+      };
+
+      const formatRoomType = (type?: string) => {
+        if (type === "double") return "Double";
+        if (type === "triple") return "Triple";
+        if (type === "quad") return "Quadruple";
+        return undefined;
+      };
+
+      const formatPension = (type?: string) => {
+        if (type === "none") return "Sans pension";
+        if (type === "breakfast") return "Petit déjeuner";
+        if (type === "half") return "Demi-pension";
+        if (type === "full") return "Pension complète";
+        return undefined;
+      };
+
       addMessage({
         type: "Devis",
         name: formData.nom || "Non spécifié",
@@ -256,7 +286,20 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
         content: formData.message || "Aucun message supplémentaire",
         devisDetails: {
           prenom: formData.prenom,
-          destination: formData.voyageDestination || formData.visaDestination || "Non spécifié",
+          destination: formData.destination || formData.voyageDestination || formData.visaDestination,
+          besoinVisa: formData.visa_required !== undefined ? (formData.visa_required ? "Oui" : "Non") : undefined,
+          volAvecSans: formData.flight_included !== undefined ? (formData.flight_included ? "Avec vol" : "Sans vol") : undefined,
+          nomHotel: formatHotelType(formData.hotel_type),
+          nombreEtoiles: formatHotelType(formData.hotel_type),
+          distanceHaram: formatDistance(formData.hotel_distance),
+          nombreChambres: formData.room_count?.toString(),
+          typeChambre: formatRoomType(formData.room_type),
+          pension: formatPension(formData.pension_type),
+          nombreAdultes: formData.adults_count?.toString(),
+          nombreEnfants: formData.children_count?.toString() || "0",
+          ageEnfants: formData.children_ages,
+          dateDepart: formData.departure_date,
+          dateRetour: formData.return_date,
         },
       });
 
@@ -299,11 +342,22 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {/* Section 1: Personal Information */}
+          {/* Section 1: Personal Information with Modifier Button */}
           <div>
-            <div className="border-l-4 border-[#0a2357] pl-4 mb-6">
-              <h2 className="text-2xl font-bold text-[#0a2357]">Informations Personnelles</h2>
-              <p className="text-sm text-muted-foreground mt-1">Vos coordonnées pour vous contacter</p>
+            <div className="border-l-4 border-[#0a2357] pl-4 mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-[#0a2357]">Informations Personnelles</h2>
+                <p className="text-sm text-muted-foreground mt-1">Vos coordonnées pour vous contacter</p>
+              </div>
+              {isLoggedIn && (
+                <button
+                  type="button"
+                  onClick={() => setShowLoginModal(true)}
+                  className="text-[#2C5F2D] hover:text-[#234d24] font-semibold text-sm transition-colors whitespace-nowrap ml-4"
+                >
+                  Modifier
+                </button>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -312,7 +366,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
                   type="text"
                   value={formData.nom}
                   onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                  className={`premium-input ${isLoggedIn ? "bg-blue-50 cursor-not-allowed" : ""}`}
+                  className={`premium-input h-[52px] ${isLoggedIn ? "bg-blue-50 cursor-not-allowed" : ""}`}
                   placeholder="Votre nom"
                   readOnly={isLoggedIn}
                 />
@@ -323,7 +377,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
                   type="text"
                   value={formData.prenom}
                   onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
-                  className={`premium-input ${isLoggedIn ? "bg-blue-50 cursor-not-allowed" : ""}`}
+                  className={`premium-input h-[52px] ${isLoggedIn ? "bg-blue-50 cursor-not-allowed" : ""}`}
                   placeholder="Votre prénom"
                   readOnly={isLoggedIn}
                 />
@@ -334,7 +388,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`premium-input ${isLoggedIn ? "bg-blue-50 cursor-not-allowed" : ""}`}
+                  className={`premium-input h-[52px] ${isLoggedIn ? "bg-blue-50 cursor-not-allowed" : ""}`}
                   placeholder="exemple@email.com"
                   readOnly={isLoggedIn}
                 />
@@ -345,7 +399,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
                   type="tel"
                   value={formData.telephone}
                   onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
-                  className={`premium-input ${isLoggedIn ? "bg-blue-50 cursor-not-allowed" : ""}`}
+                  className={`premium-input h-[52px] ${isLoggedIn ? "bg-blue-50 cursor-not-allowed" : ""}`}
                   placeholder="0549059432"
                   readOnly={isLoggedIn}
                 />
@@ -360,20 +414,20 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
               <p className="text-sm text-muted-foreground mt-1">Sélectionnez le type de service souhaité</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <motion.button
                 type="button"
                 onClick={() => setFormData({ ...formData, servicePath: "travel" })}
-                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left ${
+                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left min-h-[52px] ${
                   formData.servicePath === "travel"
                     ? "border-[#2C5F2D] bg-[#2C5F2D]/5 shadow-lg"
-                    : "border-gray-200 hover:border-[#2C5F2D]/50 hover:shadow-md"
+                    : "border-slate-200 hover:border-[#2C5F2D]/50 hover:shadow-md"
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <Plane className="text-[#2C5F2D]" size={28} />
+                  <Plane className="text-[#2C5F2D]" size={24} />
                   <h3 className="text-lg font-bold text-[#0a2357]">Voyage Organisé / Omrah</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -384,10 +438,10 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
               <motion.button
                 type="button"
                 onClick={() => setFormData({ ...formData, servicePath: "visa" })}
-                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left ${
+                className={`p-6 rounded-xl border-2 transition-all duration-300 text-left min-h-[52px] ${
                   formData.servicePath === "visa"
                     ? "border-[#2C5F2D] bg-[#2C5F2D]/5 shadow-lg"
-                    : "border-gray-200 hover:border-[#2C5F2D]/50 hover:shadow-md"
+                    : "border-slate-200 hover:border-[#2C5F2D]/50 hover:shadow-md"
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -395,8 +449,8 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
                 <div className="flex items-center gap-3 mb-2">
                   <svg
                     className="text-[#2C5F2D]"
-                    width="28"
-                    height="28"
+                    width="24"
+                    height="24"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"

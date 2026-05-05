@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Hotel, Users, Calendar, Utensils, Plane as PlaneIcon, FileText } from "lucide-react";
+import { MapPin, Hotel, Users, Calendar, Utensils, FileText } from "lucide-react";
 
 interface FormData {
   nom: string;
@@ -9,19 +9,20 @@ interface FormData {
   servicePath: "" | "travel" | "visa";
   travelType?: "omrah" | "voyage";
   
-  // Omrah Configuration
-  omrahHotelType?: "4stars" | "5stars";
-  omrahDistance?: "close" | "medium";
-  omrahRoomType?: "double" | "triple" | "quad";
-  omrahRoomCount?: number;
-  omrahAdultsCount?: number;
-  omrahChildrenCount?: number;
-  omrahChildrenAges?: string;
-  omrahMealPlan?: "breakfast" | "half" | "full";
-  omrahNeedVisa?: boolean;
-  omrahFlightIncluded?: boolean;
-  omrahDepartureDate?: string;
-  omrahReturnDate?: string;
+  // Omrah Configuration - Synced with Admin
+  destination?: string;
+  hotel_type?: "4stars" | "5stars";
+  hotel_distance?: "close" | "medium" | "far";
+  room_type?: "double" | "triple" | "quad";
+  room_count?: number;
+  adults_count?: number;
+  children_count?: number;
+  children_ages?: string;
+  pension_type?: "none" | "breakfast" | "half" | "full";
+  visa_required?: boolean;
+  flight_included?: boolean;
+  departure_date?: string;
+  return_date?: string;
   
   // Voyage Organisé Configuration
   voyageDestination?: string;
@@ -62,11 +63,12 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
               setFormData({
                 ...formData,
                 travelType: "omrah",
+                destination: "Omrah",
                 voyageDestination: undefined,
                 voyageBoardType: undefined,
               })
             }
-            className={`p-6 rounded-xl border-2 transition-all duration-300 text-left ${
+            className={`p-6 rounded-xl border-2 transition-all duration-300 text-left min-h-[48px] ${
               formData.travelType === "omrah"
                 ? "border-[#2C5F2D] bg-[#2C5F2D]/10 shadow-lg"
                 : "border-gray-200 hover:border-[#2C5F2D]/50 hover:shadow-md"
@@ -98,21 +100,22 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
               setFormData({
                 ...formData,
                 travelType: "voyage",
-                omrahHotelType: undefined,
-                omrahDistance: undefined,
-                omrahRoomType: undefined,
-                omrahRoomCount: undefined,
-                omrahAdultsCount: undefined,
-                omrahChildrenCount: undefined,
-                omrahChildrenAges: undefined,
-                omrahMealPlan: undefined,
-                omrahNeedVisa: undefined,
-                omrahFlightIncluded: undefined,
-                omrahDepartureDate: undefined,
-                omrahReturnDate: undefined,
+                destination: undefined,
+                hotel_type: undefined,
+                hotel_distance: undefined,
+                room_type: undefined,
+                room_count: undefined,
+                adults_count: undefined,
+                children_count: undefined,
+                children_ages: undefined,
+                pension_type: undefined,
+                visa_required: undefined,
+                flight_included: undefined,
+                departure_date: undefined,
+                return_date: undefined,
               })
             }
-            className={`p-6 rounded-xl border-2 transition-all duration-300 text-left ${
+            className={`p-6 rounded-xl border-2 transition-all duration-300 text-left min-h-[48px] ${
               formData.travelType === "voyage"
                 ? "border-[#2C5F2D] bg-[#2C5F2D]/10 shadow-lg"
                 : "border-gray-200 hover:border-[#2C5F2D]/50 hover:shadow-md"
@@ -140,9 +143,9 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
           className="space-y-6"
         >
           {/* Hotel Configuration */}
-          <div className="bg-gradient-to-r from-[#0a2357]/5 to-[#2C5F2D]/5 p-6 rounded-xl border border-[#2C5F2D]/20">
+          <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
             <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
-              <Hotel size={20} className="text-[#2C5F2D]" />
+              <Hotel size={18} className="text-gray-400" />
               Configuration Hôtel
             </h3>
 
@@ -153,21 +156,21 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                   Type d'Hôtel *
                 </label>
                 <select
-                  value={formData.omrahHotelType || ""}
+                  value={formData.hotel_type || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      omrahHotelType: e.target.value as "4stars" | "5stars",
+                      hotel_type: e.target.value as "4stars" | "5stars",
                     })
                   }
-                  className="premium-input"
+                  className="premium-input w-full h-[52px]"
                 >
                   <option value="">Sélectionner</option>
-                  <option value="4stars">⭐⭐⭐⭐ 4 Étoiles</option>
-                  <option value="5stars">⭐⭐⭐⭐⭐ 5 Étoiles</option>
+                  <option value="4stars">4 Étoiles</option>
+                  <option value="5stars">5 Étoiles</option>
                 </select>
-                {errors.omrahHotelType && (
-                  <p className="text-red-500 text-xs mt-1">{errors.omrahHotelType}</p>
+                {errors.hotel_type && (
+                  <p className="text-red-500 text-xs mt-1">{errors.hotel_type}</p>
                 )}
               </div>
 
@@ -177,21 +180,22 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                   Distance du Haram *
                 </label>
                 <select
-                  value={formData.omrahDistance || ""}
+                  value={formData.hotel_distance || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      omrahDistance: e.target.value as "close" | "medium",
+                      hotel_distance: e.target.value as "close" | "medium" | "far",
                     })
                   }
-                  className="premium-input"
+                  className="premium-input w-full h-[52px]"
                 >
                   <option value="">Sélectionner</option>
-                  <option value="close">🕌 Proche (0-500m)</option>
-                  <option value="medium">🚶 Moyenne (500m-1km)</option>
+                  <option value="close">Proche (0-500m)</option>
+                  <option value="medium">Moyenne (500m-1km)</option>
+                  <option value="far">Plus de 1km</option>
                 </select>
-                {errors.omrahDistance && (
-                  <p className="text-red-500 text-xs mt-1">{errors.omrahDistance}</p>
+                {errors.hotel_distance && (
+                  <p className="text-red-500 text-xs mt-1">{errors.hotel_distance}</p>
                 )}
               </div>
 
@@ -201,22 +205,22 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                   Type de Chambre *
                 </label>
                 <select
-                  value={formData.omrahRoomType || ""}
+                  value={formData.room_type || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      omrahRoomType: e.target.value as "double" | "triple" | "quad",
+                      room_type: e.target.value as "double" | "triple" | "quad",
                     })
                   }
-                  className="premium-input"
+                  className="premium-input w-full h-[52px]"
                 >
                   <option value="">Sélectionner</option>
-                  <option value="double">🛏️ Double</option>
-                  <option value="triple">🛏️🛏️ Triple</option>
-                  <option value="quad">🛏️🛏️🛏️ Quadruple</option>
+                  <option value="double">Double</option>
+                  <option value="triple">Triple</option>
+                  <option value="quad">Quadruple</option>
                 </select>
-                {errors.omrahRoomType && (
-                  <p className="text-red-500 text-xs mt-1">{errors.omrahRoomType}</p>
+                {errors.room_type && (
+                  <p className="text-red-500 text-xs mt-1">{errors.room_type}</p>
                 )}
               </div>
             </div>
@@ -230,26 +234,26 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 type="number"
                 min="1"
                 max="10"
-                value={formData.omrahRoomCount || ""}
+                value={formData.room_count || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    omrahRoomCount: parseInt(e.target.value) || undefined,
+                    room_count: parseInt(e.target.value) || undefined,
                   })
                 }
-                className="premium-input"
+                className="premium-input w-full h-[52px]"
                 placeholder="Ex: 2"
               />
-              {errors.omrahRoomCount && (
-                <p className="text-red-500 text-xs mt-1">{errors.omrahRoomCount}</p>
+              {errors.room_count && (
+                <p className="text-red-500 text-xs mt-1">{errors.room_count}</p>
               )}
             </div>
           </div>
 
           {/* Passenger Management */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200">
+          <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
             <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
-              <Users size={20} className="text-[#2C5F2D]" />
+              <Users size={18} className="text-gray-400" />
               Passagers
             </h3>
 
@@ -263,18 +267,18 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                   type="number"
                   min="1"
                   max="20"
-                  value={formData.omrahAdultsCount || ""}
+                  value={formData.adults_count || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      omrahAdultsCount: parseInt(e.target.value) || undefined,
+                      adults_count: parseInt(e.target.value) || undefined,
                     })
                   }
-                  className="premium-input"
+                  className="premium-input w-full h-[52px]"
                   placeholder="Ex: 2"
                 />
-                {errors.omrahAdultsCount && (
-                  <p className="text-red-500 text-xs mt-1">{errors.omrahAdultsCount}</p>
+                {errors.adults_count && (
+                  <p className="text-red-500 text-xs mt-1">{errors.adults_count}</p>
                 )}
               </div>
 
@@ -287,26 +291,26 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                   type="number"
                   min="0"
                   max="10"
-                  value={formData.omrahChildrenCount || ""}
+                  value={formData.children_count || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      omrahChildrenCount: parseInt(e.target.value) || undefined,
-                      omrahChildrenAges: parseInt(e.target.value) === 0 ? undefined : formData.omrahChildrenAges,
+                      children_count: parseInt(e.target.value) || undefined,
+                      children_ages: parseInt(e.target.value) === 0 ? undefined : formData.children_ages,
                     })
                   }
-                  className="premium-input"
+                  className="premium-input w-full h-[52px]"
                   placeholder="Ex: 1"
                 />
-                {errors.omrahChildrenCount && (
-                  <p className="text-red-500 text-xs mt-1">{errors.omrahChildrenCount}</p>
+                {errors.children_count && (
+                  <p className="text-red-500 text-xs mt-1">{errors.children_count}</p>
                 )}
               </div>
             </div>
 
             {/* Children Ages - Conditional */}
             <AnimatePresence>
-              {formData.omrahChildrenCount && formData.omrahChildrenCount > 0 && (
+              {formData.children_count && formData.children_count > 0 && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
@@ -319,21 +323,21 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                   </label>
                   <input
                     type="text"
-                    value={formData.omrahChildrenAges || ""}
+                    value={formData.children_ages || ""}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        omrahChildrenAges: e.target.value,
+                        children_ages: e.target.value,
                       })
                     }
-                    className="premium-input"
+                    className="premium-input w-full h-[52px]"
                     placeholder="Ex: 5 ans, 8 ans"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Séparez les âges par des virgules
                   </p>
-                  {errors.omrahChildrenAges && (
-                    <p className="text-red-500 text-xs mt-1">{errors.omrahChildrenAges}</p>
+                  {errors.children_ages && (
+                    <p className="text-red-500 text-xs mt-1">{errors.children_ages}</p>
                   )}
                 </motion.div>
               )}
@@ -341,9 +345,9 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
           </div>
 
           {/* Meal Plan */}
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-xl border border-amber-200">
+          <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
             <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
-              <Utensils size={20} className="text-[#2C5F2D]" />
+              <Utensils size={18} className="text-gray-400" />
               Pension
             </h3>
 
@@ -352,30 +356,31 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 Type de Pension *
               </label>
               <select
-                value={formData.omrahMealPlan || ""}
+                value={formData.pension_type || ""}
                 onChange={(e) =>
                   setFormData({
                     ...formData,
-                    omrahMealPlan: e.target.value as "breakfast" | "half" | "full",
+                    pension_type: e.target.value as "none" | "breakfast" | "half" | "full",
                   })
                 }
-                className="premium-input"
+                className="premium-input w-full h-[52px]"
               >
                 <option value="">Sélectionner</option>
-                <option value="breakfast">🥐 Petit Déjeuner</option>
-                <option value="half">🍽️ Demi-Pension</option>
-                <option value="full">🍽️🍽️ Pension Complète</option>
+                <option value="none">Sans pension</option>
+                <option value="breakfast">Petit déjeuner</option>
+                <option value="half">Demi-pension</option>
+                <option value="full">Pension complète</option>
               </select>
-              {errors.omrahMealPlan && (
-                <p className="text-red-500 text-xs mt-1">{errors.omrahMealPlan}</p>
+              {errors.pension_type && (
+                <p className="text-red-500 text-xs mt-1">{errors.pension_type}</p>
               )}
             </div>
           </div>
 
           {/* Logistics Toggles */}
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200">
+          <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
             <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
-              <FileText size={20} className="text-[#2C5F2D]" />
+              <FileText size={18} className="text-gray-400" />
               Logistique
             </h3>
 
@@ -389,59 +394,33 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 <label className="block text-sm font-semibold text-[#0a2357] mb-3">
                   Besoin d'un Visa ? *
                 </label>
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, omrahNeedVisa: true })}
-                    className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 ${
-                      formData.omrahNeedVisa === true
-                        ? "border-[#2C5F2D] bg-[#2C5F2D]/10 shadow-md"
-                        : "border-gray-200 hover:border-[#2C5F2D]/50"
+                    onClick={() => setFormData({ ...formData, visa_required: true })}
+                    className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 h-[60px] sm:h-[52px] ${
+                      formData.visa_required === true
+                        ? "border-[#0a2357] bg-[#0a2357]/5 shadow-md"
+                        : "border-slate-200 hover:border-[#0a2357]/50"
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <div
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          formData.omrahNeedVisa === true
-                            ? "border-[#2C5F2D] bg-[#2C5F2D]"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {formData.omrahNeedVisa === true && (
-                          <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                        )}
-                      </div>
-                      <span className="font-semibold text-[#0a2357]">Oui</span>
-                    </div>
+                    <span className="font-semibold text-[#0a2357]">Oui</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, omrahNeedVisa: false })}
-                    className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 ${
-                      formData.omrahNeedVisa === false
-                        ? "border-[#2C5F2D] bg-[#2C5F2D]/10 shadow-md"
-                        : "border-gray-200 hover:border-[#2C5F2D]/50"
+                    onClick={() => setFormData({ ...formData, visa_required: false })}
+                    className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 h-[60px] sm:h-[52px] ${
+                      formData.visa_required === false
+                        ? "border-[#0a2357] bg-[#0a2357]/5 shadow-md"
+                        : "border-slate-200 hover:border-[#0a2357]/50"
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <div
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          formData.omrahNeedVisa === false
-                            ? "border-[#2C5F2D] bg-[#2C5F2D]"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {formData.omrahNeedVisa === false && (
-                          <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                        )}
-                      </div>
-                      <span className="font-semibold text-[#0a2357]">Non</span>
-                    </div>
+                    <span className="font-semibold text-[#0a2357]">Non</span>
                   </button>
                 </div>
-                {errors.omrahNeedVisa && (
-                  <p className="text-red-500 text-xs mt-1">{errors.omrahNeedVisa}</p>
+                {errors.visa_required && (
+                  <p className="text-red-500 text-xs mt-1">{errors.visa_required}</p>
                 )}
               </motion.div>
 
@@ -454,54 +433,42 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 <label className="block text-sm font-semibold text-[#0a2357] mb-3">
                   Vol Inclus ? *
                 </label>
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, omrahFlightIncluded: true })}
-                    className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 ${
-                      formData.omrahFlightIncluded === true
-                        ? "border-[#2C5F2D] bg-[#2C5F2D]/10 shadow-md"
-                        : "border-gray-200 hover:border-[#2C5F2D]/50"
+                    onClick={() => setFormData({ ...formData, flight_included: true })}
+                    className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 h-[60px] sm:h-[52px] ${
+                      formData.flight_included === true
+                        ? "border-[#0a2357] bg-[#0a2357]/5 shadow-md"
+                        : "border-slate-200 hover:border-[#0a2357]/50"
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <PlaneIcon
-                        size={18}
-                        className={formData.omrahFlightIncluded === true ? "text-[#2C5F2D]" : "text-gray-400"}
-                      />
-                      <span className="font-semibold text-[#0a2357]">Avec Vol</span>
-                    </div>
+                    <span className="font-semibold text-[#0a2357]">Oui</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setFormData({ ...formData, omrahFlightIncluded: false })}
-                    className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 ${
-                      formData.omrahFlightIncluded === false
-                        ? "border-[#2C5F2D] bg-[#2C5F2D]/10 shadow-md"
-                        : "border-gray-200 hover:border-[#2C5F2D]/50"
+                    onClick={() => setFormData({ ...formData, flight_included: false })}
+                    className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 h-[60px] sm:h-[52px] ${
+                      formData.flight_included === false
+                        ? "border-[#0a2357] bg-[#0a2357]/5 shadow-md"
+                        : "border-slate-200 hover:border-[#0a2357]/50"
                     }`}
                   >
-                    <div className="flex items-center justify-center gap-2">
-                      <PlaneIcon
-                        size={18}
-                        className={formData.omrahFlightIncluded === false ? "text-[#2C5F2D]" : "text-gray-400"}
-                      />
-                      <span className="font-semibold text-[#0a2357]">Sans Vol</span>
-                    </div>
+                    <span className="font-semibold text-[#0a2357]">Non</span>
                   </button>
                 </div>
-                {errors.omrahFlightIncluded && (
-                  <p className="text-red-500 text-xs mt-1">{errors.omrahFlightIncluded}</p>
+                {errors.flight_included && (
+                  <p className="text-red-500 text-xs mt-1">{errors.flight_included}</p>
                 )}
               </motion.div>
             </div>
           </div>
 
           {/* Travel Dates */}
-          <div className="bg-gradient-to-r from-green-50 to-teal-50 p-6 rounded-xl border border-green-200">
+          <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
             <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
-              <Calendar size={20} className="text-[#2C5F2D]" />
+              <Calendar size={18} className="text-gray-400" />
               Dates de Voyage
             </h3>
 
@@ -513,18 +480,18 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 </label>
                 <input
                   type="date"
-                  value={formData.omrahDepartureDate || ""}
+                  value={formData.departure_date || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      omrahDepartureDate: e.target.value,
+                      departure_date: e.target.value,
                     })
                   }
-                  className="premium-input"
+                  className="premium-input w-full h-[52px]"
                   min={new Date().toISOString().split("T")[0]}
                 />
-                {errors.omrahDepartureDate && (
-                  <p className="text-red-500 text-xs mt-1">{errors.omrahDepartureDate}</p>
+                {errors.departure_date && (
+                  <p className="text-red-500 text-xs mt-1">{errors.departure_date}</p>
                 )}
               </div>
 
@@ -535,18 +502,18 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 </label>
                 <input
                   type="date"
-                  value={formData.omrahReturnDate || ""}
+                  value={formData.return_date || ""}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      omrahReturnDate: e.target.value,
+                      return_date: e.target.value,
                     })
                   }
-                  className="premium-input"
-                  min={formData.omrahDepartureDate || new Date().toISOString().split("T")[0]}
+                  className="premium-input w-full h-[52px]"
+                  min={formData.departure_date || new Date().toISOString().split("T")[0]}
                 />
-                {errors.omrahReturnDate && (
-                  <p className="text-red-500 text-xs mt-1">{errors.omrahReturnDate}</p>
+                {errors.return_date && (
+                  <p className="text-red-500 text-xs mt-1">{errors.return_date}</p>
                 )}
               </div>
             </div>
@@ -563,9 +530,9 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
           transition={{ duration: 0.4 }}
           className="space-y-6"
         >
-          <div className="bg-gradient-to-r from-[#0a2357]/5 to-[#2C5F2D]/5 p-6 rounded-xl border border-[#2C5F2D]/20">
+          <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
             <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
-              <MapPin size={20} className="text-[#2C5F2D]" />
+              <MapPin size={18} className="text-gray-400" />
               Configuration Voyage
             </h3>
 
@@ -578,19 +545,19 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 <select
                   value={formData.voyageDestination || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, voyageDestination: e.target.value })
+                    setFormData({ ...formData, voyageDestination: e.target.value, destination: e.target.value })
                   }
-                  className="premium-input"
+                  className="premium-input w-full h-[52px]"
                 >
                   <option value="">Sélectionner une destination</option>
-                  <option value="Turquie">🇹🇷 Turquie</option>
-                  <option value="Tunisie">🇹🇳 Tunisie</option>
-                  <option value="Maroc">🇲🇦 Maroc</option>
-                  <option value="Égypte">🇪🇬 Égypte</option>
-                  <option value="Espagne">🇪🇸 Espagne</option>
-                  <option value="Italie">🇮🇹 Italie</option>
-                  <option value="Grèce">🇬🇷 Grèce</option>
-                  <option value="Dubaï">🇦🇪 Dubaï</option>
+                  <option value="Turquie">Turquie</option>
+                  <option value="Tunisie">Tunisie</option>
+                  <option value="Maroc">Maroc</option>
+                  <option value="Égypte">Égypte</option>
+                  <option value="Espagne">Espagne</option>
+                  <option value="Italie">Italie</option>
+                  <option value="Grèce">Grèce</option>
+                  <option value="Dubaï">Dubaï</option>
                 </select>
                 {errors.voyageDestination && (
                   <p className="text-red-500 text-xs mt-1">{errors.voyageDestination}</p>
@@ -610,11 +577,11 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                       voyageBoardType: e.target.value as "full" | "half",
                     })
                   }
-                  className="premium-input"
+                  className="premium-input w-full h-[52px]"
                 >
                   <option value="">Sélectionner</option>
-                  <option value="full">🍽️ Pension Complète</option>
-                  <option value="half">🥐 Demi-Pension</option>
+                  <option value="full">Pension complète</option>
+                  <option value="half">Demi-pension</option>
                 </select>
                 {errors.voyageBoardType && (
                   <p className="text-red-500 text-xs mt-1">{errors.voyageBoardType}</p>

@@ -669,9 +669,9 @@ const InboxView = ({
     const renderField = (label: string, value?: string) => {
       const displayValue = value && value.trim() !== "" ? value : "Non spécifié";
       return (
-        <div key={label} className="flex justify-between items-start py-2.5 border-b border-gray-100 last:border-b-0">
-          <span className="text-sm font-medium text-primary">{label}</span>
-          <span className={`text-sm text-right ml-4 ${displayValue === "Non spécifié" ? "text-gray-400 italic" : "text-gray-700"}`}>
+        <div key={label} className="flex flex-col sm:flex-row sm:justify-between sm:items-start py-2.5 border-b border-gray-100 last:border-b-0 gap-1 sm:gap-4">
+          <span className="text-sm font-semibold text-[#0a2357]">{label}</span>
+          <span className={`text-sm sm:text-right ${displayValue === "Non spécifié" ? "text-gray-400 italic" : "text-gray-700"}`}>
             {displayValue}
           </span>
         </div>
@@ -682,7 +682,7 @@ const InboxView = ({
       <div className="space-y-6">
         {/* Infos Personnelles */}
         <div>
-          <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Informations Personnelles</h4>
+          <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Informations Personnelles</h4>
           <div className="space-y-0">
             {renderField("Nom", msg.name)}
             {renderField("Prénom", details.prenom)}
@@ -693,7 +693,7 @@ const InboxView = ({
 
         {/* Détails du Voyage */}
         <div>
-          <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Détails du Voyage</h4>
+          <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Détails du Voyage</h4>
           <div className="space-y-0">
             {renderField("Destination", details.destination)}
             {renderField("Besoin de VISA", details.besoinVisa)}
@@ -702,41 +702,47 @@ const InboxView = ({
         </div>
 
         {/* Hébergement */}
-        <div>
-          <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Hébergement</h4>
-          <div className="space-y-0">
-            {renderField("Hôtel", details.nomHotel)}
-            {renderField("Nombre d'étoiles", details.nombreEtoiles)}
-            {renderField("Nombre de chambres", details.nombreChambres)}
-            {renderField("Type de chambre", details.typeChambre)}
+        {(details.nomHotel || details.nombreEtoiles || details.distanceHaram || details.nombreChambres || details.typeChambre) && (
+          <div>
+            <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Hébergement</h4>
+            <div className="space-y-0">
+              {renderField("Type d'hôtel", details.nombreEtoiles)}
+              {renderField("Distance du Haram", details.distanceHaram)}
+              {renderField("Nombre de chambres", details.nombreChambres)}
+              {renderField("Type de chambre", details.typeChambre)}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Passagers */}
-        <div>
-          <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Passagers</h4>
-          <div className="space-y-0">
-            {renderField("Pension", details.pension)}
-            {renderField("Adultes", details.nombreAdultes)}
-            {renderField("Enfants", details.nombreEnfants)}
-            {renderField("Âge des enfants", details.ageEnfants)}
+        {(details.pension || details.nombreAdultes || details.nombreEnfants || details.ageEnfants) && (
+          <div>
+            <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Passagers & Pension</h4>
+            <div className="space-y-0">
+              {renderField("Pension", details.pension)}
+              {renderField("Adultes", details.nombreAdultes)}
+              {renderField("Enfants", details.nombreEnfants)}
+              {renderField("Âge des enfants", details.ageEnfants)}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Dates */}
-        <div>
-          <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Dates</h4>
-          <div className="space-y-0">
-            {renderField("Départ", details.dateDepart)}
-            {renderField("Retour", details.dateRetour)}
+        {(details.dateDepart || details.dateRetour) && (
+          <div>
+            <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Dates</h4>
+            <div className="space-y-0">
+              {renderField("Départ", details.dateDepart)}
+              {renderField("Retour", details.dateRetour)}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Message */}
-        {msg.content && (
+        {msg.content && msg.content !== "Aucun message supplémentaire" && (
           <div>
-            <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Message</h4>
-            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg break-words">{msg.content}</p>
+            <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Message</h4>
+            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg break-words leading-relaxed">{msg.content}</p>
           </div>
         )}
       </div>
@@ -842,57 +848,63 @@ const InboxView = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-foreground/20 flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-foreground/20 flex items-center justify-center p-0 sm:p-4"
             onClick={() => setSelectedMessage(null)}
           >
             <motion.div
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-elegant border border-accent/20 p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-none sm:rounded-2xl shadow-elegant border-0 sm:border border-accent/20 p-4 sm:p-6 w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex-1 min-w-0 pr-2">
-                  <h3 className="text-base sm:text-lg font-semibold break-words text-primary">{selectedMessage.subject}</h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => {
-                      generateMessagePDF(selectedMessage);
-                      toast.success("PDF généré avec succès");
-                    }}
-                    className="text-primary hover:bg-primary/10 p-2 rounded-lg transition-colors touch-manipulation"
-                    aria-label="Générer PDF"
-                    title="Exporter en PDF"
-                  >
-                    <FileDown size={20} />
-                  </button>
-                  <button 
-                    onClick={() => setSelectedMessage(null)} 
-                    className="text-muted-foreground hover:text-foreground p-2 -mr-2 touch-manipulation"
-                    aria-label="Fermer"
-                  >
-                    <X size={20} />
-                  </button>
+              {/* Fixed Header on Mobile */}
+              <div className="sticky top-0 bg-white z-10 pb-4 mb-2 border-b border-gray-200 sm:static sm:border-0 sm:pb-0 sm:mb-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <h3 className="text-base sm:text-lg font-semibold break-words text-[#0a2357]">{selectedMessage.subject}</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        generateMessagePDF(selectedMessage);
+                        toast.success("PDF généré avec succès");
+                      }}
+                      className="text-[#0a2357] hover:bg-[#0a2357]/10 p-2 rounded-lg transition-colors touch-manipulation"
+                      aria-label="Générer PDF"
+                      title="Exporter en PDF"
+                    >
+                      <FileDown size={20} />
+                    </button>
+                    <button 
+                      onClick={() => setSelectedMessage(null)} 
+                      className="text-muted-foreground hover:text-foreground p-2 -mr-2 touch-manipulation"
+                      aria-label="Fermer"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Affichage spécifique pour les devis */}
-              {selectedMessage.type === "Devis" ? (
-                renderDevisDetails(selectedMessage)
-              ) : selectedMessage.type === "Billetterie" ? (
-                renderBilleterieDetails(selectedMessage)
-              ) : (
-                <div>
-                  <div className="space-y-2 text-sm text-muted-foreground mb-4 pb-4 border-b border-gray-200">
-                    <p className="break-words"><strong className="text-foreground">De :</strong> {selectedMessage.name} ({selectedMessage.email})</p>
-                    {selectedMessage.phone && <p><strong className="text-foreground">Tél :</strong> {selectedMessage.phone}</p>}
-                    <p><strong className="text-foreground">Date :</strong> {new Date(selectedMessage.createdAt).toLocaleDateString("fr-FR")}</p>
+              {/* Scrollable Content */}
+              <div className="overflow-y-auto">
+                {/* Affichage spécifique pour les devis */}
+                {selectedMessage.type === "Devis" ? (
+                  renderDevisDetails(selectedMessage)
+                ) : selectedMessage.type === "Billetterie" ? (
+                  renderBilleterieDetails(selectedMessage)
+                ) : (
+                  <div>
+                    <div className="space-y-2 text-sm text-muted-foreground mb-4 pb-4 border-b border-gray-200">
+                      <p className="break-words"><strong className="text-foreground">De :</strong> {selectedMessage.name} ({selectedMessage.email})</p>
+                      {selectedMessage.phone && <p><strong className="text-foreground">Tél :</strong> {selectedMessage.phone}</p>}
+                      <p><strong className="text-foreground">Date :</strong> {new Date(selectedMessage.createdAt).toLocaleDateString("fr-FR")}</p>
+                    </div>
+                    <div className="bg-muted/50 p-4 rounded-lg text-sm break-words">{selectedMessage.content}</div>
                   </div>
-                  <div className="bg-muted/50 p-4 rounded-lg text-sm break-words">{selectedMessage.content}</div>
-                </div>
-              )}
+                )}
+              </div>
             </motion.div>
           </motion.div>
         )}
