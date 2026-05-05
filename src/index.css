@@ -159,4 +159,31 @@
     background-repeat: no-repeat;
     padding-right: 2.5rem;
   }
+
+  /* Premium Input Styles for New Devis Form */
+  .premium-input {
+    @apply w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 transition-all duration-300;
+    font-family: var(--font-body);
+  }
+
+  .premium-input:focus {
+    @apply outline-none border-[#0a2357] ring-4 ring-[#0a2357]/10;
+  }
+
+  .premium-input:hover:not(:focus):not(:disabled) {
+    @apply border-gray-300 shadow-sm;
+  }
+
+  textarea.premium-input {
+    @apply h-auto py-3;
+  }
+
+  select.premium-input {
+    @apply appearance-none cursor-pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%230a2357' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-size: 14px;
+    background-repeat: no-repeat;
+    padding-right: 2.5rem;
+  }
 }

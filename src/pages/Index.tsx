@@ -1,159 +1,225 @@
 import Layout from "@/components/Layout";
-import TripCard from "@/components/TripCard";
-import CategoryFilter from "@/components/CategoryFilter";
-import { useData } from "@/contexts/DataContext";
-import { VoyageCategory } from "@/types";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Compass, Shield, HeartHandshake } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Shield, Plane, Ticket, Star } from "lucide-react";
 
 const Index = () => {
-  const { voyages } = useData();
-  const [selectedCategory, setSelectedCategory] = useState<VoyageCategory | "Tous">("Tous");
-  
-  // Filtrer les voyages selon la catégorie sélectionnée
-  const filteredVoyages = selectedCategory === "Tous" 
-    ? voyages 
-    : voyages.filter(v => v.category === selectedCategory);
-  
-  const featured = filteredVoyages.slice(0, 6); // Afficher jusqu'à 6 voyages
+  // Animation variants
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0 }
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15
+      }
+    }
+  };
 
   return (
     <Layout>
-      {/* Hero */}
-      <section className="relative py-32 lg:py-40 overflow-hidden bg-background">
-        <div className="container mx-auto px-4 lg:px-8 relative">
+      {/* Premium Hero Section - Mobile Optimized */}
+      <section className="relative py-16 sm:py-20 lg:py-32 overflow-hidden bg-gradient-to-br from-white via-slate-50 to-white">
+        {/* Subtle Background Pattern */}
+        <div className="absolute inset-0 opacity-[0.03]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, #0a2357 1px, transparent 0)`,
+            backgroundSize: '40px 40px'
+          }} />
+        </div>
+
+        <div className="container mx-auto px-6 sm:px-8 lg:px-8 relative">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 150, damping: 25 }}
-            className="max-w-2xl"
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="max-w-4xl mx-auto text-center"
           >
-            <p className="text-upperspace text-accent mb-4">HOUSE OF TRAVEL</p>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-medium mb-6 leading-tight">
-              Votre pèlerinage commence par la confiance.
-            </h1>
-            <p className="text-lg text-muted-foreground mb-8 max-w-lg">
-              Nous organisons vos voyages spirituels et touristiques avec soin, transparence et un accompagnement personnalisé.
-            </p>
-            <div className="flex flex-wrap gap-4">
+            {/* Eyebrow */}
+            <motion.p 
+              variants={fadeInUp}
+              className="text-xs sm:text-sm uppercase tracking-wider text-[#2C5F2D] font-bold mb-3 sm:mb-4"
+            >
+              HOUSE OF TRAVEL
+            </motion.p>
+
+            {/* Main Headline - Mobile Optimized Typography */}
+            <motion.h1 
+              variants={fadeInUp}
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight text-[#0a2357]"
+            >
+              Voyagez avec Expertise,<br />
+              <span className="text-[#2C5F2D]">Réservez avec Confiance</span>
+            </motion.h1>
+
+            {/* Sub-headline */}
+            <motion.p 
+              variants={fadeInUp}
+              className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed"
+            >
+              Votre partenaire privilégié pour les visas, l'Omrah sur mesure et la billetterie internationale.
+            </motion.p>
+
+            {/* Premium CTA Buttons - Mobile Optimized (Full Width + Stacked) */}
+            <motion.div 
+              variants={fadeInUp}
+              className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-4"
+            >
+              {/* Primary CTA - Sage Green - Full Width on Mobile */}
               <Link
                 to="/devis"
-                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 hover:shadow-elegant active:scale-[0.98] transition-all duration-200"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-[#2C5F2D] text-white px-8 py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-[#234d24] hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 min-h-[56px]"
               >
-                Devis Gratuit <ArrowRight size={18} />
+                Demander un Devis Gratuit
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </Link>
+
+              {/* Secondary CTA - Navy Blue - Full Width on Mobile */}
               <Link
-                to="/omrah"
-                className="inline-flex items-center gap-2 border border-border text-foreground px-6 py-3 rounded-lg font-semibold hover:border-accent hover:text-primary transition-all duration-200"
+                to="/billetterie"
+                className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-[#0a2357] text-white px-8 py-4 rounded-xl font-bold text-base sm:text-lg hover:bg-[#081b42] hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 min-h-[56px]"
               >
-                Découvrir nos Omrah
+                Réserver votre Billet
+                <Ticket size={20} className="group-hover:translate-x-1 transition-transform" />
               </Link>
-            </div>
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Separator line */}
-      <div className="container mx-auto px-4 lg:px-8">
-        <div className="h-px bg-accent/30" />
-      </div>
-
-      {/* Values */}
-      <section className="py-24 bg-background">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { 
-                icon: Shield, 
-                title: "Votre Partenaire de Confiance", 
-                desc: "HOUSE OF TRAVEL vous accompagne dans l'organisation de vos voyages nationaux, internationaux et Omra avec professionnalisme et passion. Explorez le monde avec l'esprit serein." 
-              },
-              { icon: Compass, title: "Accompagnement", desc: "Un guide francophone vous accompagne à chaque étape de votre voyage." },
-              { icon: HeartHandshake, title: "Sur Mesure", desc: "Chaque voyage est adapté à vos besoins, votre budget et vos envies." },
-            ].map((item, i) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ type: "spring", stiffness: 150, damping: 25, delay: i * 0.1 }}
-                className="text-center p-8"
-              >
-                <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-muted flex items-center justify-center">
-                  <item.icon size={24} className="text-accent" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
-                <p className="text-sm text-muted-foreground" dangerouslySetInnerHTML={{ __html: item.desc }} />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Separator line */}
-      <div className="container mx-auto px-4 lg:px-8">
-        <div className="h-px bg-accent/30" />
-      </div>
-
-      {/* Featured Trips */}
-      <section className="py-24 bg-background">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
-            <div>
-              <p className="text-upperspace text-accent mb-2">Nos Voyages</p>
-              <h2 className="text-3xl md:text-4xl font-medium">Découvrez nos offres</h2>
-            </div>
-            <Link
-              to="/voyage-organise"
-              className="hidden md:inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              Voir tout <ArrowRight size={14} />
-            </Link>
-          </div>
-          
-          {/* Filtre de catégories */}
-          <div className="mb-8">
-            <CategoryFilter
-              categories={["Omrah", "Voyage Organisé", "Voyage National", "Voyage à la Carte"]}
-              active={selectedCategory}
-              onChange={setSelectedCategory}
-            />
-          </div>
-          
-          {/* Grille de voyages */}
-          {featured.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featured.map((v, i) => (
-                <TripCard key={v.id} voyage={v} index={i} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-muted/30 rounded-2xl">
-              <p className="text-muted-foreground">
-                Aucun voyage disponible dans cette catégorie pour le moment.
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-24 bg-background border-t border-accent/30">
-        <div className="container mx-auto px-4 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-medium mb-4">
-            Prêt à partir ?
-          </h2>
-          <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-            Demandez votre devis gratuit et recevez une proposition personnalisée sous 24h.
-          </p>
-          <Link
-            to="/devis"
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 hover:shadow-elegant active:scale-[0.98] transition-all duration-200"
+      {/* How It Works / Our Services Section - Mobile Optimized */}
+      <section className="py-16 sm:py-20 lg:py-28 bg-white">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-8">
+          {/* Section Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12 sm:mb-16"
           >
-            Demander un Devis Gratuit <ArrowRight size={18} />
-          </Link>
+            <p className="text-xs sm:text-sm uppercase tracking-wider text-[#2C5F2D] font-bold mb-2 sm:mb-3">
+              Nos Services
+            </p>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-[#0a2357] mb-3 sm:mb-4">
+              Comment Nous Vous Accompagnons
+            </h2>
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              Trois services professionnels pour répondre à tous vos besoins de voyage
+            </p>
+          </motion.div>
+
+          {/* Service Cards - Mobile: Single Column, Centered */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-10"
+          >
+            {/* Card 1: Visa Assistant - Mobile Centered */}
+            <motion.div
+              variants={fadeInUp}
+              className="group relative bg-white rounded-2xl p-6 sm:p-8 border-2 border-slate-200 hover:border-[#2C5F2D] hover:shadow-2xl transition-all duration-300 text-center"
+            >
+              {/* Icon - Centered */}
+              <div className="w-14 h-14 sm:w-16 sm:h-16 mb-5 sm:mb-6 rounded-xl bg-gradient-to-br from-[#2C5F2D]/10 to-[#2C5F2D]/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mx-auto">
+                <Shield size={28} className="sm:w-8 sm:h-8 text-[#2C5F2D]" />
+              </div>
+
+              {/* Title */}
+              <h3 className="text-lg sm:text-xl font-bold text-[#0a2357] mb-2 sm:mb-3">
+                Visa Assistant
+              </h3>
+
+              {/* Description */}
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Un accompagnement expert pour votre dossier de visa (Schengen, Canada, USA).
+              </p>
+
+              {/* Hover Indicator */}
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#2C5F2D] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-b-2xl" />
+            </motion.div>
+
+            {/* Card 2: Omrah sur Mesure - Mobile Centered */}
+            <motion.div
+              variants={fadeInUp}
+              className="group relative bg-white rounded-2xl p-6 sm:p-8 border-2 border-slate-200 hover:border-[#2C5F2D] hover:shadow-2xl transition-all duration-300 text-center"
+            >
+              {/* Icon - Centered */}
+              <div className="w-14 h-14 sm:w-16 sm:h-16 mb-5 sm:mb-6 rounded-xl bg-gradient-to-br from-[#2C5F2D]/10 to-[#2C5F2D]/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mx-auto">
+                <Star size={28} className="sm:w-8 sm:h-8 text-[#2C5F2D]" />
+              </div>
+
+              {/* Title */}
+              <h3 className="text-lg sm:text-xl font-bold text-[#0a2357] mb-2 sm:mb-3">
+                Omrah sur Mesure
+              </h3>
+
+              {/* Description */}
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Planifiez votre pèlerinage selon vos besoins : hôtels, dates, et vol.
+              </p>
+
+              {/* Hover Indicator */}
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#2C5F2D] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-b-2xl" />
+            </motion.div>
+
+            {/* Card 3: Billetterie - Mobile Centered */}
+            <motion.div
+              variants={fadeInUp}
+              className="group relative bg-white rounded-2xl p-6 sm:p-8 border-2 border-slate-200 hover:border-[#2C5F2D] hover:shadow-2xl transition-all duration-300 text-center"
+            >
+              {/* Icon - Centered */}
+              <div className="w-14 h-14 sm:w-16 sm:h-16 mb-5 sm:mb-6 rounded-xl bg-gradient-to-br from-[#2C5F2D]/10 to-[#2C5F2D]/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mx-auto">
+                <Plane size={28} className="sm:w-8 sm:h-8 text-[#2C5F2D]" />
+              </div>
+
+              {/* Title */}
+              <h3 className="text-lg sm:text-xl font-bold text-[#0a2357] mb-2 sm:mb-3">
+                Billetterie
+              </h3>
+
+              {/* Description */}
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Les meilleurs tarifs pour vos vols nationaux et internationaux.
+              </p>
+
+              {/* Hover Indicator */}
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#2C5F2D] transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-b-2xl" />
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Final CTA Section - Mobile Optimized */}
+      <section className="py-16 sm:py-20 lg:py-28 bg-white border-t border-slate-100">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="max-w-3xl mx-auto text-center"
+          >
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-[#0a2357]">
+              Prêt à Partir ?
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-[#0a2357]/70 mb-8 sm:mb-10 leading-relaxed max-w-xl mx-auto">
+              Demandez votre devis gratuit et recevez une proposition personnalisée sous 24h.
+            </p>
+            <Link
+              to="/devis"
+              className="group inline-flex items-center justify-center gap-3 bg-[#2C5F2D] text-white px-8 sm:px-10 py-4 sm:py-5 rounded-xl font-bold text-base sm:text-lg hover:bg-[#234d24] hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 w-full sm:w-auto min-h-[56px]"
+            >
+              Demander un Devis Gratuit
+              <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </motion.div>
         </div>
       </section>
     </Layout>

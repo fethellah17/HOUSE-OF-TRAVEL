@@ -957,7 +957,7 @@ const VoyagesView = ({
   setShowAddForm: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const [newVoyage, setNewVoyage] = useState({
-    title: "", imageUrl: "", imageUrls: [] as string[], price: "", priceAdult: "", priceChild: "", description: "", category: "Omrah" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "",
+    title: "", imageUrl: "", imageUrls: [] as string[], price: "", priceAdult: "", priceChild: "", description: "", category: "Voyage Organisé" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "",
   });
   const [newStartDate, setNewStartDate] = useState<Date | undefined>();
   const [newEndDate, setNewEndDate] = useState<Date | undefined>();
@@ -969,7 +969,7 @@ const VoyagesView = ({
   
   const [editingVoyage, setEditingVoyage] = useState<Voyage | null>(null);
   const [editForm, setEditForm] = useState({
-    title: "", imageUrl: "", imageUrls: [] as string[], price: "", priceAdult: "", priceChild: "", description: "", category: "Omrah" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "",
+    title: "", imageUrl: "", imageUrls: [] as string[], price: "", priceAdult: "", priceChild: "", description: "", category: "Voyage Organisé" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "",
   });
   const [editStartDate, setEditStartDate] = useState<Date | undefined>();
   const [editEndDate, setEditEndDate] = useState<Date | undefined>();
@@ -1079,7 +1079,7 @@ const VoyagesView = ({
       };
       addVoyage(v);
       setShowAddForm(false);
-      setNewVoyage({ title: "", imageUrl: "", imageUrls: [], price: "", priceAdult: "", priceChild: "", description: "", category: "Omrah", duration: "", date: "", status: "normal", flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "" });
+      setNewVoyage({ title: "", imageUrl: "", imageUrls: [], price: "", priceAdult: "", priceChild: "", description: "", category: "Voyage Organisé", duration: "", date: "", status: "normal", flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "" });
       setNewStartDate(undefined);
       setNewEndDate(undefined);
       setNewStages([
@@ -1244,9 +1244,8 @@ const VoyagesView = ({
               <div>
                 <label className="block text-sm font-medium mb-1.5">Catégorie</label>
                 <select value={newVoyage.category} onChange={(e) => setNewVoyage({ ...newVoyage, category: e.target.value as VoyageCategory })} className="form-input">
-                  <option>Omrah</option>
                   <option>Voyage Organisé</option>
-                  <option>Voyage à la Carte</option>
+                  <option>Voyage National</option>
                 </select>
               </div>
             </div>
@@ -1458,9 +1457,8 @@ const VoyagesView = ({
                       onChange={(e) => setEditForm({ ...editForm, category: e.target.value as VoyageCategory })} 
                       className="form-input"
                     >
-                      <option>Omrah</option>
                       <option>Voyage Organisé</option>
-                      <option>Voyage à la Carte</option>
+                      <option>Voyage National</option>
                     </select>
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-export type VoyageCategory = 'Omrah' | 'Voyage Organisé' | 'Voyage à la Carte';
+export type VoyageCategory = 'Omrah' | 'Voyage Organisé' | 'Voyage à la Carte' | 'Voyage National';
 export type VoyageStatus = 'normal' | 'almost-full' | 'full' | 'limited-offer';
 
 export interface User {

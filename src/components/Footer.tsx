@@ -17,10 +17,9 @@ const Footer = () => {
           <div>
             <h4 className="text-sm font-semibold mb-4">Navigation</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link to="/omrah" className="hover:text-primary transition-colors">Omrah</Link></li>
               <li><Link to="/voyage-organise" className="hover:text-primary transition-colors">Voyage Organisé</Link></li>
-              <li><Link to="/voyage-a-la-carte" className="hover:text-primary transition-colors">Voyage à la Carte</Link></li>
               <li><Link to="/billetterie" className="hover:text-primary transition-colors">Billetterie</Link></li>
+              <li><Link to="/devis" className="hover:text-primary transition-colors">Devis Gratuit</Link></li>
             </ul>
           </div>
 
