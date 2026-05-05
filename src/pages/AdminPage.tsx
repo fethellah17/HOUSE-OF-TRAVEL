@@ -52,12 +52,12 @@ const AdminPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <div className="min-h-screen flex bg-slate-50">
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-accent/20 px-4 py-3 flex items-center justify-between">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm">
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="p-2 text-primary hover:bg-muted/50 rounded-lg transition-colors"
+          className="p-2 text-primary hover:bg-slate-100 rounded-lg transition-colors"
           aria-label="Menu"
         >
           <Menu size={24} />
@@ -257,21 +257,21 @@ const UsersView = () => {
     <div>
       <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Gérer les Comptes</h2>
 
-      {/* Compact Stats Card */}
+      {/* Compact Stats Card - Minimalist White Design */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className="mb-4"
       >
-        <div className="bg-gradient-to-br from-primary to-primary/80 rounded-lg shadow-md p-4 text-white">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-white/80 mb-0.5">Total Inscriptions</p>
-              <p className="text-2xl font-bold tabular-nums">{users.length}</p>
+              <p className="text-xs font-medium text-slate-600 mb-0.5">Total Inscriptions</p>
+              <p className="text-xl font-bold tabular-nums text-slate-900">{users.length}</p>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full">
-              <Users size={24} className="text-white" />
+            <div className="bg-slate-100 p-2.5 rounded-lg">
+              <Users size={20} className="text-slate-600" />
             </div>
           </div>
         </div>
@@ -368,28 +368,28 @@ const UsersView = () => {
         )}
       </AnimatePresence>
 
-      {/* Users Table - Minimalist SaaS Design */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#0a2357] text-white">
+      {/* Users Table - Minimalist SaaS Design with Mobile Scroll */}
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-[#0a2357] scrollbar-track-slate-100">
+          <table className="w-full" style={{ minWidth: '600px' }}>
+            <thead className="bg-slate-800 text-white">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                <th className="px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                   Nom
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">
+                <th className="px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                   Prénom
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider hidden md:table-cell">
+                <th className="px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                   Email
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider hidden lg:table-cell">
+                <th className="px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                   Téléphone
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider hidden sm:table-cell">
-                  Date d'inscription
+                <th className="px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+                  Date
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">
+                <th className="px-2 sm:px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider whitespace-nowrap sticky right-0 bg-slate-800 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.1)]">
                   Actions
                 </th>
               </tr>
@@ -397,7 +397,7 @@ const UsersView = () => {
             <tbody className="divide-y divide-slate-100">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500 text-sm">
+                  <td colSpan={6} className="px-3 py-8 text-center text-slate-500 text-sm">
                     Aucun utilisateur enregistré
                   </td>
                 </tr>
@@ -405,43 +405,43 @@ const UsersView = () => {
                 users.map((user, index) => (
                   <tr 
                     key={user.id} 
-                    className={`hover:bg-slate-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}
+                    className={`hover:bg-slate-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}
                   >
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-900">
+                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                      <span className="text-sm font-medium text-slate-900">
                         {user.nom || "---"}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm text-gray-900">
+                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                      <span className="text-sm font-medium text-slate-900">
                         {user.prenom || "---"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <span className="text-sm text-gray-600 truncate block max-w-[200px]">
+                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                      <span className="text-sm text-slate-600">
                         {user.email || "---"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <span className="text-sm text-gray-600">
+                    <td className="px-2 sm:px-3 py-2.5 whitespace-nowrap">
+                      <span className="text-sm text-slate-600">
                         {user.phone || "---"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 hidden sm:table-cell">
+                    <td className="px-2 sm:px-3 py-2.5 text-sm text-slate-600 whitespace-nowrap">
                       {user.dateInsc || formatDate(user.createdAt)}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 sm:px-3 py-2.5 sticky right-0 bg-white shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => setSelectedUser(user)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-[#0a2357] hover:bg-slate-100 rounded-lg transition-colors"
                           title="Voir les détails"
                         >
                           <Eye size={18} />
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(user.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Supprimer"
                         >
                           <Trash2 size={18} />
@@ -816,21 +816,21 @@ const InboxView = ({
     <div>
       <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Boîte de Réception</h2>
 
-      {/* Compact Stats Card */}
+      {/* Compact Stats Card - Minimalist White Design */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className="mb-4"
       >
-        <div className="bg-gradient-to-br from-[#2C5F2D] to-[#3d7a3e] rounded-lg shadow-md p-4 text-white">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-white/80 mb-0.5">Messages Non Lus</p>
-              <p className="text-2xl font-bold tabular-nums">{unreadCount}</p>
+              <p className="text-xs font-medium text-slate-600 mb-0.5">Messages Non Lus</p>
+              <p className="text-xl font-bold tabular-nums text-slate-900">{unreadCount}</p>
             </div>
-            <div className="bg-white/20 backdrop-blur-sm p-3 rounded-full">
-              <Inbox size={24} className="text-white" />
+            <div className="bg-slate-100 p-2.5 rounded-lg">
+              <Inbox size={20} className="text-slate-600" />
             </div>
           </div>
         </div>

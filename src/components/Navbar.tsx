@@ -105,7 +105,7 @@ const Navbar = () => {
           ))}
         </ul>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {/* User Account Button */}
           {currentUser ? (
             <div className="hidden sm:flex items-center gap-2">
@@ -126,7 +126,7 @@ const Navbar = () => {
           ) : (
             <button
               onClick={() => setShowLoginModal(true)}
-              className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors font-medium text-sm"
+              className="hidden sm:flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors font-medium text-sm"
             >
               <User size={18} />
               <span className="hidden md:inline">Se connecter</span>
@@ -135,9 +135,9 @@ const Navbar = () => {
 
           {/* Mobile User Greeting - Shows before WhatsApp icon */}
           {currentUser && (
-            <div className="sm:hidden flex items-center gap-2">
-              <span className="text-xs font-medium text-slate-700 max-w-[80px] truncate">
-                Bonjour, {currentUser.fullName?.split(" ")[0] || "Utilisateur"}
+            <div className="sm:hidden flex items-center">
+              <span className="text-xs font-medium text-slate-700 max-w-[70px] truncate">
+                {currentUser.fullName?.split(" ")[0] || "User"}
               </span>
             </div>
           )}

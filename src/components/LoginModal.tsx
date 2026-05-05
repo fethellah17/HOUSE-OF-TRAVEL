@@ -79,6 +79,25 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
     }
   }, [isOpen]);
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = 'unset';
+      document.body.style.position = 'unset';
+      document.body.style.width = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      document.body.style.position = 'unset';
+      document.body.style.width = 'unset';
+    };
+  }, [isOpen]);
+
   // Check if user is logged in and set edit mode
   useEffect(() => {
     if (isOpen && editMode) {
@@ -503,19 +522,19 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
-        className="fixed inset-0 z-[99999] w-full h-full bg-white dark:bg-slate-950 flex flex-col items-center justify-center overflow-y-auto"
+        className="fixed inset-0 z-[99999] w-full h-full bg-white dark:bg-slate-950 flex flex-col items-center justify-start md:justify-center overflow-y-auto"
       >
         {/* Close Button - Top Right Corner */}
         <button
           onClick={onClose}
-          className="fixed top-6 right-6 z-10 p-3 text-primary hover:text-primary/80 transition-colors rounded-full hover:bg-primary/5 touch-manipulation"
+          className="fixed top-4 right-4 md:top-6 md:right-6 z-10 p-3 md:p-3 min-w-[44px] min-h-[44px] flex items-center justify-center text-primary hover:text-primary/80 transition-colors rounded-full hover:bg-primary/5 touch-manipulation"
           aria-label="Fermer"
         >
           <X size={28} strokeWidth={2.5} />
         </button>
 
         {/* Content Container */}
-        <div className="w-full max-w-md px-6 py-8">
+        <div className="w-full max-w-md px-4 md:px-6 py-6 md:py-8">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-primary mb-2">
@@ -570,7 +589,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                   <button
                     onClick={handleGoogleLogin}
                     disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 hover:border-[#2C5F2D] dark:hover:border-[#D4AF37] text-gray-700 dark:text-gray-200 font-semibold py-4 px-4 rounded-xl transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 hover:border-[#2C5F2D] dark:hover:border-[#D4AF37] text-gray-700 dark:text-gray-200 font-semibold py-3 md:py-4 min-h-[48px] px-4 rounded-xl transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                       <path
@@ -612,7 +631,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                         type="email"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
+                        className={`w-full px-4 py-3 md:py-3 min-h-[48px] text-base border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
                           errors.loginEmail ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                         }`}
                         placeholder="Ex: ahmed@example.com"
@@ -631,7 +650,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                         type="password"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
+                        className={`w-full px-4 py-3 md:py-3 min-h-[48px] text-base border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
                           errors.loginPassword ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                         }`}
                         placeholder="Votre mot de passe"
@@ -645,7 +664,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                     <button
                       onClick={handleLogin}
                       disabled={loading}
-                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 md:py-4 min-h-[48px] px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
                     >
                       {loading ? (
                         <>
@@ -705,7 +724,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                           type="tel"
                           value={forgotPhone}
                           onChange={(e) => setForgotPhone(e.target.value)}
-                          className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                          className={`w-full px-4 py-3 md:py-3 min-h-[48px] text-base border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
                             errors.forgotPhone ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                           }`}
                           placeholder="Ex: 0600000000"
@@ -718,7 +737,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                       <button
                         onClick={handleForgotPasswordPhone}
                         disabled={loading}
-                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 md:py-4 min-h-[48px] px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
                       >
                         {loading ? (
                           <>
@@ -756,7 +775,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                           type="text"
                           value={forgotOtp}
                           onChange={(e) => setForgotOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-center text-2xl tracking-widest font-semibold ${
+                          className={`w-full px-4 py-3 md:py-3 min-h-[48px] text-base border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-center text-2xl tracking-widest font-semibold ${
                             errors.forgotOtp ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                           }`}
                           placeholder="000000"
@@ -773,7 +792,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                       <button
                         onClick={handleForgotPasswordOtp}
                         disabled={loading}
-                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 md:py-4 min-h-[48px] px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
                       >
                         {loading ? (
                           <>
