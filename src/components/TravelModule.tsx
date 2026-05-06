@@ -51,8 +51,8 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
     >
       {/* Travel Type Selection */}
       <div>
-        <div className="border-l-4 border-[#2C5F2D] pl-4 mb-6">
-          <h2 className="text-2xl font-bold text-[#0a2357]">Type de Voyage</h2>
+        <div className="border-l-4 border-accent pl-4 mb-6">
+          <h2 className="text-2xl font-bold text-primary">Type de Voyage</h2>
           <p className="text-sm text-muted-foreground mt-1">Choisissez entre Omrah ou Voyage Organisé</p>
         </div>
 
@@ -70,15 +70,15 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
             }
             className={`p-6 rounded-xl border-2 transition-all duration-300 text-left min-h-[48px] ${
               formData.travelType === "omrah"
-                ? "border-[#2C5F2D] bg-[#2C5F2D]/10 shadow-lg"
-                : "border-gray-200 hover:border-[#2C5F2D]/50 hover:shadow-md"
+                ? "border-primary bg-primary/10 shadow-lg"
+                : "border-gray-200 hover:border-primary/50 hover:shadow-md"
             }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <div className="flex items-center gap-3 mb-2">
               <svg
-                className="text-[#2C5F2D]"
+                className="text-primary"
                 width="28"
                 height="28"
                 viewBox="0 0 24 24"
@@ -89,7 +89,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 <path d="M12 2L2 7l10 5 10-5-10-5z" />
                 <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
-              <h3 className="text-lg font-bold text-[#0a2357]">Omrah</h3>
+              <h3 className="text-lg font-bold text-primary">Omrah</h3>
             </div>
             <p className="text-sm text-muted-foreground">Pèlerinage à La Mecque avec hébergement</p>
           </motion.button>
@@ -117,15 +117,15 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
             }
             className={`p-6 rounded-xl border-2 transition-all duration-300 text-left min-h-[48px] ${
               formData.travelType === "voyage"
-                ? "border-[#2C5F2D] bg-[#2C5F2D]/10 shadow-lg"
-                : "border-gray-200 hover:border-[#2C5F2D]/50 hover:shadow-md"
+                ? "border-primary bg-primary/10 shadow-lg"
+                : "border-gray-200 hover:border-primary/50 hover:shadow-md"
             }`}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             <div className="flex items-center gap-3 mb-2">
-              <MapPin className="text-[#2C5F2D]" size={28} />
-              <h3 className="text-lg font-bold text-[#0a2357]">Voyage Organisé</h3>
+              <MapPin className="text-primary" size={28} />
+              <h3 className="text-lg font-bold text-primary">Voyage Organisé</h3>
             </div>
             <p className="text-sm text-muted-foreground">Destinations variées avec pension complète</p>
           </motion.button>
@@ -144,7 +144,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
         >
           {/* Hotel Configuration */}
           <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
               <Hotel size={18} className="text-gray-400" />
               Configuration Hôtel
             </h3>
@@ -152,7 +152,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Hotel Type */}
               <div>
-                <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+                <label className="block text-sm font-semibold text-primary mb-2">
                   Type d'Hôtel *
                 </label>
                 <select
@@ -176,7 +176,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
 
               {/* Distance from Haram */}
               <div>
-                <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+                <label className="block text-sm font-semibold text-primary mb-2">
                   Distance du Haram *
                 </label>
                 <select
@@ -201,7 +201,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
 
               {/* Room Type */}
               <div>
-                <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+                <label className="block text-sm font-semibold text-primary mb-2">
                   Type de Chambre *
                 </label>
                 <select
@@ -227,7 +227,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
 
             {/* Room Count */}
             <div className="mt-6">
-              <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+              <label className="block text-sm font-semibold text-primary mb-2">
                 Nombre de Chambres *
               </label>
               <input
@@ -252,7 +252,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
 
           {/* Passenger Management */}
           <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
               <Users size={18} className="text-gray-400" />
               Passagers
             </h3>
@@ -260,7 +260,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Adults Count */}
               <div>
-                <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+                <label className="block text-sm font-semibold text-primary mb-2">
                   Nombre d'Adultes *
                 </label>
                 <input
@@ -284,7 +284,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
 
               {/* Children Count */}
               <div>
-                <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+                <label className="block text-sm font-semibold text-primary mb-2">
                   Nombre d'Enfants
                 </label>
                 <input
@@ -318,7 +318,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                   transition={{ duration: 0.3 }}
                   className="mt-6"
                 >
-                  <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+                  <label className="block text-sm font-semibold text-primary mb-2">
                     Âge des Enfants *
                   </label>
                   <input
@@ -346,13 +346,13 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
 
           {/* Meal Plan */}
           <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
               <Utensils size={18} className="text-gray-400" />
               Pension
             </h3>
 
             <div>
-              <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+              <label className="block text-sm font-semibold text-primary mb-2">
                 Type de Pension *
               </label>
               <select
@@ -379,7 +379,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
 
           {/* Logistics Toggles */}
           <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
               <FileText size={18} className="text-gray-400" />
               Logistique
             </h3>
@@ -391,7 +391,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 }}
               >
-                <label className="block text-sm font-semibold text-[#0a2357] mb-3">
+                <label className="block text-sm font-semibold text-primary mb-3">
                   Besoin d'un Visa ? *
                 </label>
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -400,11 +400,11 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                     onClick={() => setFormData({ ...formData, visa_required: true })}
                     className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 h-[60px] sm:h-[52px] ${
                       formData.visa_required === true
-                        ? "border-[#0a2357] bg-[#0a2357]/5 shadow-md"
-                        : "border-slate-200 hover:border-[#0a2357]/50"
+                        ? "border-primary bg-primary text-white shadow-md"
+                        : "border-slate-200 hover:border-primary/50 text-primary"
                     }`}
                   >
-                    <span className="font-semibold text-[#0a2357]">Oui</span>
+                    <span className="font-semibold">Oui</span>
                   </button>
 
                   <button
@@ -412,11 +412,11 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                     onClick={() => setFormData({ ...formData, visa_required: false })}
                     className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 h-[60px] sm:h-[52px] ${
                       formData.visa_required === false
-                        ? "border-[#0a2357] bg-[#0a2357]/5 shadow-md"
-                        : "border-slate-200 hover:border-[#0a2357]/50"
+                        ? "border-primary bg-primary text-white shadow-md"
+                        : "border-slate-200 hover:border-primary/50 text-primary"
                     }`}
                   >
-                    <span className="font-semibold text-[#0a2357]">Non</span>
+                    <span className="font-semibold">Non</span>
                   </button>
                 </div>
                 {errors.visa_required && (
@@ -430,7 +430,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <label className="block text-sm font-semibold text-[#0a2357] mb-3">
+                <label className="block text-sm font-semibold text-primary mb-3">
                   Vol Inclus ? *
                 </label>
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -439,11 +439,11 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                     onClick={() => setFormData({ ...formData, flight_included: true })}
                     className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 h-[60px] sm:h-[52px] ${
                       formData.flight_included === true
-                        ? "border-[#0a2357] bg-[#0a2357]/5 shadow-md"
-                        : "border-slate-200 hover:border-[#0a2357]/50"
+                        ? "border-primary bg-primary text-white shadow-md"
+                        : "border-slate-200 hover:border-primary/50 text-primary"
                     }`}
                   >
-                    <span className="font-semibold text-[#0a2357]">Oui</span>
+                    <span className="font-semibold">Oui</span>
                   </button>
 
                   <button
@@ -451,11 +451,11 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                     onClick={() => setFormData({ ...formData, flight_included: false })}
                     className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 h-[60px] sm:h-[52px] ${
                       formData.flight_included === false
-                        ? "border-[#0a2357] bg-[#0a2357]/5 shadow-md"
-                        : "border-slate-200 hover:border-[#0a2357]/50"
+                        ? "border-primary bg-primary text-white shadow-md"
+                        : "border-slate-200 hover:border-primary/50 text-primary"
                     }`}
                   >
-                    <span className="font-semibold text-[#0a2357]">Non</span>
+                    <span className="font-semibold">Non</span>
                   </button>
                 </div>
                 {errors.flight_included && (
@@ -467,7 +467,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
 
           {/* Travel Dates */}
           <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
               <Calendar size={18} className="text-gray-400" />
               Dates de Voyage
             </h3>
@@ -475,7 +475,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Departure Date */}
               <div>
-                <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+                <label className="block text-sm font-semibold text-primary mb-2">
                   Date de Départ *
                 </label>
                 <input
@@ -497,7 +497,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
 
               {/* Return Date */}
               <div>
-                <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+                <label className="block text-sm font-semibold text-primary mb-2">
                   Date de Retour *
                 </label>
                 <input
@@ -531,7 +531,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
           className="space-y-6"
         >
           <div className="bg-white border border-slate-100 rounded-xl p-6 hover:shadow-md transition-shadow">
-            <h3 className="text-lg font-bold text-[#0a2357] mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold text-primary mb-4 flex items-center gap-2">
               <MapPin size={18} className="text-gray-400" />
               Configuration Voyage
             </h3>
@@ -539,7 +539,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Destination */}
               <div>
-                <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+                <label className="block text-sm font-semibold text-primary mb-2">
                   Destination *
                 </label>
                 <select
@@ -566,7 +566,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
 
               {/* Board Type */}
               <div>
-                <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+                <label className="block text-sm font-semibold text-primary mb-2">
                   Type de Pension *
                 </label>
                 <select

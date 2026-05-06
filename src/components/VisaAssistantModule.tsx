@@ -180,8 +180,8 @@ const VisaAssistantModule = ({ formData, setFormData, errors }: VisaAssistantMod
     >
       {/* Professional Information */}
       <div>
-        <div className="border-l-4 border-[#2C5F2D] pl-4 mb-6">
-          <h2 className="text-2xl font-bold text-[#0a2357]">Informations Professionnelles</h2>
+        <div className="border-l-4 border-accent pl-4 mb-6">
+          <h2 className="text-2xl font-bold text-primary">Informations Professionnelles</h2>
           <p className="text-sm text-muted-foreground mt-1">
             Pour personnaliser votre dossier de visa
           </p>
@@ -190,7 +190,7 @@ const VisaAssistantModule = ({ formData, setFormData, errors }: VisaAssistantMod
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Profession */}
           <div>
-            <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+            <label className="block text-sm font-semibold text-primary mb-2">
               Votre Profession *
             </label>
             <select
@@ -213,7 +213,7 @@ const VisaAssistantModule = ({ formData, setFormData, errors }: VisaAssistantMod
 
           {/* Destination */}
           <div>
-            <label className="block text-sm font-semibold text-[#0a2357] mb-2">
+            <label className="block text-sm font-semibold text-primary mb-2">
               Destination du Visa *
             </label>
             <select
@@ -248,11 +248,11 @@ const VisaAssistantModule = ({ formData, setFormData, errors }: VisaAssistantMod
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border-2 border-blue-200">
+            <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-6 rounded-xl border-2 border-accent/30">
               <div className="flex items-start gap-3 mb-4">
-                <Sparkles className="text-blue-600 mt-1" size={24} />
+                <Sparkles className="text-accent mt-1" size={24} />
                 <div>
-                  <h3 className="text-lg font-bold text-[#0a2357] mb-2">
+                  <h3 className="text-lg font-bold text-primary mb-2">
                     Vérification d'Éligibilité - Traitement Simplifié
                   </h3>
                   <p className="text-sm text-muted-foreground mb-4">
@@ -267,15 +267,15 @@ const VisaAssistantModule = ({ formData, setFormData, errors }: VisaAssistantMod
                   onClick={() => setFormData({ ...formData, hasUsaVisa: true })}
                   className={`flex-1 p-4 rounded-lg border-2 transition-all duration-300 ${
                     formData.hasUsaVisa === true
-                      ? "border-green-500 bg-green-50"
-                      : "border-gray-200 hover:border-green-300"
+                      ? "border-accent bg-accent/10"
+                      : "border-gray-200 hover:border-accent/50"
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <CheckCircle2
                     className={`mx-auto mb-2 ${
-                      formData.hasUsaVisa === true ? "text-green-600" : "text-gray-400"
+                      formData.hasUsaVisa === true ? "text-accent" : "text-gray-400"
                     }`}
                     size={28}
                   />
@@ -315,7 +315,7 @@ const VisaAssistantModule = ({ formData, setFormData, errors }: VisaAssistantMod
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
             transition={{ type: "spring", stiffness: 200, damping: 20 }}
-            className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 p-6 rounded-xl border-2 border-green-400 shadow-xl"
+            className="bg-gradient-to-r from-accent/10 via-accent/5 to-primary/5 p-6 rounded-xl border-2 border-accent shadow-xl"
           >
             <div className="flex items-start gap-4">
               <motion.div
@@ -323,19 +323,19 @@ const VisaAssistantModule = ({ formData, setFormData, errors }: VisaAssistantMod
                 animate={{ rotate: [0, 10, -10, 10, 0] }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <div className="bg-green-500 rounded-full p-3">
-                  <CheckCircle2 className="text-white" size={32} />
+                <div className="bg-accent rounded-full p-3">
+                  <CheckCircle2 className="text-primary" size={32} />
                 </div>
               </motion.div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold text-green-800 mb-2 flex items-center gap-2">
+                <h3 className="text-xl font-bold text-primary mb-2 flex items-center gap-2">
                   🎉 Félicitations !
                 </h3>
-                <p className="text-green-700 font-medium mb-2">
+                <p className="text-primary font-medium mb-2">
                   Vous êtes éligible au <span className="font-bold">Simplified Path</span> (Traitement
                   Prioritaire)
                 </p>
-                <p className="text-sm text-green-600">
+                <p className="text-sm text-primary/70">
                   Votre Visa USA valide vous permet de bénéficier d'une procédure accélérée pour le
                   Canada. Nous vous accompagnerons dans cette démarche simplifiée.
                 </p>
@@ -354,11 +354,11 @@ const VisaAssistantModule = ({ formData, setFormData, errors }: VisaAssistantMod
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="bg-gradient-to-r from-[#0a2357]/5 to-[#2C5F2D]/5 p-6 rounded-xl border border-[#2C5F2D]/20">
+            <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-6 rounded-xl border border-accent/20">
               <div className="flex items-center gap-3 mb-4">
-                <FileText className="text-[#2C5F2D]" size={24} />
+                <FileText className="text-accent" size={24} />
                 <div>
-                  <h3 className="text-lg font-bold text-[#0a2357]">
+                  <h3 className="text-lg font-bold text-primary">
                     Documents Requis pour Votre Dossier
                   </h3>
                   <p className="text-sm text-muted-foreground">
@@ -374,9 +374,9 @@ const VisaAssistantModule = ({ formData, setFormData, errors }: VisaAssistantMod
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-[#2C5F2D]/30 transition-colors"
+                    className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-accent/30 transition-colors"
                   >
-                    <CheckCircle2 className="text-[#2C5F2D] mt-0.5 flex-shrink-0" size={18} />
+                    <CheckCircle2 className="text-accent mt-0.5 flex-shrink-0" size={18} />
                     <p className="text-sm text-gray-700 font-medium">{doc}</p>
                   </motion.div>
                 ))}
@@ -386,9 +386,9 @@ const VisaAssistantModule = ({ formData, setFormData, errors }: VisaAssistantMod
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200"
+                className="mt-4 p-4 bg-primary/5 rounded-lg border border-primary/20"
               >
-                <p className="text-sm text-blue-800">
+                <p className="text-sm text-primary">
                   <span className="font-bold">💡 Note:</span> Notre équipe vous accompagnera dans la
                   préparation de chaque document et vérifiera la conformité de votre dossier avant
                   soumission.

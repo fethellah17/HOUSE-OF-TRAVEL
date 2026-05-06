@@ -329,8 +329,8 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
           animate={{ opacity: 1, scale: 1 }}
           className="text-center py-16 bg-white rounded-2xl shadow-xl border border-gray-200"
         >
-          <CheckCircle size={64} className="mx-auto text-[#2C5F2D] mb-4" />
-          <h2 className="text-2xl font-bold mb-2 text-[#0a2357]">Demande Envoyée !</h2>
+          <CheckCircle size={64} className="mx-auto text-accent mb-4" />
+          <h2 className="text-2xl font-bold mb-2 text-primary">Demande Envoyée !</h2>
           <p className="text-muted-foreground">Notre équipe vous répondra dans les plus brefs délais.</p>
         </motion.div>
       ) : (
@@ -344,16 +344,16 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
         >
           {/* Section 1: Personal Information with Modifier Button */}
           <div>
-            <div className="border-l-4 border-[#0a2357] pl-4 mb-6 flex items-center justify-between">
+            <div className="border-l-4 border-primary pl-4 mb-6 flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-[#0a2357]">Informations Personnelles</h2>
+                <h2 className="text-2xl font-bold text-primary">Informations Personnelles</h2>
                 <p className="text-sm text-muted-foreground mt-1">Vos coordonnées pour vous contacter</p>
               </div>
               {isLoggedIn && (
                 <button
                   type="button"
                   onClick={() => setShowLoginModal(true)}
-                  className="text-[#2C5F2D] hover:text-[#234d24] font-semibold text-sm transition-colors whitespace-nowrap ml-4"
+                  className="text-primary hover:text-primary/80 font-semibold text-sm transition-colors whitespace-nowrap ml-4"
                 >
                   Modifier
                 </button>
@@ -409,8 +409,8 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
 
           {/* Section 2: Service Choice (The Logic Gate) */}
           <div>
-            <div className="border-l-4 border-[#2C5F2D] pl-4 mb-6">
-              <h2 className="text-2xl font-bold text-[#0a2357]">Choisissez Votre Service</h2>
+            <div className="border-l-4 border-accent pl-4 mb-6">
+              <h2 className="text-2xl font-bold text-primary">Choisissez Votre Service</h2>
               <p className="text-sm text-muted-foreground mt-1">Sélectionnez le type de service souhaité</p>
             </div>
 
@@ -420,15 +420,15 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
                 onClick={() => setFormData({ ...formData, servicePath: "travel" })}
                 className={`p-6 rounded-xl border-2 transition-all duration-300 text-left min-h-[52px] ${
                   formData.servicePath === "travel"
-                    ? "border-[#2C5F2D] bg-[#2C5F2D]/5 shadow-lg"
-                    : "border-slate-200 hover:border-[#2C5F2D]/50 hover:shadow-md"
+                    ? "border-primary bg-primary/5 shadow-lg"
+                    : "border-slate-200 hover:border-primary/50 hover:shadow-md"
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-3 mb-2">
-                  <Plane className="text-[#2C5F2D]" size={24} />
-                  <h3 className="text-lg font-bold text-[#0a2357]">Voyage Organisé / Omrah</h3>
+                  <Plane className="text-primary" size={24} />
+                  <h3 className="text-lg font-bold text-primary">Voyage Organisé / Omrah</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Réservez votre voyage complet avec hébergement et services
@@ -440,15 +440,15 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
                 onClick={() => setFormData({ ...formData, servicePath: "visa" })}
                 className={`p-6 rounded-xl border-2 transition-all duration-300 text-left min-h-[52px] ${
                   formData.servicePath === "visa"
-                    ? "border-[#2C5F2D] bg-[#2C5F2D]/5 shadow-lg"
-                    : "border-slate-200 hover:border-[#2C5F2D]/50 hover:shadow-md"
+                    ? "border-primary bg-primary/5 shadow-lg"
+                    : "border-slate-200 hover:border-primary/50 hover:shadow-md"
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 <div className="flex items-center gap-3 mb-2">
                   <svg
-                    className="text-[#2C5F2D]"
+                    className="text-primary"
                     width="24"
                     height="24"
                     viewBox="0 0 24 24"
@@ -459,7 +459,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
                     <rect x="2" y="4" width="20" height="16" rx="2" />
                     <path d="M7 15h0M2 9.5h20" />
                   </svg>
-                  <h3 className="text-lg font-bold text-[#0a2357]">Assistant Visa</h3>
+                  <h3 className="text-lg font-bold text-primary">Assistant Visa</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Assistance professionnelle pour votre dossier de visa
@@ -496,7 +496,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
               transition={{ delay: 0.2 }}
             >
               <div className="border-l-4 border-gray-300 pl-4 mb-6">
-                <h2 className="text-xl font-bold text-[#0a2357]">Message Supplémentaire</h2>
+                <h2 className="text-xl font-bold text-primary">Message Supplémentaire</h2>
                 <p className="text-sm text-muted-foreground mt-1">Informations complémentaires (optionnel)</p>
               </div>
 
@@ -523,7 +523,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="w-full bg-[#2C5F2D] text-white px-8 py-5 rounded-xl font-bold text-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                className="w-full bg-accent text-primary px-8 py-5 rounded-xl font-bold text-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
               >
                 {status === "loading" ? (
                   <>
@@ -539,7 +539,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
               </button>
 
               {!isLoggedIn && (
-                <p className="text-sm text-center text-blue-600 font-medium">
+                <p className="text-sm text-center text-primary font-medium">
                   💡 Vous serez invité à vous connecter pour finaliser votre demande
                 </p>
               )}
@@ -558,7 +558,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
             <motion.p
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-sm uppercase tracking-wider text-[#2C5F2D] font-bold mb-2"
+              className="text-sm uppercase tracking-wider text-accent font-bold mb-2"
             >
               Devis Gratuit
             </motion.p>
@@ -566,7 +566,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl font-bold mb-4 text-[#0a2357]"
+              className="text-4xl md:text-5xl font-bold mb-4 text-primary"
             >
               Demander un Devis Personnalisé
             </motion.h1>
@@ -596,7 +596,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
 
 const Field = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
   <div>
-    <label className="block text-sm font-semibold text-[#0a2357] mb-2">{label}</label>
+    <label className="block text-sm font-semibold text-primary mb-2">{label}</label>
     {children}
     {error && (
       <motion.p

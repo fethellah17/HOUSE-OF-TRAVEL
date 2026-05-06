@@ -103,7 +103,7 @@ const AdminPage = () => {
               <item.icon size={20} className="lg:w-[18px] lg:h-[18px]" />
               {item.label}
               {item.count ? (
-                <span className="ml-auto bg-accent text-white text-xs px-2 py-0.5 rounded-full tabular-nums">
+                <span className="ml-auto bg-accent text-primary text-xs px-2 py-0.5 rounded-full tabular-nums">
                   {item.count}
                 </span>
               ) : null}
@@ -370,9 +370,9 @@ const UsersView = () => {
 
       {/* Users Table - Minimalist SaaS Design with Mobile Scroll */}
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-[#0a2357] scrollbar-track-slate-100">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary scrollbar-track-slate-100">
           <table className="w-full" style={{ minWidth: '600px' }}>
-            <thead className="bg-slate-800 text-white">
+            <thead className="bg-primary text-white">
               <tr>
                 <th className="px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                   Nom
@@ -389,7 +389,7 @@ const UsersView = () => {
                 <th className="px-2 sm:px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
                   Date
                 </th>
-                <th className="px-2 sm:px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider whitespace-nowrap sticky right-0 bg-slate-800 shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.1)]">
+                <th className="px-2 sm:px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider whitespace-nowrap sticky right-0 bg-primary shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.1)]">
                   Actions
                 </th>
               </tr>
@@ -434,7 +434,7 @@ const UsersView = () => {
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => setSelectedUser(user)}
-                          className="p-1.5 text-slate-400 hover:text-[#0a2357] hover:bg-slate-100 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-primary hover:bg-slate-100 rounded-lg transition-colors"
                           title="Voir les détails"
                         >
                           <Eye size={18} />
