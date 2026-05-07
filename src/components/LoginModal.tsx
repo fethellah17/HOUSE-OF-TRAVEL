@@ -484,7 +484,9 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
         const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
         existingUsers.push(newUser);
         localStorage.setItem("users", JSON.stringify(existingUsers));
-        localStorage.setItem("currentUser", JSON.stringify({
+        
+        // IMMEDIATE AUTO-LOGIN: Set currentUser BEFORE any other actions
+        const currentUserData = {
           id: newUser.id,
           nom: nom,
           prenom: prenom,
@@ -493,22 +495,28 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
           phone,
           createdAt: newUser.createdAt,
           dateInsc: newUser.dateInsc,
-        }));
+        };
+        localStorage.setItem("currentUser", JSON.stringify(currentUserData));
         
         setLoading(false);
         toast.success("Inscription réussie ! Bienvenue !");
         
-        // Dispatch event for admin panel to update user count
+        // Dispatch events for immediate data sync
         window.dispatchEvent(new Event("userRegistered"));
-        
-        // Dispatch event for pending request recovery
         window.dispatchEvent(new Event("userLoggedIn"));
         
+        // Call onLoginSuccess with user data for immediate state update
         if (onLoginSuccess) {
           onLoginSuccess(newUser);
         }
         
+        // Close modal and redirect immediately
         onClose();
+        
+        // Immediate redirect to home page (no manual login needed)
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 100);
       }, 1500);
     }
   };

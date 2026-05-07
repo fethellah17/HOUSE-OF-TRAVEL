@@ -159,23 +159,45 @@ const DevisPage = () => {
     message: ""
   });
 
-  // Load user data on mount
+  // Load user data on mount and listen for changes
   useEffect(() => {
-    const currentUserStr = localStorage.getItem("currentUser");
-    if (currentUserStr) {
-      try {
-        const currentUser = JSON.parse(currentUserStr);
-        setIsLoggedIn(true);
-        setPersonalInfo({
-          nom: currentUser.nom || "",
-          prenom: currentUser.prenom || "",
-          email: currentUser.email || "",
-          telephone: currentUser.phone || ""
-        });
-      } catch (error) {
-        console.error("Error loading user data:", error);
+    const loadUserData = () => {
+      const currentUserStr = localStorage.getItem("currentUser");
+      if (currentUserStr) {
+        try {
+          const currentUser = JSON.parse(currentUserStr);
+          setIsLoggedIn(true);
+          setPersonalInfo({
+            nom: currentUser.nom || "",
+            prenom: currentUser.prenom || "",
+            email: currentUser.email || "",
+            telephone: currentUser.phone || ""
+          });
+        } catch (error) {
+          console.error("Error loading user data:", error);
+        }
       }
-    }
+    };
+
+    // Load immediately on mount
+    loadUserData();
+
+    // Listen for user login/registration events for instant sync
+    const handleUserLogin = () => {
+      loadUserData();
+    };
+
+    const handleProfileUpdate = () => {
+      loadUserData();
+    };
+
+    window.addEventListener("userLoggedIn", handleUserLogin);
+    window.addEventListener("profileUpdated", handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener("userLoggedIn", handleUserLogin);
+      window.removeEventListener("profileUpdated", handleProfileUpdate);
+    };
   }, []);
 
   // Handle city autocomplete
