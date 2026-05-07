@@ -81,7 +81,7 @@ const StageSection = ({
                   value={stage.name}
                   onChange={(e) => updateStage(stage.id, "name", e.target.value)}
                   className="devis-input"
-                  placeholder="Ex: مكة المكرمة (La Mecque)"
+                  placeholder="Ex: Istanbul"
                 />
               </div>
 
@@ -108,7 +108,7 @@ const StageSection = ({
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Nom de l'hôtel *
+                  Nom de l'hôtel
                 </label>
                 <input
                   type="text"
@@ -117,13 +117,13 @@ const StageSection = ({
                     updateStage(stage.id, "hotelName", e.target.value)
                   }
                   className="devis-input"
-                  placeholder="Ex: Hilton Makkah"
+                  placeholder="Ex: Hilton Bosphorus"
                 />
               </div>
 
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Lien Google Maps *
+                  Lien Google Maps
                 </label>
                 <input
                   type="url"

@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "@/contexts/DataContext";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Calendar, Clock, ArrowDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, ArrowDown, Plane, Hotel, Utensils, Users, Wifi, MapPin, Star } from "lucide-react";
 import { formatPrice } from "@/lib/formatters";
 import DevisForm from "../components/DevisForm";
 import StageDisplay from "../components/StageDisplay";
@@ -10,6 +10,32 @@ import VoyageStatusBadge from "../components/VoyageStatusBadge";
 import SocialShareButtons from "../components/SocialShareButtons";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import logo from "@/assets/logo.png";
+
+const getFeatureIcon = (feature: string) => {
+  const lowerFeature = feature.toLowerCase();
+  if (lowerFeature.includes("vol") || lowerFeature.includes("avion") || lowerFeature.includes("billet")) {
+    return <Plane size={14} />;
+  }
+  if (lowerFeature.includes("hôtel") || lowerFeature.includes("hotel")) {
+    return <Hotel size={14} />;
+  }
+  if (lowerFeature.includes("inclusive") || lowerFeature.includes("pension") || lowerFeature.includes("repas")) {
+    return <Utensils size={14} />;
+  }
+  if (lowerFeature.includes("guide") || lowerFeature.includes("francophone")) {
+    return <Users size={14} />;
+  }
+  if (lowerFeature.includes("wifi") || lowerFeature.includes("internet")) {
+    return <Wifi size={14} />;
+  }
+  if (lowerFeature.includes("tour") || lowerFeature.includes("visite") || lowerFeature.includes("croisière")) {
+    return <MapPin size={14} />;
+  }
+  if (lowerFeature.includes("*") || lowerFeature.includes("étoile")) {
+    return <Star size={14} />;
+  }
+  return null;
+};
 
 const VoyageDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -176,10 +202,31 @@ const VoyageDetailPage = () => {
               <h1 className="text-3xl sm:text-4xl font-bold text-primary mb-4">
                 {voyage.title}
               </h1>
-              <p className="text-base text-gray-700 leading-relaxed">
+              <p className="text-base text-gray-700 leading-relaxed whitespace-pre-wrap break-words max-w-none">
                 {voyage.description}
               </p>
             </div>
+
+            {/* Points Forts du Voyage */}
+            {voyage.features && voyage.features.length > 0 && (
+              <div className="mb-8 pb-8 border-b border-accent/20">
+                <h2 className="text-xl font-bold text-primary mb-4">Points Forts</h2>
+                <div className="flex flex-wrap gap-3">
+                  {voyage.features.map((feature, idx) => {
+                    const icon = getFeatureIcon(feature);
+                    return (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-2 bg-purple-50 text-purple-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm"
+                      >
+                        {icon}
+                        <span>{feature}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Détails */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 py-6 border-t border-b border-accent/20">

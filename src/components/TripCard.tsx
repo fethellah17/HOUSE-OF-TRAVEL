@@ -2,6 +2,7 @@ import { Voyage } from "@/types";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import VoyageStatusBadge from "./VoyageStatusBadge";
+import { Plane, Hotel, Utensils, Users, Wifi, MapPin, Star } from "lucide-react";
 
 interface TripCardProps {
   voyage: Voyage;
@@ -15,6 +16,32 @@ const getStageIcon = (stageName: string) => {
   }
   if (lowerName.includes("medine") || lowerName.includes("madinah") || lowerName.includes("medina")) {
     return "🕌";
+  }
+  return null;
+};
+
+const getFeatureIcon = (feature: string) => {
+  const lowerFeature = feature.toLowerCase();
+  if (lowerFeature.includes("vol") || lowerFeature.includes("avion") || lowerFeature.includes("billet")) {
+    return <Plane size={12} />;
+  }
+  if (lowerFeature.includes("hôtel") || lowerFeature.includes("hotel")) {
+    return <Hotel size={12} />;
+  }
+  if (lowerFeature.includes("inclusive") || lowerFeature.includes("pension") || lowerFeature.includes("repas")) {
+    return <Utensils size={12} />;
+  }
+  if (lowerFeature.includes("guide") || lowerFeature.includes("francophone")) {
+    return <Users size={12} />;
+  }
+  if (lowerFeature.includes("wifi") || lowerFeature.includes("internet")) {
+    return <Wifi size={12} />;
+  }
+  if (lowerFeature.includes("tour") || lowerFeature.includes("visite") || lowerFeature.includes("croisière")) {
+    return <MapPin size={12} />;
+  }
+  if (lowerFeature.includes("*") || lowerFeature.includes("étoile")) {
+    return <Star size={12} />;
   }
   return null;
 };
@@ -48,7 +75,32 @@ const TripCard = ({ voyage, index = 0 }: TripCardProps) => {
           </div>
           <div className="p-6">
             <h3 className="text-lg font-semibold mb-2">{voyage.title}</h3>
-            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{voyage.description}</p>
+            <p className="text-sm text-muted-foreground mb-4 line-clamp-2 whitespace-pre-wrap break-words">{voyage.description}</p>
+
+            {/* Points Forts (Features) */}
+            {voyage.features && voyage.features.length > 0 && (
+              <div className="mb-4 pb-4 border-b border-gray-200">
+                <div className="flex flex-wrap gap-2">
+                  {voyage.features.slice(0, 5).map((feature, idx) => {
+                    const icon = getFeatureIcon(feature);
+                    return (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full text-xs font-medium"
+                      >
+                        {icon}
+                        <span>{feature}</span>
+                      </span>
+                    );
+                  })}
+                  {voyage.features.length > 5 && (
+                    <span className="inline-flex items-center bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full text-xs font-medium">
+                      +{voyage.features.length - 5}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Affichage des étapes si disponibles */}
             {voyage.stages && voyage.stages.length > 0 && (
