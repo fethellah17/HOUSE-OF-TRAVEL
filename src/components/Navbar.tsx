@@ -72,10 +72,14 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
-      <nav className="container mx-auto flex items-center justify-between h-20 px-4 lg:px-8">
-        <Link to="/" className="flex items-center gap-3 py-2">
-          <img src={logo} alt="HOUSE OF TRAVEL" className="h-20 w-auto lg:h-24" />
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
+      <nav className="container mx-auto flex items-center justify-between h-16 sm:h-20 px-4 lg:px-8">
+        <Link to="/" className="flex items-center py-2">
+          <img 
+            src={logo} 
+            alt="HOUSE OF TRAVEL" 
+            className="h-10 sm:h-12 md:h-14 w-auto object-contain" 
+          />
         </Link>
 
         <ul className="hidden lg:flex items-center gap-1">

@@ -1,9 +1,62 @@
 import Layout from "@/components/Layout";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowRight, Shield, Plane, Ticket, Hotel, Globe } from "lucide-react";
+import { motion, AnimatePresence, useInView } from "framer-motion";
+import { ArrowRight, Shield, Plane, Ticket, Hotel, Globe, CheckCircle, MapPin } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 const Index = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const statsRef = useRef(null);
+  const isStatsInView = useInView(statsRef, { once: true, amount: 0.3 });
+  
+  const photos = [
+    "/photos/3.jpg",
+    "/photos/4.jpg",
+    "/photos/5.jpg",
+    "/photos/6.jpg",
+    "/photos/8.jpg"
+  ];
+
+  // Auto-advance slides: increment by 1 every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev === photos.length - 1 ? 0 : prev + 1));
+    }, 5000); // Stay on each image for 5 seconds
+
+    return () => clearInterval(interval);
+  }, [photos.length]);
+
+  // Animated counter hook
+  const useCounter = (end: number, duration: number = 2000) => {
+    const [count, setCount] = useState(0);
+
+    useEffect(() => {
+      if (!isStatsInView) return;
+
+      let startTime: number | null = null;
+      const startValue = 0;
+
+      const animate = (currentTime: number) => {
+        if (!startTime) startTime = currentTime;
+        const progress = Math.min((currentTime - startTime) / duration, 1);
+        
+        const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+        setCount(Math.floor(easeOutQuart * (end - startValue) + startValue));
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+
+      requestAnimationFrame(animate);
+    }, [isStatsInView, end, duration]);
+
+    return count;
+  };
+
+  const ticketsCount = useCounter(10000, 2000);
+  const visasCount = useCounter(5000, 2000);
+  const destinationsCount = useCounter(200, 2000);
   // Animation variants
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
@@ -22,17 +75,51 @@ const Index = () => {
 
   return (
     <Layout>
-      {/* Premium Hero Section - Mobile Optimized */}
-      <section className="relative py-16 sm:py-20 lg:py-32 overflow-hidden bg-white">
-        {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.02]">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, #4B2C7F 1px, transparent 0)`,
-            backgroundSize: '40px 40px'
-          }} />
+      {/* Premium Hero Section - High-Performance Cross-Fade */}
+      <section className="relative py-24 sm:py-28 lg:py-32 overflow-hidden bg-primary">
+        {/* Static Layer Cross-Fade Container */}
+        <div className="absolute inset-0 z-0">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentIndex}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                duration: 1.5,
+                ease: "easeInOut"
+              }}
+              className="absolute inset-0 w-full h-full"
+              style={{
+                transform: 'translateZ(0)',
+                backfaceVisibility: 'hidden',
+                willChange: 'opacity'
+              }}
+            >
+              <img
+                src={photos[currentIndex]}
+                alt=""
+                loading={currentIndex === 0 ? "eager" : "lazy"}
+                className="w-full h-full object-cover object-center"
+                style={{
+                  transform: 'translateZ(0)',
+                  backfaceVisibility: 'hidden'
+                }}
+              />
+            </motion.div>
+          </AnimatePresence>
         </div>
+        
+        {/* Fixed Dark Overlay - Above Images, Below Text */}
+        <div 
+          className="absolute inset-0 bg-black/50 z-[1] pointer-events-none"
+          style={{
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden'
+          }}
+        />
 
-        <div className="container mx-auto px-6 sm:px-8 lg:px-8 relative">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-8 relative z-10">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -42,7 +129,7 @@ const Index = () => {
             {/* Eyebrow */}
             <motion.p 
               variants={fadeInUp}
-              className="text-xs sm:text-sm uppercase tracking-wider text-accent font-bold mb-3 sm:mb-4"
+              className="text-xs sm:text-sm uppercase tracking-wider text-white/90 font-bold mb-3 sm:mb-4 drop-shadow-md"
             >
               HOUSE OF TRAVEL
             </motion.p>
@@ -50,16 +137,16 @@ const Index = () => {
             {/* Main Headline - Mobile Optimized Typography */}
             <motion.h1 
               variants={fadeInUp}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight text-primary"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 sm:mb-6 leading-tight text-white drop-shadow-lg"
             >
               Voyagez avec Expertise,<br />
-              <span className="text-accent">Réservez avec Confiance</span>
+              <span className="text-accent drop-shadow-lg">Réservez avec Confiance</span>
             </motion.h1>
 
             {/* Sub-headline */}
             <motion.p 
               variants={fadeInUp}
-              className="text-base sm:text-lg md:text-xl text-muted-foreground mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed"
+              className="text-base sm:text-lg md:text-xl text-white/90 mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed drop-shadow-md"
             >
               Votre partenaire privilégié pour les visas, les réservations d'hôtels, la billetterie internationale et les voyages organisés.
             </motion.p>
@@ -149,6 +236,60 @@ const Index = () => {
                   </div>
                 ))}
               </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Success Statistics Bar - Slim & Mobile-Optimized */}
+      <section 
+        ref={statsRef}
+        className="py-6 sm:py-8 bg-gradient-to-r from-primary via-primary to-primary/90 border-y border-primary/20"
+      >
+        <div className="container mx-auto px-6 sm:px-8 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={isStatsInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+            transition={{ duration: 0.6 }}
+            className="grid grid-cols-3 gap-4 sm:gap-8 lg:gap-12"
+          >
+            {/* Stat 1: Billets Émis */}
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
+                <Ticket className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-accent">
+                  +{ticketsCount.toLocaleString()}
+                </h3>
+              </div>
+              <p className="text-white/90 text-xs sm:text-sm font-medium">
+                Billets Émis
+              </p>
+            </div>
+
+            {/* Stat 2: Visas Approuvés */}
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
+                <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-accent">
+                  +{visasCount.toLocaleString()}
+                </h3>
+              </div>
+              <p className="text-white/90 text-xs sm:text-sm font-medium">
+                Visas Approuvés
+              </p>
+            </div>
+
+            {/* Stat 3: Destinations */}
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-accent" />
+                <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-accent">
+                  +{destinationsCount}
+                </h3>
+              </div>
+              <p className="text-white/90 text-xs sm:text-sm font-medium">
+                Destinations
+              </p>
             </div>
           </motion.div>
         </div>
