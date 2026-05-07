@@ -1,13 +1,57 @@
 import Layout from "@/components/Layout";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Hotel, Map, FileText, Zap, Briefcase, ArrowRight, CheckCircle, Upload, Pencil } from "lucide-react";
+import { Users, Hotel, Map, FileText, Zap, Briefcase, ArrowRight, CheckCircle, Upload, Pencil, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import LoginModal from "@/components/LoginModal";
 
 type ServiceType = "hotel" | "sejour" | "visa" | null;
 type VisaType = "e-visa" | "dossier" | null;
+
+// Comprehensive list of popular travel destinations (same as BilletteriePage)
+const DESTINATIONS = [
+  "Alger, Algérie", "Oran, Algérie", "Constantine, Algérie", "Annaba, Algérie",
+  "Paris, France", "Lyon, France", "Marseille, France", "Nice, France", "Toulouse, France",
+  "Istanbul, Turquie", "Ankara, Turquie", "Antalya, Turquie",
+  "Dubai, Émirats Arabes Unis", "Abu Dhabi, Émirats Arabes Unis",
+  "Le Caire, Égypte", "Alexandrie, Égypte", "Sharm El-Sheikh, Égypte", "Hurghada, Égypte",
+  "Tunis, Tunisie", "Djerba, Tunisie", "Sousse, Tunisie",
+  "Casablanca, Maroc", "Marrakech, Maroc", "Rabat, Maroc", "Fès, Maroc", "Tanger, Maroc",
+  "Londres, Royaume-Uni", "Manchester, Royaume-Uni", "Édimbourg, Royaume-Uni",
+  "Madrid, Spain", "Barcelone, Espagne", "Séville, Espagne", "Valence, Espagne",
+  "Rome, Italie", "Milan, Italie", "Venise, Italie", "Florence, Italie", "Naples, Italie",
+  "Berlin, Allemagne", "Munich, Allemagne", "Francfort, Allemagne", "Hambourg, Allemagne",
+  "Amsterdam, Pays-Bas", "Rotterdam, Pays-Bas",
+  "Bruxelles, Belgique", "Anvers, Belgique",
+  "Vienne, Autriche", "Salzbourg, Autriche",
+  "Zurich, Suisse", "Genève, Suisse", "Berne, Suisse",
+  "Lisbonne, Portugal", "Porto, Portugal",
+  "Athènes, Grèce", "Thessalonique, Grèce", "Santorin, Grèce",
+  "Prague, République Tchèque", "Budapest, Hongrie", "Varsovie, Pologne",
+  "Stockholm, Suède", "Copenhague, Danemark", "Oslo, Norvège", "Helsinki, Finlande",
+  "Moscou, Russie", "Saint-Pétersbourg, Russie",
+  "New York, États-Unis", "Los Angeles, États-Unis", "Chicago, États-Unis", "Miami, États-Unis", "San Francisco, États-Unis",
+  "Toronto, Canada", "Montréal, Canada", "Vancouver, Canada",
+  "Mexico, Mexique", "Cancún, Mexique",
+  "São Paulo, Brésil", "Rio de Janeiro, Brésil",
+  "Buenos Aires, Argentine",
+  "Tokyo, Japon", "Osaka, Japon", "Kyoto, Japon",
+  "Séoul, Corée du Sud", "Busan, Corée du Sud",
+  "Pékin, Chine", "Shanghai, Chine", "Hong Kong, Chine", "Guangzhou, Chine",
+  "Bangkok, Thaïlande", "Phuket, Thaïlande", "Chiang Mai, Thaïlande",
+  "Singapour", "Kuala Lumpur, Malaisie",
+  "Jakarta, Indonésie", "Bali, Indonésie",
+  "Manille, Philippines", "Cebu, Philippines",
+  "Hanoï, Vietnam", "Ho Chi Minh, Vietnam",
+  "Mumbai, Inde", "Delhi, Inde", "Bangalore, Inde", "Goa, Inde",
+  "Dubaï, Émirats Arabes Unis", "Doha, Qatar", "Riyad, Arabie Saoudite", "Jeddah, Arabie Saoudite",
+  "Beyrouth, Liban", "Amman, Jordanie",
+  "Tel Aviv, Israël", "Jérusalem, Israël",
+  "Nairobi, Kenya", "Le Cap, Afrique du Sud", "Johannesburg, Afrique du Sud",
+  "Sydney, Australie", "Melbourne, Australie", "Brisbane, Australie",
+  "Auckland, Nouvelle-Zélande",
+];
 
 const DevisPage = () => {
   const navigate = useNavigate();
@@ -15,6 +59,17 @@ const DevisPage = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [activeService, setActiveService] = useState<ServiceType>(null);
   const [visaType, setVisaType] = useState<VisaType>(null);
+  
+  // Refs for autocomplete
+  const cityInputRef = useRef<HTMLInputElement>(null);
+  const cityDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Ref for form section (auto-scroll)
+  const formRef = useRef<HTMLDivElement>(null);
+  
+  // Autocomplete state
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [filteredCities, setFilteredCities] = useState<string[]>([]);
   
   // Personal Info (Pre-filled from session)
   const [personalInfo, setPersonalInfo] = useState({
@@ -24,14 +79,19 @@ const DevisPage = () => {
     telephone: ""
   });
 
-  // Hotel Form
+  // Hotel Form - Enhanced with new fields
   const [hotelForm, setHotelForm] = useState({
+    hotelPreference: "specific", // "specific" or "suggest"
     hotelName: "",
+    hotelCategory: "",
     city: "",
     dateArrivee: "",
     dateDepart: "",
     nombreChambres: "1",
-    nombrePersonnes: "1"
+    nombrePersonnes: "1",
+    roomType: "",
+    boardBasis: "",
+    message: ""
   });
 
   // Séjour à la Carte Form
@@ -101,6 +161,45 @@ const DevisPage = () => {
     }
   }, []);
 
+  // Handle city autocomplete
+  const handleCityChange = (value: string) => {
+    setHotelForm({ ...hotelForm, city: value });
+    
+    if (value.trim().length > 0) {
+      const filtered = DESTINATIONS.filter(dest =>
+        dest.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 10);
+      setFilteredCities(filtered);
+      setShowCityDropdown(filtered.length > 0);
+    } else {
+      setFilteredCities([]);
+      setShowCityDropdown(false);
+    }
+  };
+
+  const handleCitySelect = (city: string) => {
+    setHotelForm({ ...hotelForm, city });
+    setShowCityDropdown(false);
+    setFilteredCities([]);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        cityDropdownRef.current &&
+        !cityDropdownRef.current.contains(event.target as Node) &&
+        cityInputRef.current &&
+        !cityInputRef.current.contains(event.target as Node)
+      ) {
+        setShowCityDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleServiceClick = (service: string) => {
     if (service === "voyage") {
       navigate("/dashboard/voyages");
@@ -109,6 +208,17 @@ const DevisPage = () => {
     
     setActiveService(service as ServiceType);
     setVisaType(null);
+    
+    // Auto-scroll to form section after a brief delay for state update
+    setTimeout(() => {
+      if (formRef.current) {
+        const yOffset = -80; // Offset for fixed header (adjust as needed)
+        const element = formRef.current;
+        const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 100);
   };
 
   const handleVisaTypeClick = (type: VisaType) => {
@@ -142,7 +252,7 @@ const DevisPage = () => {
     setTimeout(() => {
       setActiveService(null);
       setVisaType(null);
-      setHotelForm({ hotelName: "", city: "", dateArrivee: "", dateDepart: "", nombreChambres: "1", nombrePersonnes: "1" });
+      setHotelForm({ hotelPreference: "specific", hotelName: "", hotelCategory: "", city: "", dateArrivee: "", dateDepart: "", nombreChambres: "1", nombrePersonnes: "1", roomType: "", boardBasis: "", message: "" });
       setSejourForm({ destination: "", budget: "", duree: "", preferences: "" });
       setVisaForm({ pays: "", duree: "", passportFile: null, photoFile: null });
     }, 2000);
@@ -323,6 +433,7 @@ const DevisPage = () => {
           <AnimatePresence mode="wait">
             {activeService && (
               <motion.form
+                ref={formRef}
                 key={activeService}
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -338,28 +449,174 @@ const DevisPage = () => {
                       Détails de la Réservation
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-primary mb-2">Nom de l'hôtel</label>
-                        <input
-                          type="text"
-                          value={hotelForm.hotelName}
-                          onChange={(e) => setHotelForm({ ...hotelForm, hotelName: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
-                          placeholder="Ex: Hilton Paris"
-                        />
-                      </div>
+                    {/* Radio Button Group - Hotel Preference */}
+                    <div className="mb-6 p-4 bg-slate-50 rounded-xl border-2 border-slate-200">
+                      <label className="block text-sm font-semibold text-primary mb-3">Préférence d'hôtel *</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHotelForm({ ...hotelForm, hotelPreference: "specific", hotelCategory: "" });
+                          }}
+                          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                            hotelForm.hotelPreference === "specific"
+                              ? "border-primary bg-primary/5 shadow-md"
+                              : "border-slate-300 bg-white hover:border-primary/50"
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            hotelForm.hotelPreference === "specific"
+                              ? "border-primary"
+                              : "border-slate-400"
+                          }`}>
+                            {hotelForm.hotelPreference === "specific" && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="w-3 h-3 rounded-full bg-primary"
+                              />
+                            )}
+                          </div>
+                          <span className={`text-sm font-medium ${
+                            hotelForm.hotelPreference === "specific" ? "text-primary" : "text-slate-700"
+                          }`}>
+                            J'ai un hôtel spécifique
+                          </span>
+                        </button>
 
-                      <div>
-                        <label className="block text-sm font-semibold text-primary mb-2">Ville/Destination *</label>
-                        <input
-                          type="text"
-                          value={hotelForm.city}
-                          onChange={(e) => setHotelForm({ ...hotelForm, city: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
-                          placeholder="Ex: Paris"
-                          required
-                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setHotelForm({ ...hotelForm, hotelPreference: "suggest", hotelName: "" });
+                          }}
+                          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                            hotelForm.hotelPreference === "suggest"
+                              ? "border-primary bg-primary/5 shadow-md"
+                              : "border-slate-300 bg-white hover:border-primary/50"
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            hotelForm.hotelPreference === "suggest"
+                              ? "border-primary"
+                              : "border-slate-400"
+                          }`}>
+                            {hotelForm.hotelPreference === "suggest" && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                className="w-3 h-3 rounded-full bg-primary"
+                              />
+                            )}
+                          </div>
+                          <span className={`text-sm font-medium ${
+                            hotelForm.hotelPreference === "suggest" ? "text-primary" : "text-slate-700"
+                          }`}>
+                            Proposez-moi un hôtel
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Conditional: Hotel Name (Only if "specific" is selected) */}
+                      <AnimatePresence>
+                        {hotelForm.hotelPreference === "specific" && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <label className="block text-sm font-semibold text-primary mb-2">Nom de l'hôtel</label>
+                            <input
+                              type="text"
+                              value={hotelForm.hotelName}
+                              onChange={(e) => setHotelForm({ ...hotelForm, hotelName: e.target.value })}
+                              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                              placeholder="Ex: Hilton Paris"
+                            />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      {/* Conditional: Hotel Category (Only if "suggest" is selected) */}
+                      <AnimatePresence>
+                        {hotelForm.hotelPreference === "suggest" && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <label className="block text-sm font-semibold text-primary mb-2">Catégorie d'hôtel</label>
+                            <select
+                              value={hotelForm.hotelCategory}
+                              onChange={(e) => setHotelForm({ ...hotelForm, hotelCategory: e.target.value })}
+                              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            >
+                              <option value="">Sélectionner</option>
+                              <option value="2-stars">⭐⭐ - 2 Étoiles</option>
+                              <option value="3-stars">⭐⭐⭐ - 3 Étoiles</option>
+                              <option value="4-stars">⭐⭐⭐⭐ - 4 Étoiles</option>
+                              <option value="5-stars">⭐⭐⭐⭐⭐ - 5 Étoiles</option>
+                              <option value="luxury">💎 - Luxe</option>
+                            </select>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
+                      <div className="relative">
+                        <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                          <MapPin size={16} />
+                          Ville/Destination *
+                        </label>
+                        <div className="relative">
+                          <input
+                            ref={cityInputRef}
+                            type="text"
+                            value={hotelForm.city}
+                            onChange={(e) => handleCityChange(e.target.value)}
+                            onFocus={() => {
+                              if (hotelForm.city.trim().length > 0) {
+                                const filtered = DESTINATIONS.filter(dest =>
+                                  dest.toLowerCase().includes(hotelForm.city.toLowerCase())
+                                ).slice(0, 10);
+                                setFilteredCities(filtered);
+                                setShowCityDropdown(filtered.length > 0);
+                              }
+                            }}
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            placeholder="Ex: Paris, Istanbul, Dubai..."
+                            autoComplete="off"
+                            required
+                          />
+                          
+                          {/* Autocomplete Dropdown */}
+                          <AnimatePresence>
+                            {showCityDropdown && filteredCities.length > 0 && (
+                              <motion.div
+                                ref={cityDropdownRef}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="absolute z-50 w-full mt-1 bg-white border-2 border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+                              >
+                                {filteredCities.map((city, index) => (
+                                  <button
+                                    key={index}
+                                    type="button"
+                                    onClick={() => handleCitySelect(city)}
+                                    className="w-full text-left px-4 py-3 hover:bg-purple-50 transition-colors border-b border-slate-100 last:border-b-0 flex items-center gap-2 text-sm"
+                                  >
+                                    <MapPin size={14} className="text-primary flex-shrink-0" />
+                                    <span className="text-gray-700">{city}</span>
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
 
                       <div>
@@ -368,7 +625,7 @@ const DevisPage = () => {
                           type="date"
                           value={hotelForm.dateArrivee}
                           onChange={(e) => setHotelForm({ ...hotelForm, dateArrivee: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                           required
                         />
                       </div>
@@ -379,7 +636,7 @@ const DevisPage = () => {
                           type="date"
                           value={hotelForm.dateDepart}
                           onChange={(e) => setHotelForm({ ...hotelForm, dateDepart: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                           required
                         />
                       </div>
@@ -390,8 +647,22 @@ const DevisPage = () => {
                           type="number"
                           min="1"
                           value={hotelForm.nombreChambres}
-                          onChange={(e) => setHotelForm({ ...hotelForm, nombreChambres: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "") {
+                              setHotelForm({ ...hotelForm, nombreChambres: "" });
+                            } else {
+                              const numValue = parseInt(value);
+                              setHotelForm({ ...hotelForm, nombreChambres: String(numValue >= 1 ? numValue : 1) });
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === "" || parseInt(e.target.value) < 1) {
+                              setHotelForm({ ...hotelForm, nombreChambres: "1" });
+                            }
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                         />
                       </div>
 
@@ -401,8 +672,63 @@ const DevisPage = () => {
                           type="number"
                           min="1"
                           value={hotelForm.nombrePersonnes}
-                          onChange={(e) => setHotelForm({ ...hotelForm, nombrePersonnes: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === "") {
+                              setHotelForm({ ...hotelForm, nombrePersonnes: "" });
+                            } else {
+                              const numValue = parseInt(value);
+                              setHotelForm({ ...hotelForm, nombrePersonnes: String(numValue >= 1 ? numValue : 1) });
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === "" || parseInt(e.target.value) < 1) {
+                              setHotelForm({ ...hotelForm, nombrePersonnes: "1" });
+                            }
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-primary mb-2">Type de chambre</label>
+                        <select
+                          value={hotelForm.roomType}
+                          onChange={(e) => setHotelForm({ ...hotelForm, roomType: e.target.value })}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                        >
+                          <option value="">Sélectionner</option>
+                          <option value="simple">Chambre Simple (Single)</option>
+                          <option value="double">Chambre Double (Double)</option>
+                          <option value="triple">Chambre Triple (Triple)</option>
+                          <option value="quadruple">Chambre Quadruple (Quad)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-primary mb-2">Pension</label>
+                        <select
+                          value={hotelForm.boardBasis}
+                          onChange={(e) => setHotelForm({ ...hotelForm, boardBasis: e.target.value })}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                        >
+                          <option value="">Sélectionner</option>
+                          <option value="breakfast">Petit déjeuner (Bed & Breakfast)</option>
+                          <option value="half-board">Demi-pension (Half Board)</option>
+                          <option value="full-board">Pension complète (Full Board)</option>
+                          <option value="all-inclusive">All Inclusive</option>
+                        </select>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-semibold text-primary mb-2">Message / Demandes particulières</label>
+                        <textarea
+                          value={hotelForm.message}
+                          onChange={(e) => setHotelForm({ ...hotelForm, message: e.target.value })}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all min-h-[120px] resize-y"
+                          placeholder="Décrivez vos besoins spécifiques, préférences d'étage, vue, équipements particuliers..."
+                          maxLength={1000}
                         />
                       </div>
                     </div>
