@@ -1,13 +1,18 @@
 import Layout from "@/components/Layout";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { ArrowRight, Shield, Plane, Ticket, Hotel, Globe, CheckCircle, MapPin } from "lucide-react";
+import { ArrowRight, Shield, Plane, Ticket, Hotel, Globe, CheckCircle, MapPin, ChevronLeft, ChevronRight, Map, Palmtree } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useData } from "@/contexts/DataContext";
+import TripCard from "@/components/TripCard";
 
 const Index = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [carouselIndex, setCarouselIndex] = useState(0);
   const statsRef = useRef(null);
   const isStatsInView = useInView(statsRef, { once: true, amount: 0.3 });
+  const navigate = useNavigate();
+  const { voyages } = useData();
   
   const photos = [
     "/photos/3.jpg",
@@ -17,6 +22,9 @@ const Index = () => {
     "/photos/8.jpg"
   ];
 
+  // Filter only "Voyage Organisé" trips dynamically
+  const organizedTrips = voyages.filter(v => v.category === "Voyage Organisé");
+
   // Auto-advance slides: increment by 1 every 5 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -25,6 +33,24 @@ const Index = () => {
 
     return () => clearInterval(interval);
   }, [photos.length]);
+
+  // Auto-advance carousel: every 4 seconds (works for any number of trips)
+  useEffect(() => {
+    if (organizedTrips.length === 0) return;
+    
+    const interval = setInterval(() => {
+      setCarouselIndex((prev) => (prev === organizedTrips.length - 1 ? 0 : prev + 1));
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [organizedTrips.length]);
+
+  // Reset carousel index if it exceeds the number of trips (handles deletions)
+  useEffect(() => {
+    if (carouselIndex >= organizedTrips.length && organizedTrips.length > 0) {
+      setCarouselIndex(0);
+    }
+  }, [organizedTrips.length, carouselIndex]);
 
   // Animated counter hook
   const useCounter = (end: number, duration: number = 2000) => {
@@ -57,6 +83,31 @@ const Index = () => {
   const ticketsCount = useCounter(10000, 2000);
   const visasCount = useCounter(5000, 2000);
   const destinationsCount = useCounter(200, 2000);
+
+  // Carousel navigation (handles any number of trips)
+  const handlePrevTrip = () => {
+    if (organizedTrips.length === 0) return;
+    setCarouselIndex((prev) => (prev === 0 ? organizedTrips.length - 1 : prev - 1));
+  };
+
+  const handleNextTrip = () => {
+    if (organizedTrips.length === 0) return;
+    setCarouselIndex((prev) => (prev === organizedTrips.length - 1 ? 0 : prev + 1));
+  };
+
+  // Get visible trips for desktop (3 at a time, sliding window)
+  const getVisibleTrips = () => {
+    if (organizedTrips.length === 0) return [];
+    if (organizedTrips.length <= 3) return organizedTrips;
+    
+    const trips = [];
+    for (let i = 0; i < 3; i++) {
+      const index = (carouselIndex + i) % organizedTrips.length;
+      trips.push(organizedTrips[index]);
+    }
+    return trips;
+  };
+
   // Animation variants
   const fadeInUp = {
     hidden: { opacity: 0, y: 30 },
@@ -421,6 +472,257 @@ const Index = () => {
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-b-2xl" />
             </motion.div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Voyage Organisé Preview Section - Optimized with Animations */}
+      <section className="relative py-16 sm:py-20 lg:py-28 bg-gradient-to-b from-purple-50 to-white overflow-hidden">
+        {/* Floating Decorative Icons - Background */}
+        <motion.div
+          animate={{ y: [0, -20, 0] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-20 left-10 opacity-10 pointer-events-none hidden lg:block"
+        >
+          <Plane size={80} className="text-primary" />
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, 20, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute top-40 right-20 opacity-10 pointer-events-none hidden lg:block"
+        >
+          <Map size={100} className="text-accent" />
+        </motion.div>
+        <motion.div
+          animate={{ y: [0, -15, 0] }}
+          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+          className="absolute bottom-40 left-1/4 opacity-10 pointer-events-none hidden lg:block"
+        >
+          <Palmtree size={90} className="text-primary" />
+        </motion.div>
+
+        <div className="container mx-auto px-6 sm:px-8 lg:px-8 relative z-10">
+          {/* Section Header with Fade-in Up Animation */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12 sm:mb-16"
+          >
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-xs sm:text-sm uppercase tracking-wider text-accent font-bold mb-2 sm:mb-3"
+            >
+              Nos Meilleures Offres
+            </motion.p>
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-primary mb-3 sm:mb-4"
+            >
+              Voyages Organisés
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+            >
+              Découvrez nos destinations phares avec des tarifs exceptionnels
+            </motion.p>
+          </motion.div>
+
+          {/* Carousel Container - Optimized with Swipe Gestures */}
+          {organizedTrips.length > 0 ? (
+            <div className="relative max-w-6xl mx-auto">
+              {/* Desktop: Show 3 cards in sliding window */}
+              <div className="hidden lg:block">
+                <div className="relative">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={carouselIndex}
+                      initial={{ opacity: 0, x: 100 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -100 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      className="grid grid-cols-3 gap-8"
+                    >
+                      {getVisibleTrips().map((trip, index) => (
+                        <motion.div
+                          key={`${trip.id}-${index}`}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
+                          className="pointer-events-none"
+                        >
+                          <TripCard voyage={trip} index={index} />
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  </AnimatePresence>
+
+                  {/* Navigation Arrows - Desktop */}
+                  {organizedTrips.length > 3 && (
+                    <>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={handlePrevTrip}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-6 bg-white/90 hover:bg-white text-primary p-3 rounded-full shadow-lg hover:shadow-xl transition-all z-10"
+                        aria-label="Voyage précédent"
+                      >
+                        <ChevronLeft size={24} />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={handleNextTrip}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-6 bg-white/90 hover:bg-white text-primary p-3 rounded-full shadow-lg hover:shadow-xl transition-all z-10"
+                        aria-label="Voyage suivant"
+                      >
+                        <ChevronRight size={24} />
+                      </motion.button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile & Tablet: Show 1 card with swipe gestures */}
+              <div className="lg:hidden relative">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={carouselIndex}
+                    initial={{ opacity: 0, x: 100 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -100 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    drag="x"
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={(e, { offset, velocity }) => {
+                      const swipe = Math.abs(offset.x) * velocity.x;
+                      if (swipe < -10000) {
+                        handleNextTrip();
+                      } else if (swipe > 10000) {
+                        handlePrevTrip();
+                      }
+                    }}
+                    className="pointer-events-auto cursor-grab active:cursor-grabbing"
+                  >
+                    <div className="pointer-events-none">
+                      <TripCard voyage={organizedTrips[carouselIndex]} index={0} />
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+
+                {/* Navigation Arrows - Mobile */}
+                {organizedTrips.length > 1 && (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={handlePrevTrip}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-white/90 hover:bg-white text-primary p-3 rounded-full shadow-lg hover:shadow-xl transition-all z-10"
+                      aria-label="Voyage précédent"
+                    >
+                      <ChevronLeft size={24} />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={handleNextTrip}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-white/90 hover:bg-white text-primary p-3 rounded-full shadow-lg hover:shadow-xl transition-all z-10"
+                      aria-label="Voyage suivant"
+                    >
+                      <ChevronRight size={24} />
+                    </motion.button>
+                  </>
+                )}
+
+                {/* Carousel Indicators - Mobile */}
+                {organizedTrips.length > 1 && (
+                  <div className="flex justify-center gap-2 mt-6">
+                    {organizedTrips.map((_, index) => (
+                      <motion.button
+                        key={index}
+                        whileHover={{ scale: 1.2 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setCarouselIndex(index)}
+                        className={`h-2 rounded-full transition-all ${
+                          index === carouselIndex
+                            ? 'w-8 bg-primary'
+                            : 'w-2 bg-primary/30 hover:bg-primary/50'
+                        }`}
+                        aria-label={`Aller au voyage ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Carousel Indicators - Desktop */}
+              {organizedTrips.length > 1 && (
+                <div className="hidden lg:flex justify-center gap-2 mt-8">
+                  {organizedTrips.map((_, index) => (
+                    <motion.button
+                      key={index}
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setCarouselIndex(index)}
+                      className={`h-2 rounded-full transition-all ${
+                        index === carouselIndex
+                          ? 'w-8 bg-primary'
+                          : 'w-2 bg-primary/30 hover:bg-primary/50'
+                      }`}
+                      aria-label={`Aller au voyage ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-center py-12"
+            >
+              <p className="text-muted-foreground text-lg">
+                Aucun voyage organisé disponible pour le moment.
+              </p>
+            </motion.div>
+          )}
+
+          {/* CTA Button with Animation */}
+          {organizedTrips.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="text-center mt-12 sm:mt-16"
+            >
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/voyage-organise')}
+                className="group inline-flex items-center justify-center gap-3 bg-primary text-white px-8 sm:px-10 py-4 sm:py-5 rounded-xl font-bold text-base sm:text-lg hover:bg-primary/90 hover:shadow-2xl transition-all duration-300 w-full sm:w-auto min-h-[56px]"
+              >
+                Découvrez nos Voyages Organisés
+                <Globe size={20} className="group-hover:rotate-12 transition-transform" />
+              </motion.button>
+              <p className="text-sm text-muted-foreground mt-3 font-arabic">
+                استكشف رحلاتنا المنظمة
+              </p>
+            </motion.div>
+          )}
         </div>
       </section>
 

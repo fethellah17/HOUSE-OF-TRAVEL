@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DataProvider } from "@/contexts/DataContext";
@@ -21,20 +21,28 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            {/* Routes hidden from public navigation - kept for backward compatibility */}
-            {/* <Route path="/omrah" element={
-              <VoyageListPage category="Omrah" title="Nos Omrah" description="Des pèlerinages organisés avec soin, dans un cadre spirituel et confortable." />
-            } /> */}
+            
+            {/* Active Route: Voyages Organisés */}
             <Route path="/voyage-organise" element={
               <VoyageListPage category="Voyage Organisé" title="Voyages Organisés" description="Découvrez nos circuits culturels et historiques accompagnés par des guides francophones." />
             } />
-            {/* <Route path="/voyage-a-la-carte" element={
-              <VoyageListPage category="Voyage à la Carte" title="Voyages à la Carte" description="Un voyage entièrement personnalisé selon vos envies, votre budget et votre calendrier." />
-            } /> */}
+            
+            {/* Redirects for obsolete routes */}
+            <Route path="/omrah" element={<Navigate to="/voyage-organise" replace />} />
+            <Route path="/voyage-a-la-carte" element={<Navigate to="/voyage-organise" replace />} />
+            <Route path="/voyage-national" element={<Navigate to="/voyage-organise" replace />} />
+            <Route path="/dashboard/omrah" element={<Navigate to="/voyage-organise" replace />} />
+            <Route path="/dashboard/voyages" element={<Navigate to="/voyage-organise" replace />} />
+            <Route path="/dashboard/voyage-national" element={<Navigate to="/voyage-organise" replace />} />
+            <Route path="/dashboard/voyage-a-la-carte" element={<Navigate to="/voyage-organise" replace />} />
+            
+            {/* Other Routes */}
             <Route path="/voyage/:id" element={<VoyageDetailPage />} />
             <Route path="/billetterie" element={<BilletteriePage />} />
             <Route path="/devis" element={<DevisPage />} />
             <Route path="/admin" element={<AdminPage />} />
+            
+            {/* 404 Catch-all */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

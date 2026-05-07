@@ -1,13 +1,11 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "@/contexts/DataContext";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Calendar, Clock, ArrowDown, Plane, Hotel, Utensils, Users, Wifi, MapPin, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, Plane, Hotel, Utensils, Users, Wifi, MapPin, Star } from "lucide-react";
 import { formatPrice } from "@/lib/formatters";
-import DevisForm from "../components/DevisForm";
 import StageDisplay from "../components/StageDisplay";
 import VoyageStatusBadge from "../components/VoyageStatusBadge";
-import SocialShareButtons from "../components/SocialShareButtons";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import logo from "@/assets/logo.png";
 
@@ -42,7 +40,6 @@ const VoyageDetailPage = () => {
   const navigate = useNavigate();
   const { voyages } = useData();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const devisFormRef = useRef<HTMLDivElement>(null);
 
   const voyage = voyages.find((v) => v.id === id);
 
@@ -65,24 +62,12 @@ const VoyageDetailPage = () => {
   const images = voyage.imageUrls && voyage.imageUrls.length > 0 ? voyage.imageUrls : [voyage.imageUrl];
   const currentImage = images[currentImageIndex];
 
-  // URL complète de la page pour le partage (encodée proprement)
-  const currentUrl = window.location.href;
-  
-  // Image absolue pour Open Graph (utilise la première image)
-  // Gère les URLs relatives et absolues
-  const absoluteImageUrl = images[0].startsWith('http') 
-    ? images[0] 
-    : `${window.location.origin}${images[0].startsWith('/') ? images[0] : '/' + images[0]}`;
-
-  // Description enrichie avec le prix pour les meta tags
-  const enrichedDescription = `${voyage.description} - À partir de ${formatPrice(voyage.price)}`;
-
-  // Configuration des meta tags pour SEO et partage social
+  // Configuration des meta tags pour SEO
   useMetaTags({
     title: voyage.title,
-    description: enrichedDescription,
-    image: absoluteImageUrl,
-    url: currentUrl,
+    description: voyage.description,
+    image: images[0],
+    url: window.location.href,
     type: 'website'
   });
 
@@ -92,10 +77,6 @@ const VoyageDetailPage = () => {
 
   const handleNextImage = () => {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-  };
-
-  const scrollToForm = () => {
-    devisFormRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -258,7 +239,7 @@ const VoyageDetailPage = () => {
               </div>
               <div className="flex items-start gap-3">
                 <div className="flex-1">
-                  <p className="text-xs text-muted-foreground font-medium mb-2">Tarifs</p>
+                  <p className="text-xs text-muted-foreground font-medium mb-2">Tarifs à partir de</p>
                   <div className="space-y-1.5">
                     {voyage.priceAdult && voyage.priceAdult > 0 ? (
                       <div className="flex items-center justify-between">
@@ -309,7 +290,7 @@ const VoyageDetailPage = () => {
               className="sticky top-24 bg-white rounded-2xl border-2 border-accent/30 p-6 shadow-card"
             >
               <div className="mb-6">
-                <p className="text-xs text-muted-foreground font-medium mb-3">Tarifs</p>
+                <p className="text-xs text-muted-foreground font-medium mb-3">Tarifs à partir de</p>
                 <div className="space-y-2.5">
                   {voyage.priceAdult && voyage.priceAdult > 0 ? (
                     <div className="flex items-center justify-between pb-2 border-b border-gray-200">
@@ -344,19 +325,6 @@ const VoyageDetailPage = () => {
               )}
 
               <button
-                onClick={scrollToForm}
-                disabled={voyage.status === 'full'}
-                className={`w-full px-6 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 mb-3 ${
-                  voyage.status === 'full'
-                    ? 'bg-gray-400 text-white cursor-not-allowed opacity-70'
-                    : 'bg-primary text-white hover:scale-[1.02] active:scale-[0.98]'
-                }`}
-              >
-                <span>{voyage.status === 'full' ? 'Complet / Liste d\'attente' : 'Réserver maintenant'}</span>
-                {voyage.status !== 'full' && <ArrowDown size={18} />}
-              </button>
-
-              <button
                 onClick={() => {
                   // Vérifier s'il y a un historique, sinon aller à l'accueil
                   if (window.history.length > 1) {
@@ -370,32 +338,7 @@ const VoyageDetailPage = () => {
                 Retour
               </button>
             </motion.div>
-
-            {/* Boutons de partage social */}
-            <div className="mt-6">
-              <SocialShareButtons
-                title={voyage.title}
-                price={formatPrice(voyage.price)}
-                url={currentUrl}
-                imageUrl={absoluteImageUrl}
-              />
-            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Formulaire Devis */}
-      <div ref={devisFormRef} className="bg-gray-50 py-12 border-t border-accent/20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-primary mb-2">
-              Demander un Devis Gratuit
-            </h2>
-            <p className="text-gray-600">
-              Remplissez le formulaire ci-dessous pour recevoir une offre personnalisée
-            </p>
-          </div>
-          <DevisForm voyageData={voyage} />
         </div>
       </div>
     </div>

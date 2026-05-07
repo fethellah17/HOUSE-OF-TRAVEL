@@ -1261,7 +1261,7 @@ const VoyagesView = ({
                 <input type="text" value={newVoyage.title} onChange={(e) => setNewVoyage({ ...newVoyage, title: e.target.value })} className="form-input" required maxLength={200} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Prix Adulte (DA) *</label>
+                <label className="block text-sm font-medium mb-1.5">Prix Adulte (À partir de) - DA *</label>
                 <div className="relative">
                   <input 
                     type="number" 
@@ -1277,7 +1277,7 @@ const VoyagesView = ({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Prix Enfant (DA) *</label>
+                <label className="block text-sm font-medium mb-1.5">Prix Enfant (À partir de) - DA *</label>
                 <div className="relative">
                   <input 
                     type="number" 
@@ -1471,7 +1471,7 @@ const VoyagesView = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Prix Adulte (DA) *</label>
+                    <label className="block text-sm font-medium mb-1.5">Prix Adulte (À partir de) - DA *</label>
                     <div className="relative">
                       <input 
                         type="number" 
@@ -1487,7 +1487,7 @@ const VoyagesView = ({
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Prix Enfant (DA) *</label>
+                    <label className="block text-sm font-medium mb-1.5">Prix Enfant (À partir de) - DA *</label>
                     <div className="relative">
                       <input 
                         type="number" 

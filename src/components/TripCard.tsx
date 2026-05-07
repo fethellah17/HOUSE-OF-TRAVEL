@@ -52,6 +52,7 @@ const TripCard = ({ voyage, index = 0 }: TripCardProps) => {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.02, boxShadow: "0 20px 40px rgba(75, 44, 127, 0.15)" }}
       transition={{
         type: "spring",
         stiffness: 150,
@@ -60,7 +61,7 @@ const TripCard = ({ voyage, index = 0 }: TripCardProps) => {
       }}
     >
       <Link to={`/voyage/${voyage.id}`}>
-        <div className="group rounded-2xl bg-white overflow-hidden shadow-card hover:shadow-elegant border border-transparent hover:border-accent hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+        <div className="group rounded-2xl bg-white overflow-hidden shadow-card hover:shadow-elegant border border-transparent hover:border-accent transition-all duration-300 cursor-pointer">
           <div className="aspect-[4/3] overflow-hidden relative">
             <img
               src={voyage.imageUrl}
@@ -126,7 +127,7 @@ const TripCard = ({ voyage, index = 0 }: TripCardProps) => {
 
             {/* Section Tarifs */}
             <div className="mb-4 pb-4 border-b border-gray-200">
-              <p className="text-xs font-semibold text-muted-foreground mb-2">Tarifs</p>
+              <p className="text-xs font-semibold text-muted-foreground mb-2">Tarifs à partir de</p>
               <div className="space-y-1.5">
                 {voyage.priceAdult && voyage.priceAdult > 0 ? (
                   <div className="flex items-center justify-between">
