@@ -15,6 +15,7 @@ import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { formatPrice } from "@/lib/formatters";
 import { generateMessagePDF } from "@/lib/pdfGenerator";
+import InboxView from "@/components/admin/inbox/InboxView";
 
 type Tab = "inbox" | "users" | "voyages" | "sejour-config" | "visa-config";
 
@@ -23,6 +24,7 @@ const AdminPage = () => {
   const { 
     voyages, 
     messages, 
+    requests,
     sejourDestinations, 
     sejourServices,
     eVisaCountries,
@@ -31,6 +33,9 @@ const AdminPage = () => {
     updateVoyage, 
     deleteVoyage, 
     markMessageAsRead,
+    markRequestAsRead,
+    toggleRequestStatus,
+    deleteRequest,
     addSejourDestination,
     deleteSejourDestination,
     addSejourService,
@@ -45,16 +50,15 @@ const AdminPage = () => {
   const [loggedIn, setLoggedIn] = useState(false);
   const [tab, setTab] = useState<Tab>("inbox");
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Safety check for critical data only
-  if (!voyages || !messages) {
+  // Safety check for critical data
+  if (!voyages || !messages || !requests) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="text-center">
           <Loader2 className="animate-spin h-8 w-8 text-primary mx-auto mb-4" />
-          <p className="text-slate-600">Chargement...</p>
+          <p className="text-slate-600">Chargement des données...</p>
         </div>
       </div>
     );
@@ -65,6 +69,7 @@ const AdminPage = () => {
   const safeSejourServices = sejourServices || [];
   const safeEVisaCountries = eVisaCountries || [];
   const safeDossierCountries = dossierCountries || [];
+  const safeRequests = requests || [];
 
   const handleLogout = () => {
     // Nettoyage de la session
@@ -80,7 +85,7 @@ const AdminPage = () => {
   }
 
   const sidebarItems: { id: Tab; label: string; icon: React.ElementType; count?: number }[] = [
-    { id: "inbox", label: "Boîte de Réception", icon: Inbox, count: messages.filter((m) => !m.isRead).length },
+    { id: "inbox", label: "Boîte de Réception", icon: Inbox, count: safeRequests.filter((r) => !r.isRead).length },
     { id: "users", label: "Gérer les Comptes", icon: Users },
     { id: "voyages", label: "Gérer les Voyages Organisés", icon: Plane },
     { id: "sejour-config", label: "Configuration Séjour", icon: Settings2 },
@@ -166,10 +171,10 @@ const AdminPage = () => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           {tab === "inbox" ? (
             <InboxView
-              messages={messages}
-              markMessageAsRead={markMessageAsRead}
-              selectedMessage={selectedMessage}
-              setSelectedMessage={setSelectedMessage}
+              requests={safeRequests}
+              markRequestAsRead={markRequestAsRead}
+              toggleRequestStatus={toggleRequestStatus}
+              deleteRequest={deleteRequest}
             />
           ) : tab === "users" ? (
             <UsersView />
@@ -699,319 +704,6 @@ const RequestsView = () => {
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
-  );
-};
-
-/* Inbox */
-const InboxView = ({
-  messages, markMessageAsRead, selectedMessage, setSelectedMessage,
-}: {
-  messages: Message[];
-  markMessageAsRead: (id: string) => void;
-  selectedMessage: Message | null;
-  setSelectedMessage: React.Dispatch<React.SetStateAction<Message | null>>;
-}) => {
-  const openMessage = (msg: Message) => {
-    setSelectedMessage(msg);
-    if (!msg.isRead) {
-      markMessageAsRead(msg.id);
-    }
-  };
-
-  const unreadCount = messages.filter((m) => !m.isRead).length;
-
-  const renderDevisDetails = (msg: Message) => {
-    if (msg.type !== "Devis" || !msg.devisDetails) return null;
-    
-    const details = msg.devisDetails;
-    const renderField = (label: string, value?: string) => {
-      const displayValue = value && value.trim() !== "" ? value : "Non spécifié";
-      return (
-        <div key={label} className="flex flex-col sm:flex-row sm:justify-between sm:items-start py-2.5 border-b border-gray-100 last:border-b-0 gap-1 sm:gap-4">
-          <span className="text-sm font-semibold text-[#0a2357]">{label}</span>
-          <span className={`text-sm sm:text-right ${displayValue === "Non spécifié" ? "text-gray-400 italic" : "text-gray-700"}`}>
-            {displayValue}
-          </span>
-        </div>
-      );
-    };
-
-    return (
-      <div className="space-y-6">
-        {/* Infos Personnelles */}
-        <div>
-          <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Informations Personnelles</h4>
-          <div className="space-y-0">
-            {renderField("Nom", msg.name)}
-            {renderField("Prénom", details.prenom)}
-            {renderField("Email", msg.email)}
-            {renderField("Téléphone", msg.phone)}
-          </div>
-        </div>
-
-        {/* Détails du Voyage */}
-        <div>
-          <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Détails du Voyage</h4>
-          <div className="space-y-0">
-            {renderField("Destination", details.destination)}
-            {renderField("Besoin de VISA", details.besoinVisa)}
-            {renderField("Vol", details.volAvecSans)}
-          </div>
-        </div>
-
-        {/* Hébergement */}
-        {(details.nomHotel || details.nombreEtoiles || details.distanceHaram || details.nombreChambres || details.typeChambre) && (
-          <div>
-            <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Hébergement</h4>
-            <div className="space-y-0">
-              {renderField("Type d'hôtel", details.nombreEtoiles)}
-              {renderField("Distance du Haram", details.distanceHaram)}
-              {renderField("Nombre de chambres", details.nombreChambres)}
-              {renderField("Type de chambre", details.typeChambre)}
-            </div>
-          </div>
-        )}
-
-        {/* Passagers */}
-        {(details.pension || details.nombreAdultes || details.nombreEnfants || details.ageEnfants) && (
-          <div>
-            <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Passagers & Pension</h4>
-            <div className="space-y-0">
-              {renderField("Pension", details.pension)}
-              {renderField("Adultes", details.nombreAdultes)}
-              {renderField("Enfants", details.nombreEnfants)}
-              {renderField("Âge des enfants", details.ageEnfants)}
-            </div>
-          </div>
-        )}
-
-        {/* Dates */}
-        {(details.dateDepart || details.dateRetour) && (
-          <div>
-            <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Dates</h4>
-            <div className="space-y-0">
-              {renderField("Départ", details.dateDepart)}
-              {renderField("Retour", details.dateRetour)}
-            </div>
-          </div>
-        )}
-
-        {/* Message */}
-        {msg.content && msg.content !== "Aucun message supplémentaire" && (
-          <div>
-            <h4 className="text-sm font-semibold text-[#0a2357] mb-3 pb-2 border-b-2 border-[#2C5F2D]">Message</h4>
-            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg break-words leading-relaxed">{msg.content}</p>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderBilleterieDetails = (msg: Message) => {
-    if (msg.type !== "Billetterie" || !msg.billeterieDetails) return null;
-    
-    const details = msg.billeterieDetails;
-    const renderField = (label: string, value?: string) => {
-      const displayValue = value && value.trim() !== "" ? value : "Non spécifié";
-      return (
-        <div key={label} className="flex justify-between items-start py-2.5 border-b border-gray-100 last:border-b-0">
-          <span className="text-sm font-medium text-primary">{label}</span>
-          <span className={`text-sm text-right ml-4 ${displayValue === "Non spécifié" ? "text-gray-400 italic" : "text-gray-700"}`}>
-            {displayValue}
-          </span>
-        </div>
-      );
-    };
-
-    return (
-      <div className="space-y-6">
-        {/* Infos Personnelles */}
-        <div>
-          <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Informations Personnelles</h4>
-          <div className="space-y-0">
-            {renderField("Nom", msg.name)}
-            {renderField("Prénom", details.prenom)}
-            {renderField("Email", msg.email)}
-            {renderField("Téléphone", msg.phone)}
-          </div>
-        </div>
-
-        {/* Détails du Vol */}
-        <div>
-          <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Détails du Vol</h4>
-          <div className="space-y-0">
-            {renderField("Destination", details.destination)}
-            {renderField("Besoin de VISA", details.besoinVisa)}
-            {renderField("Compagnie Aérienne", details.compagnie)}
-          </div>
-        </div>
-
-        {/* Passagers */}
-        <div>
-          <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Passagers</h4>
-          <div className="space-y-0">
-            {renderField("Adultes", details.nombreAdultes)}
-            {renderField("Enfants", details.nombreEnfants)}
-            {renderField("Âge des enfants", details.ageEnfants)}
-          </div>
-        </div>
-
-        {/* Dates */}
-        <div>
-          <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Dates</h4>
-          <div className="space-y-0">
-            {renderField("Départ", details.dateDepart)}
-            {renderField("Retour", details.dateRetour)}
-          </div>
-        </div>
-
-        {/* Message */}
-        {msg.content && (
-          <div>
-            <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b border-gray-300">Message</h4>
-            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg break-words">{msg.content}</p>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <div>
-      <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Boîte de Réception</h2>
-
-      {/* Compact Stats Card - Minimalist White Design */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="mb-4"
-      >
-        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-slate-600 mb-0.5">Messages Non Lus</p>
-              <p className="text-xl font-bold tabular-nums text-slate-900">{unreadCount}</p>
-            </div>
-            <div className="bg-slate-100 p-2.5 rounded-lg">
-              <Inbox size={20} className="text-slate-600" />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      <AnimatePresence>
-        {selectedMessage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-foreground/20 flex items-center justify-center p-0 sm:p-4"
-            onClick={() => setSelectedMessage(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-white rounded-none sm:rounded-2xl shadow-elegant border-0 sm:border border-accent/20 p-4 sm:p-6 w-full h-full sm:h-auto sm:max-w-2xl sm:max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Fixed Header on Mobile */}
-              <div className="sticky top-0 bg-white z-10 pb-4 mb-2 border-b border-gray-200 sm:static sm:border-0 sm:pb-0 sm:mb-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0 pr-2">
-                    <h3 className="text-base sm:text-lg font-semibold break-words text-[#0a2357]">{selectedMessage.subject}</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => {
-                        generateMessagePDF(selectedMessage);
-                        toast.success("PDF généré avec succès");
-                      }}
-                      className="text-[#0a2357] hover:bg-[#0a2357]/10 p-2 rounded-lg transition-colors touch-manipulation"
-                      aria-label="Générer PDF"
-                      title="Exporter en PDF"
-                    >
-                      <FileDown size={20} />
-                    </button>
-                    <button 
-                      onClick={() => setSelectedMessage(null)} 
-                      className="text-muted-foreground hover:text-foreground p-2 -mr-2 touch-manipulation"
-                      aria-label="Fermer"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Scrollable Content */}
-              <div className="overflow-y-auto">
-                {/* Affichage spécifique pour les devis */}
-                {selectedMessage.type === "Devis" ? (
-                  renderDevisDetails(selectedMessage)
-                ) : selectedMessage.type === "Billetterie" ? (
-                  renderBilleterieDetails(selectedMessage)
-                ) : (
-                  <div>
-                    <div className="space-y-2 text-sm text-muted-foreground mb-4 pb-4 border-b border-gray-200">
-                      <p className="break-words"><strong className="text-foreground">De :</strong> {selectedMessage.name} ({selectedMessage.email})</p>
-                      {selectedMessage.phone && <p><strong className="text-foreground">Tél :</strong> {selectedMessage.phone}</p>}
-                      <p><strong className="text-foreground">Date :</strong> {new Date(selectedMessage.createdAt).toLocaleDateString("fr-FR")}</p>
-                    </div>
-                    <div className="bg-muted/50 p-4 rounded-lg text-sm break-words">{selectedMessage.content}</div>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="space-y-3">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            onClick={() => openMessage(msg)}
-            className="relative flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-4 rounded-xl cursor-pointer transition-all bg-white border border-gray-200 hover:border-accent hover:shadow-sm touch-manipulation group"
-          >
-            {/* Pastille bleue pour messages non-lus */}
-            {!msg.isRead && (
-              <div className="absolute left-2 top-4 sm:top-1/2 sm:-translate-y-1/2 w-2.5 h-2.5 bg-primary rounded-full" />
-            )}
-            
-            <div className="flex-1 min-w-0 ml-5 sm:ml-3">
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <span className="text-upperspace text-primary text-[10px] font-semibold">{msg.type}</span>
-                <span className={`text-sm truncate ${!msg.isRead ? "font-bold text-primary" : "font-medium text-primary"}`}>
-                  {msg.name}
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 line-clamp-2 sm:truncate">{msg.subject} — {msg.content}</p>
-              <span className="text-xs text-muted-foreground mt-1 inline-block sm:hidden tabular-nums">
-                {new Date(msg.createdAt).toLocaleDateString("fr-FR")}
-              </span>
-            </div>
-            
-            <div className="hidden sm:flex items-center gap-3">
-              <span className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
-                {new Date(msg.createdAt).toLocaleDateString("fr-FR")}
-              </span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openMessage(msg);
-                }}
-                className="text-gray-400 hover:text-primary transition-colors p-2 touch-manipulation"
-                aria-label="Voir le message"
-              >
-                <Eye size={18} />
-              </button>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

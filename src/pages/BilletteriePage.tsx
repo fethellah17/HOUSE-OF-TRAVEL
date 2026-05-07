@@ -51,7 +51,7 @@ const DESTINATIONS = [
 ];
 
 const BilletteriePage = () => {
-  const { addMessage } = useData();
+  const { addRequest } = useData();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUpdateFlash, setShowUpdateFlash] = useState(false);
@@ -245,49 +245,24 @@ const BilletteriePage = () => {
     setStatus("loading");
     
     setTimeout(() => {
-      const currentUserStr = localStorage.getItem("currentUser");
-      let userInfo = { name: "Visiteur Anonyme", email: form.email || "Non spécifié", phone: form.telephone || "Non spécifié", isAnonymous: true };
-
-      if (currentUserStr) {
-        try {
-          const currentUser = JSON.parse(currentUserStr);
-          userInfo = { name: currentUser.fullName || "Utilisateur", email: currentUser.email || form.email, phone: currentUser.phone || form.telephone, isAnonymous: false };
-        } catch (error) {
-          console.error("Error parsing user:", error);
-        }
-      }
-
-      const requestObject = {
-        id: `req-${Date.now()}`,
-        type: "Billetterie",
-        userInfo: userInfo,
-        formData: { ...form },
-        timestamp: new Date().toISOString(),
-        isRead: false,
-      };
-
-      const adminInbox = JSON.parse(localStorage.getItem("admin_inbox") || "[]");
-      adminInbox.push(requestObject);
-      localStorage.setItem("admin_inbox", JSON.stringify(adminInbox));
-
-      addMessage({
-        type: "Billetterie",
-        name: form.nom || "Non spécifié",
-        email: form.email || "Non spécifié",
-        phone: form.telephone || "Non spécifié",
-        subject: `BILLETTERIE - ${form.destination || "Destination non spécifiée"}`,
-        content: form.message || "Aucun message supplémentaire",
-        billeterieDetails: {
-          prenom: form.prenom || "Non spécifié",
-          destination: form.destination || "Non spécifié",
-          besoinVisa: form.besoinVisa || "Non spécifié",
-          compagnie: form.compagnie || "Non précisé",
-          nombreAdultes: form.nombreAdultes || "Non spécifié",
-          nombreEnfants: form.nombreEnfants || "0",
-          ageEnfants: form.ageEnfants || "Non applicable",
-          dateDepart: form.dateDepart || "Non spécifié",
-          dateRetour: form.dateRetour || "Non spécifié",
+      addRequest({
+        serviceType: "billetterie",
+        personalInfo: {
+          nom: form.nom,
+          prenom: form.prenom,
+          email: form.email,
+          telephone: form.telephone,
         },
+        tripType: form.typeVoyage,
+        destination: form.destination,
+        dateDepart: form.dateDepart,
+        dateRetour: form.dateRetour,
+        nombreAdultes: form.nombreAdultes,
+        nombreEnfants: form.nombreEnfants,
+        ageEnfants: form.ageEnfants,
+        compagnie: form.compagnie,
+        besoinVisa: form.besoinVisa,
+        message: form.message,
       });
       
       setStatus("success");

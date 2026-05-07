@@ -56,7 +56,7 @@ const DESTINATIONS = [
 
 const DevisPage = () => {
   const navigate = useNavigate();
-  const { sejourDestinations, sejourServices, eVisaCountries, dossierCountries } = useData();
+  const { sejourDestinations, sejourServices, eVisaCountries, dossierCountries, addRequest } = useData();
   
   // Safety checks for data
   const safeSejourDestinations = sejourDestinations || [];
@@ -226,16 +226,61 @@ const DevisPage = () => {
       return;
     }
 
-    console.log("Service:", activeService);
-    console.log("Personal Info:", personalInfo);
-    
+    // Submit based on active service
     if (activeService === "hotel") {
-      console.log("Hotel Form:", hotelForm);
+      addRequest({
+        serviceType: "hotel",
+        personalInfo: {
+          nom: personalInfo.nom,
+          prenom: personalInfo.prenom,
+          email: personalInfo.email,
+          telephone: personalInfo.telephone,
+        },
+        hotelPreference: hotelForm.hotelPreference as "specific" | "suggest",
+        hotelName: hotelForm.hotelName,
+        hotelCategory: hotelForm.hotelCategory,
+        city: hotelForm.city,
+        dateArrivee: hotelForm.dateArrivee,
+        dateDepart: hotelForm.dateDepart,
+        nombreChambres: hotelForm.nombreChambres,
+        nombrePersonnes: hotelForm.nombrePersonnes,
+        roomType: hotelForm.roomType,
+        boardBasis: hotelForm.boardBasis,
+        message: hotelForm.message,
+      });
     } else if (activeService === "sejour") {
-      console.log("Séjour Form:", sejourForm);
-    } else if (activeService === "visa") {
-      console.log("Visa Type:", visaType);
-      console.log("Visa Form:", visaForm);
+      addRequest({
+        serviceType: "sejour",
+        personalInfo: {
+          nom: personalInfo.nom,
+          prenom: personalInfo.prenom,
+          email: personalInfo.email,
+          telephone: personalInfo.telephone,
+        },
+        destination: sejourForm.destination,
+        typeVoyage: sejourForm.typeVoyage,
+        budget: sejourForm.budget,
+        dateDepart: sejourForm.dateDepart,
+        dateRetour: sejourForm.dateRetour,
+        servicesInclus: sejourForm.servicesInclus,
+        preferences: sejourForm.preferences,
+      });
+    } else if (activeService === "visa" && visaType) {
+      addRequest({
+        serviceType: "visa",
+        personalInfo: {
+          nom: personalInfo.nom,
+          prenom: personalInfo.prenom,
+          email: personalInfo.email,
+          telephone: personalInfo.telephone,
+        },
+        visaType: visaType,
+        pays: visaForm.pays,
+        dateVoyage: visaForm.dateVoyage,
+        passeportValide: visaForm.passeportValide,
+        situationPro: visaForm.situationPro,
+        message: visaForm.message,
+      });
     }
 
     toast.success("Votre demande a été envoyée avec succès !");

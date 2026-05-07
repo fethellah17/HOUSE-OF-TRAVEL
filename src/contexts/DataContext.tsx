@@ -23,6 +23,99 @@ export interface DossierCountry {
   documents: string[];
 }
 
+// Request interfaces for specialized inbox
+export interface BilletterieRequest {
+  id: string;
+  serviceType: "billetterie";
+  createdAt: string;
+  isRead: boolean;
+  completed: boolean;
+  personalInfo: {
+    nom: string;
+    prenom: string;
+    email: string;
+    telephone: string;
+  };
+  tripType: string;
+  destination: string;
+  dateDepart: string;
+  dateRetour?: string;
+  nombreAdultes: string;
+  nombreEnfants: string;
+  ageEnfants?: string;
+  compagnie?: string;
+  besoinVisa?: string;
+  message?: string;
+}
+
+export interface VisaRequest {
+  id: string;
+  serviceType: "visa";
+  createdAt: string;
+  isRead: boolean;
+  completed: boolean;
+  personalInfo: {
+    nom: string;
+    prenom: string;
+    email: string;
+    telephone: string;
+  };
+  visaType: "e-visa" | "dossier";
+  pays: string;
+  dateVoyage: string;
+  passeportValide: boolean;
+  situationPro?: string;
+  message?: string;
+}
+
+export interface HotelRequest {
+  id: string;
+  serviceType: "hotel";
+  createdAt: string;
+  isRead: boolean;
+  completed: boolean;
+  personalInfo: {
+    nom: string;
+    prenom: string;
+    email: string;
+    telephone: string;
+  };
+  hotelPreference: "specific" | "suggest";
+  hotelName?: string;
+  hotelCategory?: string;
+  city: string;
+  dateArrivee: string;
+  dateDepart: string;
+  nombreChambres: string;
+  nombrePersonnes: string;
+  roomType?: string;
+  boardBasis?: string;
+  message?: string;
+}
+
+export interface SejourRequest {
+  id: string;
+  serviceType: "sejour";
+  createdAt: string;
+  isRead: boolean;
+  completed: boolean;
+  personalInfo: {
+    nom: string;
+    prenom: string;
+    email: string;
+    telephone: string;
+  };
+  destination: string;
+  typeVoyage: string;
+  budget: string;
+  dateDepart: string;
+  dateRetour: string;
+  servicesInclus: string[];
+  preferences?: string;
+}
+
+export type ServiceRequest = BilletterieRequest | VisaRequest | HotelRequest | SejourRequest;
+
 interface DataContextType {
   voyages: Voyage[];
   messages: Message[];
@@ -30,6 +123,7 @@ interface DataContextType {
   sejourServices: SejourService[];
   eVisaCountries: EVisaCountry[];
   dossierCountries: DossierCountry[];
+  requests: ServiceRequest[];
   addVoyage: (voyage: Voyage) => void;
   updateVoyage: (id: string, voyage: Partial<Voyage>) => void;
   deleteVoyage: (id: string) => void;
@@ -45,12 +139,16 @@ interface DataContextType {
   addDossierCountry: (country: Omit<DossierCountry, "id">) => void;
   updateDossierCountry: (id: string, country: Partial<DossierCountry>) => void;
   deleteDossierCountry: (id: string) => void;
+  addRequest: (request: Omit<ServiceRequest, "id" | "createdAt" | "isRead" | "completed">) => void;
+  markRequestAsRead: (id: string) => void;
+  toggleRequestStatus: (id: string) => void;
+  deleteRequest: (id: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 // Data version for schema migration
-const DATA_VERSION = "1.0";
+const DATA_VERSION = "2.0"; // Updated for new request system
 
 // Default destinations and services
 const defaultDestinations: SejourDestination[] = [
@@ -129,6 +227,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [sejourServices, setSejourServices] = useState<SejourService[]>(defaultServices);
   const [eVisaCountries, setEVisaCountries] = useState<EVisaCountry[]>(defaultEVisaCountries);
   const [dossierCountries, setDossierCountries] = useState<DossierCountry[]>(defaultDossierCountries);
+  const [requests, setRequests] = useState<ServiceRequest[]>([]);
 
   // Charger les messages depuis localStorage au montage
   useEffect(() => {
@@ -138,13 +237,15 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       
       if (savedVersion !== DATA_VERSION) {
         console.log("Data schema version mismatch. Migrating to new version...");
-        // Clear old visa data to force reset
+        // Clear old data for fresh start with new request system
         localStorage.removeItem("eVisaCountries");
         localStorage.removeItem("dossierCountries");
+        localStorage.removeItem("messages");
+        localStorage.removeItem("admin_inbox");
         localStorage.setItem("dataVersion", DATA_VERSION);
       }
 
-      // Load messages
+      // Load messages (legacy - will be phased out)
       const savedMessages = localStorage.getItem("messages");
       if (savedMessages) {
         try {
@@ -154,6 +255,19 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           }
         } catch (e) {
           console.error("Error parsing messages from localStorage", e);
+        }
+      }
+      
+      // Load requests (new system)
+      const savedRequests = localStorage.getItem("requests");
+      if (savedRequests) {
+        try {
+          const parsed = JSON.parse(savedRequests);
+          if (Array.isArray(parsed)) {
+            setRequests(parsed);
+          }
+        } catch (e) {
+          console.error("Error parsing requests from localStorage", e);
         }
       }
       
@@ -235,6 +349,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     localStorage.setItem("messages", JSON.stringify(messages));
   }, [messages]);
+  
+  useEffect(() => {
+    localStorage.setItem("requests", JSON.stringify(requests));
+  }, [requests]);
   
   useEffect(() => {
     localStorage.setItem("sejourDestinations", JSON.stringify(sejourDestinations));
@@ -343,6 +461,33 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setDossierCountries((prev) => prev.filter((c) => c.id !== id));
   };
 
+  const addRequest = (requestData: Omit<ServiceRequest, "id" | "createdAt" | "isRead" | "completed">) => {
+    const newRequest: ServiceRequest = {
+      ...requestData,
+      id: `req-${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      isRead: false,
+      completed: false,
+    } as ServiceRequest;
+    setRequests((prev) => [newRequest, ...prev]);
+  };
+
+  const markRequestAsRead = (id: string) => {
+    setRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, isRead: true } : r))
+    );
+  };
+
+  const toggleRequestStatus = (id: string) => {
+    setRequests((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, completed: !r.completed } : r))
+    );
+  };
+
+  const deleteRequest = (id: string) => {
+    setRequests((prev) => prev.filter((r) => r.id !== id));
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -352,6 +497,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         sejourServices,
         eVisaCountries,
         dossierCountries,
+        requests,
         addVoyage,
         updateVoyage,
         deleteVoyage,
@@ -367,6 +513,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         addDossierCountry,
         updateDossierCountry,
         deleteDossierCountry,
+        addRequest,
+        markRequestAsRead,
+        toggleRequestStatus,
+        deleteRequest,
       }}
     >
       {children}
