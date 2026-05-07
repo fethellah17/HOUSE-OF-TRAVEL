@@ -2,7 +2,7 @@ import Layout from "@/components/Layout";
 import LoginModal from "@/components/LoginModal";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle, Loader2, Pencil, MapPin, Calendar, Users, Plane, ArrowLeftRight, ArrowRight } from "lucide-react";
+import { CheckCircle, Loader2, Pencil, MapPin, Calendar, Users, Plane, ArrowLeftRight, ArrowRight, Ticket, Globe, Luggage, Map } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { toast } from "sonner";
 
@@ -237,8 +237,149 @@ const BilletteriePage = () => {
 
   return (
     <Layout>
-      <section className="py-24 bg-gradient-to-b from-slate-50 to-white min-h-screen">
-        <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
+      <section className="relative py-24 bg-gradient-to-b from-slate-50 to-white min-h-screen overflow-hidden">
+        {/* Floating Decorative Icons - Background Layer */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Icon 1: Plane - Top Left */}
+          <motion.div
+            animate={{ 
+              y: [0, -25, 0], 
+              rotate: [0, 10, -10, 0],
+              scale: [1, 1.08, 1] 
+            }}
+            transition={{ 
+              duration: 8, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
+            className="absolute top-16 left-4 md:top-24 md:left-12"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Plane className="w-10 h-10 md:w-16 md:h-16 lg:w-20 lg:h-20 text-purple-600/15" />
+          </motion.div>
+
+          {/* Icon 2: Ticket - Top Right */}
+          <motion.div
+            animate={{ 
+              y: [0, -20, 0], 
+              rotate: [0, -8, 8, 0],
+              scale: [1, 1.1, 1] 
+            }}
+            transition={{ 
+              duration: 10, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 1.5 
+            }}
+            className="absolute top-32 right-6 md:top-48 md:right-16"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Ticket className="w-9 h-9 md:w-14 md:h-14 lg:w-18 lg:h-18 text-yellow-500/15" />
+          </motion.div>
+
+          {/* Icon 3: Globe - Mid Left */}
+          <motion.div
+            animate={{ 
+              y: [0, -25, 0], 
+              rotate: [0, 12, -12, 0],
+              scale: [1, 1.06, 1] 
+            }}
+            transition={{ 
+              duration: 9, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 2.5 
+            }}
+            className="absolute top-1/3 left-8 md:left-20"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Globe className="w-12 h-12 md:w-18 md:h-18 lg:w-24 lg:h-24 text-purple-600/15" />
+          </motion.div>
+
+          {/* Icon 4: Luggage - Mid Right */}
+          <motion.div
+            animate={{ 
+              y: [0, -22, 0], 
+              rotate: [0, -10, 10, 0],
+              scale: [1, 1.09, 1] 
+            }}
+            transition={{ 
+              duration: 11, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 3 
+            }}
+            className="absolute top-1/2 right-10 md:right-24"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Luggage className="w-10 h-10 md:w-16 md:h-16 lg:w-20 lg:h-20 text-yellow-500/15" />
+          </motion.div>
+
+          {/* Icon 5: Map - Bottom Left */}
+          <motion.div
+            animate={{ 
+              y: [0, -20, 0], 
+              rotate: [0, 9, -9, 0],
+              scale: [1, 1.07, 1] 
+            }}
+            transition={{ 
+              duration: 7.5, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 4 
+            }}
+            className="absolute bottom-32 left-6 md:bottom-40 md:left-16"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Map className="w-11 h-11 md:w-18 md:h-18 lg:w-24 lg:h-24 text-purple-600/15" />
+          </motion.div>
+
+          {/* Icon 6: Plane - Bottom Right */}
+          <motion.div
+            animate={{ 
+              y: [0, -25, 0], 
+              rotate: [0, -12, 12, 0],
+              scale: [1, 1.08, 1] 
+            }}
+            transition={{ 
+              duration: 6.5, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 1 
+            }}
+            className="absolute bottom-24 right-8 md:bottom-36 md:right-20"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Plane className="w-10 h-10 md:w-16 md:h-16 lg:w-20 lg:h-20 text-yellow-500/15" />
+          </motion.div>
+        </div>
+
+        {/* Content Layer - Higher z-index */}
+        <div className="container mx-auto px-4 lg:px-8 max-w-6xl relative z-10">
           <div className="text-center mb-8">
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-full mb-4">
               <Plane size={20} />

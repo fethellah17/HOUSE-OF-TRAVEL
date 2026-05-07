@@ -14,9 +14,9 @@ const navLinks = [
 ];
 
 const whatsappServices = [
-  { id: 1, label: "Service 1", phone: "213549059432" },
-  { id: 2, label: "Service 2", phone: "213777738342" },
-  { id: 3, label: "Service 3", phone: "213771933646" },
+  { id: 1, label: "Assistant 1", phone: "213549059432" },
+  { id: 2, label: "Assistant 2", phone: "213777738342" },
+  { id: 3, label: "Assistant 3", phone: "213771933646" },
 ];
 
 const Navbar = () => {
@@ -72,13 +72,13 @@ const Navbar = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
+    <header className="sticky top-0 z-50 bg-white border-b border-border shadow-sm">
       <nav className="container mx-auto flex items-center justify-between h-16 sm:h-20 px-4 lg:px-8">
         <Link to="/" className="flex items-center py-2">
           <img 
             src={logo} 
             alt="HOUSE OF TRAVEL" 
-            className="h-10 sm:h-12 md:h-14 w-auto object-contain" 
+            className="h-12 sm:h-14 md:h-16 lg:h-18 w-auto object-contain" 
           />
         </Link>
 
@@ -119,7 +119,7 @@ const Navbar = () => {
               </div>
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors"
+                className="p-2 rounded-lg hover:bg-purple-50 text-purple-900 transition-colors"
                 title="Se déconnecter"
               >
                 <LogOut size={18} />
@@ -262,7 +262,7 @@ const Navbar = () => {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-b border-border bg-background overflow-hidden"
+            className="lg:hidden border-b border-border bg-white overflow-hidden"
           >
             <ul className="flex flex-col p-4 gap-1">
               {navLinks.map((link) => (
@@ -287,7 +287,7 @@ const Navbar = () => {
                 {currentUser ? (
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors text-sm font-medium"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-purple-50 text-purple-900 hover:bg-purple-100 transition-colors text-sm font-medium"
                   >
                     <LogOut size={18} />
                     Déconnexion
