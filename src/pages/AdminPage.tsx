@@ -969,31 +969,53 @@ const VoyagesView = ({
   setShowAddForm: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const [newVoyage, setNewVoyage] = useState({
-    title: "", imageUrl: "", imageUrls: [] as string[], price: "", priceAdult: "", priceChild: "", description: "", category: "Voyage Organisé" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "", features: [] as string[],
+    title: "", imageUrl: "", imageUrls: [] as string[], price: "", description: "", category: "Voyage Organisé" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "", features: [] as string[],
   });
   const [newFeatureInput, setNewFeatureInput] = useState("");
   const [newStartDate, setNewStartDate] = useState<Date | undefined>();
   const [newEndDate, setNewEndDate] = useState<Date | undefined>();
   const [newStages, setNewStages] = useState<Stage[]>([
     { id: "stage-1", name: "", hotelName: "", googleMapsUrl: "", days: 0 },
-    { id: "stage-2", name: "", hotelName: "", googleMapsUrl: "", days: 0 },
   ]);
   const [newDaysMismatch, setNewDaysMismatch] = useState(false);
   
   const [editingVoyage, setEditingVoyage] = useState<Voyage | null>(null);
   const [editForm, setEditForm] = useState({
-    title: "", imageUrl: "", imageUrls: [] as string[], price: "", priceAdult: "", priceChild: "", description: "", category: "Voyage Organisé" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "", features: [] as string[],
+    title: "", imageUrl: "", imageUrls: [] as string[], price: "", description: "", category: "Voyage Organisé" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "", features: [] as string[],
   });
   const [editFeatureInput, setEditFeatureInput] = useState("");
   const [editStartDate, setEditStartDate] = useState<Date | undefined>();
   const [editEndDate, setEditEndDate] = useState<Date | undefined>();
   const [editStages, setEditStages] = useState<Stage[]>([
     { id: "stage-1", name: "", hotelName: "", googleMapsUrl: "", days: 0 },
-    { id: "stage-2", name: "", hotelName: "", googleMapsUrl: "", days: 0 },
   ]);
   const [editDaysMismatch, setEditDaysMismatch] = useState(false);
   
   const [saving, setSaving] = useState(false);
+
+  // Helper function to add a new stage
+  const addNewStage = () => {
+    const newStage: Stage = {
+      id: `stage-${Date.now()}`,
+      name: "",
+      hotelName: "",
+      googleMapsUrl: "",
+      days: 0,
+    };
+    setNewStages([...newStages, newStage]);
+  };
+
+  // Helper function to add a new stage in edit mode
+  const addEditStage = () => {
+    const newStage: Stage = {
+      id: `stage-${Date.now()}`,
+      name: "",
+      hotelName: "",
+      googleMapsUrl: "",
+      days: 0,
+    };
+    setEditStages([...editStages, newStage]);
+  };
 
   // Calculer automatiquement la durée et formater la date
   const calculateDurationAndDate = (start?: Date, end?: Date) => {
@@ -1047,7 +1069,7 @@ const VoyagesView = ({
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newVoyage.title || !newVoyage.priceAdult || !newVoyage.priceChild) return;
+    if (!newVoyage.title || !newVoyage.price) return;
     
     // Pour "Voyage à la Carte", utiliser des valeurs par défaut
     let duration, date;
@@ -1076,9 +1098,7 @@ const VoyagesView = ({
         title: newVoyage.title,
         imageUrl: newVoyage.imageUrls[0] || newVoyage.imageUrl || "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80",
         imageUrls: newVoyage.imageUrls.length > 0 ? newVoyage.imageUrls : undefined,
-        price: Number(newVoyage.priceAdult),
-        priceAdult: Number(newVoyage.priceAdult),
-        priceChild: Number(newVoyage.priceChild),
+        price: Number(newVoyage.price),
         description: newVoyage.description,
         category: newVoyage.category,
         duration: duration || newVoyage.duration,
@@ -1094,13 +1114,12 @@ const VoyagesView = ({
       };
       addVoyage(v);
       setShowAddForm(false);
-      setNewVoyage({ title: "", imageUrl: "", imageUrls: [], price: "", priceAdult: "", priceChild: "", description: "", category: "Voyage Organisé", duration: "", date: "", status: "normal", flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "", features: [] });
+      setNewVoyage({ title: "", imageUrl: "", imageUrls: [], price: "", description: "", category: "Voyage Organisé", duration: "", date: "", status: "normal", flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "", features: [] });
       setNewFeatureInput("");
       setNewStartDate(undefined);
       setNewEndDate(undefined);
       setNewStages([
         { id: "stage-1", name: "", hotelName: "", googleMapsUrl: "", days: 0 },
-        { id: "stage-2", name: "", hotelName: "", googleMapsUrl: "", days: 0 },
       ]);
       setSaving(false);
       toast.success("Voyage ajouté avec succès");
@@ -1119,8 +1138,6 @@ const VoyagesView = ({
       imageUrl: voyage.imageUrl,
       imageUrls: voyage.imageUrls || [],
       price: String(voyage.price),
-      priceAdult: String(voyage.priceAdult || voyage.price),
-      priceChild: String(voyage.priceChild || 0),
       description: voyage.description || "",
       category: voyage.category,
       duration: voyage.duration || "",
@@ -1168,13 +1185,12 @@ const VoyagesView = ({
     // Charger les étapes existantes ou initialiser
     setEditStages(voyage.stages || [
       { id: "stage-1", name: "", hotelName: "", googleMapsUrl: "", days: 0 },
-      { id: "stage-2", name: "", hotelName: "", googleMapsUrl: "", days: 0 },
     ]);
   };
 
   const handleEdit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editForm.title || !editForm.priceAdult || !editForm.priceChild || !editingVoyage) return;
+    if (!editForm.title || !editForm.price || !editingVoyage) return;
     
     // Pour "Voyage à la Carte", utiliser des valeurs par défaut
     let duration, date;
@@ -1209,9 +1225,7 @@ const VoyagesView = ({
         title: editForm.title,
         imageUrl: editForm.imageUrls[0] || editForm.imageUrl || editingVoyage.imageUrl,
         imageUrls: editForm.imageUrls.length > 0 ? editForm.imageUrls : undefined,
-        price: Number(editForm.priceAdult),
-        priceAdult: Number(editForm.priceAdult),
-        priceChild: Number(editForm.priceChild),
+        price: Number(editForm.price),
         description: editForm.description,
         category: editForm.category,
         duration: duration || editForm.duration,
@@ -1261,28 +1275,12 @@ const VoyagesView = ({
                 <input type="text" value={newVoyage.title} onChange={(e) => setNewVoyage({ ...newVoyage, title: e.target.value })} className="form-input" required maxLength={200} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5">Prix Adulte (À partir de) - DA *</label>
+                <label className="block text-sm font-medium mb-1.5">Prix (À partir de) - DA *</label>
                 <div className="relative">
                   <input 
                     type="number" 
-                    value={newVoyage.priceAdult} 
-                    onChange={(e) => setNewVoyage({ ...newVoyage, priceAdult: e.target.value })} 
-                    className="form-input pr-12" 
-                    required 
-                    min={0}
-                    step="0.01"
-                    placeholder="0"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">DA</span>
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">Prix Enfant (À partir de) - DA *</label>
-                <div className="relative">
-                  <input 
-                    type="number" 
-                    value={newVoyage.priceChild} 
-                    onChange={(e) => setNewVoyage({ ...newVoyage, priceChild: e.target.value })} 
+                    value={newVoyage.price} 
+                    onChange={(e) => setNewVoyage({ ...newVoyage, price: e.target.value })} 
                     className="form-input pr-12" 
                     required 
                     min={0}
@@ -1415,6 +1413,18 @@ const VoyagesView = ({
                   totalDays={getTotalDays(newStartDate, newEndDate)}
                   onDaysMismatch={setNewDaysMismatch}
                 />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    addNewStage();
+                  }}
+                  className="w-full border-dashed border-2 border-purple-300 text-purple-600 hover:bg-purple-50 px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <Plus size={18} />
+                  Ajouter une étape
+                </button>
               </div>
             )}
 
@@ -1471,28 +1481,12 @@ const VoyagesView = ({
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium mb-1.5">Prix Adulte (À partir de) - DA *</label>
+                    <label className="block text-sm font-medium mb-1.5">Prix (À partir de) - DA *</label>
                     <div className="relative">
                       <input 
                         type="number" 
-                        value={editForm.priceAdult} 
-                        onChange={(e) => setEditForm({ ...editForm, priceAdult: e.target.value })} 
-                        className="form-input pr-12" 
-                        required 
-                        min={0}
-                        step="0.01"
-                        placeholder="0"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">DA</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1.5">Prix Enfant (À partir de) - DA *</label>
-                    <div className="relative">
-                      <input 
-                        type="number" 
-                        value={editForm.priceChild} 
-                        onChange={(e) => setEditForm({ ...editForm, priceChild: e.target.value })} 
+                        value={editForm.price} 
+                        onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} 
                         className="form-input pr-12" 
                         required 
                         min={0}
@@ -1630,6 +1624,18 @@ const VoyagesView = ({
                       totalDays={getTotalDays(editStartDate, editEndDate)}
                       onDaysMismatch={setEditDaysMismatch}
                     />
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addEditStage();
+                      }}
+                      className="w-full border-dashed border-2 border-purple-300 text-purple-600 hover:bg-purple-50 px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Plus size={18} />
+                      Ajouter une étape
+                    </button>
                   </div>
                 )}
 

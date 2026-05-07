@@ -6,6 +6,50 @@ import { CheckCircle, Loader2, Pencil, MapPin, Calendar, Users, Plane, ArrowLeft
 import { useData } from "@/contexts/DataContext";
 import { toast } from "sonner";
 
+// Comprehensive list of popular travel destinations
+const DESTINATIONS = [
+  "Alger, Algérie", "Oran, Algérie", "Constantine, Algérie", "Annaba, Algérie",
+  "Paris, France", "Lyon, France", "Marseille, France", "Nice, France", "Toulouse, France",
+  "Istanbul, Turquie", "Ankara, Turquie", "Antalya, Turquie",
+  "Dubai, Émirats Arabes Unis", "Abu Dhabi, Émirats Arabes Unis",
+  "Le Caire, Égypte", "Alexandrie, Égypte", "Sharm El-Sheikh, Égypte", "Hurghada, Égypte",
+  "Tunis, Tunisie", "Djerba, Tunisie", "Sousse, Tunisie",
+  "Casablanca, Maroc", "Marrakech, Maroc", "Rabat, Maroc", "Fès, Maroc", "Tanger, Maroc",
+  "Londres, Royaume-Uni", "Manchester, Royaume-Uni", "Édimbourg, Royaume-Uni",
+  "Madrid, Spain", "Barcelone, Espagne", "Séville, Espagne", "Valence, Espagne",
+  "Rome, Italie", "Milan, Italie", "Venise, Italie", "Florence, Italie", "Naples, Italie",
+  "Berlin, Allemagne", "Munich, Allemagne", "Francfort, Allemagne", "Hambourg, Allemagne",
+  "Amsterdam, Pays-Bas", "Rotterdam, Pays-Bas",
+  "Bruxelles, Belgique", "Anvers, Belgique",
+  "Vienne, Autriche", "Salzbourg, Autriche",
+  "Zurich, Suisse", "Genève, Suisse", "Berne, Suisse",
+  "Lisbonne, Portugal", "Porto, Portugal",
+  "Athènes, Grèce", "Thessalonique, Grèce", "Santorin, Grèce",
+  "Prague, République Tchèque", "Budapest, Hongrie", "Varsovie, Pologne",
+  "Stockholm, Suède", "Copenhague, Danemark", "Oslo, Norvège", "Helsinki, Finlande",
+  "Moscou, Russie", "Saint-Pétersbourg, Russie",
+  "New York, États-Unis", "Los Angeles, États-Unis", "Chicago, États-Unis", "Miami, États-Unis", "San Francisco, États-Unis",
+  "Toronto, Canada", "Montréal, Canada", "Vancouver, Canada",
+  "Mexico, Mexique", "Cancún, Mexique",
+  "São Paulo, Brésil", "Rio de Janeiro, Brésil",
+  "Buenos Aires, Argentine",
+  "Tokyo, Japon", "Osaka, Japon", "Kyoto, Japon",
+  "Séoul, Corée du Sud", "Busan, Corée du Sud",
+  "Pékin, Chine", "Shanghai, Chine", "Hong Kong, Chine", "Guangzhou, Chine",
+  "Bangkok, Thaïlande", "Phuket, Thaïlande", "Chiang Mai, Thaïlande",
+  "Singapour", "Kuala Lumpur, Malaisie",
+  "Jakarta, Indonésie", "Bali, Indonésie",
+  "Manille, Philippines", "Cebu, Philippines",
+  "Hanoï, Vietnam", "Ho Chi Minh, Vietnam",
+  "Mumbai, Inde", "Delhi, Inde", "Bangalore, Inde", "Goa, Inde",
+  "Dubaï, Émirats Arabes Unis", "Doha, Qatar", "Riyad, Arabie Saoudite", "Jeddah, Arabie Saoudite",
+  "Beyrouth, Liban", "Amman, Jordanie",
+  "Tel Aviv, Israël", "Jérusalem, Israël",
+  "Nairobi, Kenya", "Le Cap, Afrique du Sud", "Johannesburg, Afrique du Sud",
+  "Sydney, Australie", "Melbourne, Australie", "Brisbane, Australie",
+  "Auckland, Nouvelle-Zélande",
+];
+
 const BilletteriePage = () => {
   const { addMessage } = useData();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -14,6 +58,12 @@ const BilletteriePage = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = useState(false);
   const animationFrameRef = useRef<number | null>(null);
+  const destinationInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Autocomplete state
+  const [showDestinationDropdown, setShowDestinationDropdown] = useState(false);
+  const [filteredDestinations, setFilteredDestinations] = useState<string[]>([]);
   
   const [form, setForm] = useState({
     nom: "",
@@ -127,6 +177,45 @@ const BilletteriePage = () => {
       }
     };
   }, [isPaused]);
+
+  // Handle destination autocomplete
+  const handleDestinationChange = (value: string) => {
+    setForm({ ...form, destination: value });
+    
+    if (value.trim().length > 0) {
+      const filtered = DESTINATIONS.filter(dest =>
+        dest.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 10); // Limit to 10 results
+      setFilteredDestinations(filtered);
+      setShowDestinationDropdown(filtered.length > 0);
+    } else {
+      setFilteredDestinations([]);
+      setShowDestinationDropdown(false);
+    }
+  };
+
+  const handleDestinationSelect = (destination: string) => {
+    setForm({ ...form, destination });
+    setShowDestinationDropdown(false);
+    setFilteredDestinations([]);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        destinationInputRef.current &&
+        !destinationInputRef.current.contains(event.target as Node)
+      ) {
+        setShowDestinationDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -425,7 +514,52 @@ const BilletteriePage = () => {
                           <MapPin size={16} />
                           Destination *
                         </label>
-                        <input type="text" value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base" placeholder="Ex: Istanbul, Paris, Dubai..." />
+                        <div className="relative">
+                          <input 
+                            ref={destinationInputRef}
+                            type="text" 
+                            value={form.destination} 
+                            onChange={(e) => handleDestinationChange(e.target.value)}
+                            onFocus={() => {
+                              if (form.destination.trim().length > 0) {
+                                const filtered = DESTINATIONS.filter(dest =>
+                                  dest.toLowerCase().includes(form.destination.toLowerCase())
+                                ).slice(0, 10);
+                                setFilteredDestinations(filtered);
+                                setShowDestinationDropdown(filtered.length > 0);
+                              }
+                            }}
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base" 
+                            placeholder="Ex: Istanbul, Paris, Dubai..." 
+                            autoComplete="off"
+                          />
+                          
+                          {/* Autocomplete Dropdown */}
+                          <AnimatePresence>
+                            {showDestinationDropdown && filteredDestinations.length > 0 && (
+                              <motion.div
+                                ref={dropdownRef}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="absolute z-50 w-full mt-1 bg-white border-2 border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+                              >
+                                {filteredDestinations.map((destination, index) => (
+                                  <button
+                                    key={index}
+                                    type="button"
+                                    onClick={() => handleDestinationSelect(destination)}
+                                    className="w-full text-left px-4 py-3 hover:bg-purple-50 transition-colors border-b border-slate-100 last:border-b-0 flex items-center gap-2 text-sm"
+                                  >
+                                    <MapPin size={14} className="text-primary flex-shrink-0" />
+                                    <span className="text-gray-700">{destination}</span>
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                         {errors.destination && <p className="text-sm text-red-600 mt-1">{errors.destination}</p>}
                       </div>
                       
@@ -456,7 +590,18 @@ const BilletteriePage = () => {
                           <Users size={16} />
                           Adultes
                         </label>
-                        <input type="number" min="1" value={form.nombreAdultes} onChange={(e) => setForm({ ...form, nombreAdultes: e.target.value })} className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base" placeholder="1" />
+                        <input 
+                          type="number" 
+                          min="1" 
+                          value={form.nombreAdultes} 
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setForm({ ...form, nombreAdultes: value === "" ? "1" : String(parseInt(value) || 1) });
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base" 
+                          placeholder="1" 
+                        />
                       </div>
                       
                       <div className="relative">
@@ -464,7 +609,18 @@ const BilletteriePage = () => {
                           <Users size={16} />
                           Enfants
                         </label>
-                        <input type="number" min="0" value={form.nombreEnfants} onChange={(e) => setForm({ ...form, nombreEnfants: e.target.value })} className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base" placeholder="0" />
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={form.nombreEnfants} 
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setForm({ ...form, nombreEnfants: value === "" ? "0" : String(parseInt(value) || 0) });
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base" 
+                          placeholder="0" 
+                        />
                       </div>
                       
                       <div className="relative">
@@ -581,12 +737,12 @@ const BilletteriePage = () => {
                     {status === "loading" ? (
                       <>
                         <Loader2 size={24} className="animate-spin" /> 
-                        <span>Recherche en cours...</span>
+                        <span>Envoi en cours...</span>
                       </>
                     ) : (
                       <>
                         <Plane size={24} />
-                        <span>Rechercher des vols</span>
+                        <span>Envoyer</span>
                       </>
                     )}
                   </button>

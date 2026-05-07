@@ -240,30 +240,13 @@ const VoyageDetailPage = () => {
               <div className="flex items-start gap-3">
                 <div className="flex-1">
                   <p className="text-xs text-muted-foreground font-medium mb-2">Tarifs à partir de</p>
-                  <div className="space-y-1.5">
-                    {voyage.priceAdult && voyage.priceAdult > 0 ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Adulte :</span>
-                        <span className="text-sm font-semibold" style={{ color: "#D4AF37" }}>
-                          {voyage.priceAdult.toLocaleString("fr-FR")} DA
-                        </span>
-                      </div>
-                    ) : null}
-                    {voyage.priceChild && voyage.priceChild > 0 ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Enfant :</span>
-                        <span className="text-sm font-semibold text-accent">
-                          {voyage.priceChild.toLocaleString("fr-FR")} DA
-                        </span>
-                      </div>
-                    ) : null}
-                    {(!voyage.priceAdult || voyage.priceAdult === 0) && (!voyage.priceChild || voyage.priceChild === 0) ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Prix :</span>
-                        <span className="text-sm font-semibold text-accent">Sur devis</span>
-                      </div>
-                    ) : null}
-                  </div>
+                  {voyage.price && voyage.price > 0 ? (
+                    <span className="text-lg font-bold" style={{ color: "#D4AF37" }}>
+                      {voyage.price.toLocaleString("fr-FR")} DA
+                    </span>
+                  ) : (
+                    <span className="text-sm font-semibold text-accent">Sur devis</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -291,30 +274,13 @@ const VoyageDetailPage = () => {
             >
               <div className="mb-6">
                 <p className="text-xs text-muted-foreground font-medium mb-3">Tarifs à partir de</p>
-                <div className="space-y-2.5">
-                  {voyage.priceAdult && voyage.priceAdult > 0 ? (
-                    <div className="flex items-center justify-between pb-2 border-b border-gray-200">
-                      <span className="text-sm text-muted-foreground">Adulte :</span>
-                      <span className="text-lg font-bold" style={{ color: "#D4AF37" }}>
-                        {voyage.priceAdult.toLocaleString("fr-FR")} DA
-                      </span>
-                    </div>
-                  ) : null}
-                  {voyage.priceChild && voyage.priceChild > 0 ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Enfant :</span>
-                      <span className="text-lg font-bold text-accent">
-                        {voyage.priceChild.toLocaleString("fr-FR")} DA
-                      </span>
-                    </div>
-                  ) : null}
-                  {(!voyage.priceAdult || voyage.priceAdult === 0) && (!voyage.priceChild || voyage.priceChild === 0) ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Prix :</span>
-                      <span className="text-lg font-bold text-accent">Sur devis</span>
-                    </div>
-                  ) : null}
-                </div>
+                {voyage.price && voyage.price > 0 ? (
+                  <span className="text-2xl font-bold" style={{ color: "#D4AF37" }}>
+                    {voyage.price.toLocaleString("fr-FR")} DA
+                  </span>
+                ) : (
+                  <span className="text-lg font-bold text-accent">Sur devis</span>
+                )}
               </div>
 
               {/* Badge de statut proéminent */}

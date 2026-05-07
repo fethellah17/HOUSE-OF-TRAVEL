@@ -62,7 +62,12 @@ const StageSection = ({
               </h3>
               {stages.length > 1 && (
                 <button
-                  onClick={() => removeStage(stage.id)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    removeStage(stage.id);
+                  }}
                   className="text-red-500 hover:text-red-700 transition-colors"
                   title="Supprimer cette étape"
                 >

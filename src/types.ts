@@ -24,9 +24,7 @@ export interface Voyage {
   title: string;
   imageUrl: string;
   imageUrls?: string[];
-  price: number;
-  priceAdult?: number;
-  priceChild?: number;
+  price: number; // Starting price (À partir de)
   description: string;
   category: VoyageCategory;
   duration: string;
