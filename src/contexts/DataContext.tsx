@@ -150,8 +150,105 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 // Data version for schema migration
 const DATA_VERSION = "2.0"; // Updated for new request system
 
-// Default destinations and services
-const defaultDestinations: SejourDestination[] = [
+// ============================================================================
+// GOLD MASTER PRESENTATION DATA (VOLATILE - RESETS ON REFRESH)
+// ============================================================================
+// These states are for demonstration purposes only. Changes made during the
+// session will NOT persist to localStorage. On page refresh, they revert to
+// these hardcoded "Gold Master" values.
+// ============================================================================
+
+// GOLD MASTER: Presentation Requests (Boîte de Réception)
+const GOLD_MASTER_REQUESTS: ServiceRequest[] = [
+  {
+    id: "demo-bill-001",
+    serviceType: "billetterie",
+    createdAt: "2026-05-06T10:30:00.000Z",
+    isRead: false,
+    completed: false,
+    personalInfo: {
+      nom: "Benali",
+      prenom: "Karim",
+      email: "karim.benali@email.dz",
+      telephone: "+213 555 123 456"
+    },
+    tripType: "Aller-retour",
+    destination: "Paris, France",
+    dateDepart: "2026-06-15",
+    dateRetour: "2026-06-25",
+    nombreAdultes: "2",
+    nombreEnfants: "1",
+    ageEnfants: "8 ans",
+    compagnie: "Air France",
+    besoinVisa: "Oui",
+    message: "Nous préférons un vol direct si possible. Merci."
+  },
+  {
+    id: "demo-visa-001",
+    serviceType: "visa",
+    createdAt: "2026-05-05T14:20:00.000Z",
+    isRead: true,
+    completed: false,
+    personalInfo: {
+      nom: "Mansouri",
+      prenom: "Amina",
+      email: "amina.mansouri@email.dz",
+      telephone: "+213 666 789 012"
+    },
+    visaType: "e-visa",
+    pays: "Turquie",
+    dateVoyage: "2026-07-10",
+    passeportValide: true,
+    situationPro: "Employée",
+    message: "Besoin urgent pour voyage d'affaires."
+  },
+  {
+    id: "demo-hotel-001",
+    serviceType: "hotel",
+    createdAt: "2026-05-04T09:15:00.000Z",
+    isRead: true,
+    completed: true,
+    personalInfo: {
+      nom: "Khelifi",
+      prenom: "Yacine",
+      email: "yacine.khelifi@email.dz",
+      telephone: "+213 777 345 678"
+    },
+    hotelPreference: "suggest",
+    hotelCategory: "4 étoiles",
+    city: "Istanbul",
+    dateArrivee: "2026-08-01",
+    dateDepart: "2026-08-07",
+    nombreChambres: "1",
+    nombrePersonnes: "2",
+    roomType: "Double",
+    boardBasis: "Petit-déjeuner inclus",
+    message: "Proche des sites touristiques si possible."
+  },
+  {
+    id: "demo-sejour-001",
+    serviceType: "sejour",
+    createdAt: "2026-05-03T16:45:00.000Z",
+    isRead: false,
+    completed: false,
+    personalInfo: {
+      nom: "Boudiaf",
+      prenom: "Leila",
+      email: "leila.boudiaf@email.dz",
+      telephone: "+213 555 987 654"
+    },
+    destination: "Dubai, Émirats Arabes Unis",
+    typeVoyage: "Lune de miel",
+    budget: "350000",
+    dateDepart: "2026-09-15",
+    dateRetour: "2026-09-22",
+    servicesInclus: ["Billet d'avion", "Transfert Aéroport", "Guide touristique"],
+    preferences: "Hôtel 5 étoiles avec vue sur mer. Activités romantiques incluses."
+  }
+];
+
+// GOLD MASTER: Séjour Destinations
+const GOLD_MASTER_DESTINATIONS: SejourDestination[] = [
   { id: "1", name: "Alger, Algérie" },
   { id: "2", name: "Oran, Algérie" },
   { id: "3", name: "Paris, France" },
@@ -164,20 +261,27 @@ const defaultDestinations: SejourDestination[] = [
   { id: "10", name: "Rome, Italie" },
 ];
 
+// GOLD MASTER: E-Visa Countries
+const GOLD_MASTER_EVISA_COUNTRIES: EVisaCountry[] = [
+  { id: "1", name: "Turquie" },
+  { id: "2", name: "Émirats Arabes Unis" },
+  { id: "3", name: "Arabie Saoudite" },
+  { id: "4", name: "Égypte" },
+  { id: "5", name: "Inde" },
+];
+
+// ============================================================================
+// PERSISTENT DATA (SAVED TO LOCALSTORAGE)
+// ============================================================================
+// These states persist across page refreshes via localStorage
+// ============================================================================
+
 const defaultServices: SejourService[] = [
   { id: "billet-avion", label: "Billet d'avion" },
   { id: "transfert", label: "Transfert Aéroport" },
   { id: "guide", label: "Guide touristique" },
   { id: "location-voiture", label: "Location de voiture" },
   { id: "activites", label: "Activités & Excursions" },
-];
-
-const defaultEVisaCountries: EVisaCountry[] = [
-  { id: "1", name: "Turquie" },
-  { id: "2", name: "Émirats Arabes Unis" },
-  { id: "3", name: "Arabie Saoudite" },
-  { id: "4", name: "Égypte" },
-  { id: "5", name: "Inde" },
 ];
 
 const defaultDossierCountries: DossierCountry[] = [
@@ -220,16 +324,25 @@ const defaultDossierCountries: DossierCountry[] = [
 ];
 
 export const DataProvider = ({ children }: { children: ReactNode }) => {
-  // Initialiser avec les données mock (voyages par défaut)
+  // ============================================================================
+  // VOLATILE PRESENTATION STATE (NO LOCALSTORAGE PERSISTENCE)
+  // ============================================================================
+  // These states reset to Gold Master values on every page refresh
+  const [requests, setRequests] = useState<ServiceRequest[]>(GOLD_MASTER_REQUESTS);
+  const [sejourDestinations, setSejourDestinations] = useState<SejourDestination[]>(GOLD_MASTER_DESTINATIONS);
+  const [eVisaCountries, setEVisaCountries] = useState<EVisaCountry[]>(GOLD_MASTER_EVISA_COUNTRIES);
+
+  // ============================================================================
+  // PERSISTENT STATE (LOCALSTORAGE ENABLED)
+  // ============================================================================
   const [voyages, setVoyages] = useState<Voyage[]>(mockVoyages);
   const [messages, setMessages] = useState<Message[]>(mockMessages);
-  const [sejourDestinations, setSejourDestinations] = useState<SejourDestination[]>(defaultDestinations);
   const [sejourServices, setSejourServices] = useState<SejourService[]>(defaultServices);
-  const [eVisaCountries, setEVisaCountries] = useState<EVisaCountry[]>(defaultEVisaCountries);
   const [dossierCountries, setDossierCountries] = useState<DossierCountry[]>(defaultDossierCountries);
-  const [requests, setRequests] = useState<ServiceRequest[]>([]);
 
-  // Charger les messages depuis localStorage au montage
+  // ============================================================================
+  // LOAD PERSISTENT DATA FROM LOCALSTORAGE (ON MOUNT)
+  // ============================================================================
   useEffect(() => {
     try {
       // Check data version for schema migration
@@ -237,15 +350,16 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       
       if (savedVersion !== DATA_VERSION) {
         console.log("Data schema version mismatch. Migrating to new version...");
-        // Clear old data for fresh start with new request system
+        // Clear old volatile data
+        localStorage.removeItem("requests");
+        localStorage.removeItem("sejourDestinations");
         localStorage.removeItem("eVisaCountries");
-        localStorage.removeItem("dossierCountries");
         localStorage.removeItem("messages");
         localStorage.removeItem("admin_inbox");
         localStorage.setItem("dataVersion", DATA_VERSION);
       }
 
-      // Load messages (legacy - will be phased out)
+      // Load messages (legacy - persistent for now)
       const savedMessages = localStorage.getItem("messages");
       if (savedMessages) {
         try {
@@ -258,33 +372,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       
-      // Load requests (new system)
-      const savedRequests = localStorage.getItem("requests");
-      if (savedRequests) {
-        try {
-          const parsed = JSON.parse(savedRequests);
-          if (Array.isArray(parsed)) {
-            setRequests(parsed);
-          }
-        } catch (e) {
-          console.error("Error parsing requests from localStorage", e);
-        }
-      }
-      
-      // Load sejour destinations
-      const savedDestinations = localStorage.getItem("sejourDestinations");
-      if (savedDestinations) {
-        try {
-          const parsed = JSON.parse(savedDestinations);
-          if (Array.isArray(parsed)) {
-            setSejourDestinations(parsed);
-          }
-        } catch (e) {
-          console.error("Error parsing destinations from localStorage", e);
-        }
-      }
-      
-      // Load sejour services
+      // Load sejour services (persistent)
       const savedServices = localStorage.getItem("sejourServices");
       if (savedServices) {
         try {
@@ -297,26 +385,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       
-      // Load E-visa countries with validation
-      const savedEVisaCountries = localStorage.getItem("eVisaCountries");
-      if (savedEVisaCountries) {
-        try {
-          const parsed = JSON.parse(savedEVisaCountries);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            // Validate structure
-            const isValid = parsed.every(c => c.id && c.name);
-            if (isValid) {
-              setEVisaCountries(parsed);
-            } else {
-              console.warn("Invalid E-visa countries structure. Using defaults.");
-            }
-          }
-        } catch (e) {
-          console.error("Error parsing E-visa countries from localStorage", e);
-        }
-      }
-      
-      // Load Dossier countries with validation
+      // Load Dossier countries with validation (persistent)
       const savedDossierCountries = localStorage.getItem("dossierCountries");
       if (savedDossierCountries) {
         try {
@@ -338,33 +407,24 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
       console.error("Critical error loading data from localStorage:", error);
       // Reset to defaults on critical error
       setMessages(mockMessages);
-      setSejourDestinations(defaultDestinations);
       setSejourServices(defaultServices);
-      setEVisaCountries(defaultEVisaCountries);
       setDossierCountries(defaultDossierCountries);
     }
   }, []);
 
-  // Sauvegarder les données dans localStorage
+  // ============================================================================
+  // SAVE PERSISTENT DATA TO LOCALSTORAGE
+  // ============================================================================
+  // NOTE: Volatile states (requests, sejourDestinations, eVisaCountries) are
+  // intentionally NOT saved to localStorage. They reset on page refresh.
+  
   useEffect(() => {
     localStorage.setItem("messages", JSON.stringify(messages));
   }, [messages]);
   
   useEffect(() => {
-    localStorage.setItem("requests", JSON.stringify(requests));
-  }, [requests]);
-  
-  useEffect(() => {
-    localStorage.setItem("sejourDestinations", JSON.stringify(sejourDestinations));
-  }, [sejourDestinations]);
-  
-  useEffect(() => {
     localStorage.setItem("sejourServices", JSON.stringify(sejourServices));
   }, [sejourServices]);
-  
-  useEffect(() => {
-    localStorage.setItem("eVisaCountries", JSON.stringify(eVisaCountries));
-  }, [eVisaCountries]);
   
   useEffect(() => {
     localStorage.setItem("dossierCountries", JSON.stringify(dossierCountries));
