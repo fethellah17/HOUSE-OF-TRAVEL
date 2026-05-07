@@ -1,9 +1,10 @@
 import Layout from "@/components/Layout";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Users, Hotel, Map, FileText, Zap, Briefcase, ArrowRight, CheckCircle, Upload, Pencil, MapPin, Calendar, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
+import { Users, Hotel, Map, FileText, Zap, Briefcase, ArrowRight, CheckCircle, Upload, Pencil, MapPin, Calendar, AlertCircle, Plane, Ticket, Globe, Key, Mountain } from "lucide-react";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 import LoginModal from "@/components/LoginModal";
 import { useData } from "@/contexts/DataContext";
 
@@ -79,6 +80,41 @@ const DevisPage = () => {
   // Autocomplete state
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [filteredCities, setFilteredCities] = useState<string[]>([]);
+  
+  // 3D Tilt effect for service cards
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  
+  // Confetti function
+  const triggerConfetti = () => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+    const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+    const interval = window.setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        colors: ['#4B2C7F', '#F9D423', '#FFD700'],
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        colors: ['#4B2C7F', '#F9D423', '#FFD700'],
+      });
+    }, 250);
+  };
   
   // Personal Info (Pre-filled from session)
   const [personalInfo, setPersonalInfo] = useState({
@@ -226,6 +262,9 @@ const DevisPage = () => {
       return;
     }
 
+    // Trigger confetti animation
+    triggerConfetti();
+
     // Submit based on active service
     if (activeService === "hotel") {
       addRequest({
@@ -304,8 +343,195 @@ const DevisPage = () => {
 
   return (
     <Layout>
-      <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-b from-slate-50 to-white min-h-screen">
-        <div className="container mx-auto px-6 sm:px-8 lg:px-8 max-w-6xl">
+      <section className="relative py-16 sm:py-20 lg:py-24 bg-gradient-to-b from-slate-50 to-white min-h-screen overflow-hidden">
+        {/* Floating Decorative Icons - Background Layer (Billetterie Style) */}
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          {/* Icon 1: Plane - Top Left */}
+          <motion.div
+            animate={{ 
+              y: [0, -25, 0], 
+              rotate: [0, 10, -10, 0],
+              scale: [1, 1.08, 1] 
+            }}
+            transition={{ 
+              duration: 8, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
+            className="absolute top-16 left-4 md:top-24 md:left-12"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Plane className="w-10 h-10 md:w-16 md:h-16 lg:w-20 lg:h-20 text-purple-600/10" />
+          </motion.div>
+
+          {/* Icon 2: Ticket - Top Right */}
+          <motion.div
+            animate={{ 
+              y: [0, -20, 0], 
+              rotate: [0, -8, 8, 0],
+              scale: [1, 1.1, 1] 
+            }}
+            transition={{ 
+              duration: 10, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 1.5 
+            }}
+            className="absolute top-32 right-6 md:top-48 md:right-16"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Ticket className="w-9 h-9 md:w-14 md:h-14 lg:w-18 lg:h-18 text-yellow-500/10" />
+          </motion.div>
+
+          {/* Icon 3: Globe - Mid Left */}
+          <motion.div
+            animate={{ 
+              y: [0, -25, 0], 
+              rotate: [0, 12, -12, 0],
+              scale: [1, 1.06, 1] 
+            }}
+            transition={{ 
+              duration: 9, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 2.5 
+            }}
+            className="absolute top-1/3 left-8 md:left-20"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Globe className="w-12 h-12 md:w-18 md:h-18 lg:w-24 lg:h-24 text-purple-600/10" />
+          </motion.div>
+
+          {/* Icon 4: Map - Mid Right */}
+          <motion.div
+            animate={{ 
+              y: [0, -22, 0], 
+              rotate: [0, -10, 10, 0],
+              scale: [1, 1.09, 1] 
+            }}
+            transition={{ 
+              duration: 11, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 3 
+            }}
+            className="absolute top-1/2 right-10 md:right-24"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Map className="w-10 h-10 md:w-16 md:h-16 lg:w-20 lg:h-20 text-yellow-500/10" />
+          </motion.div>
+
+          {/* Icon 5: Hotel - Bottom Left */}
+          <motion.div
+            animate={{ 
+              y: [0, -20, 0], 
+              rotate: [0, 9, -9, 0],
+              scale: [1, 1.07, 1] 
+            }}
+            transition={{ 
+              duration: 7.5, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 4 
+            }}
+            className="absolute bottom-32 left-6 md:bottom-40 md:left-16"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Hotel className="w-11 h-11 md:w-18 md:h-18 lg:w-24 lg:h-24 text-purple-600/10" />
+          </motion.div>
+
+          {/* Icon 6: Plane - Bottom Right */}
+          <motion.div
+            animate={{ 
+              y: [0, -25, 0], 
+              rotate: [0, -12, 12, 0],
+              scale: [1, 1.08, 1] 
+            }}
+            transition={{ 
+              duration: 6.5, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 1 
+            }}
+            className="absolute bottom-24 right-8 md:bottom-36 md:right-20"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Plane className="w-10 h-10 md:w-16 md:h-16 lg:w-20 lg:h-20 text-yellow-500/10" />
+          </motion.div>
+
+          {/* Icon 7: FileText - Upper Mid */}
+          <motion.div
+            animate={{ 
+              y: [0, -18, 0], 
+              rotate: [0, 8, -8, 0],
+              scale: [1, 1.05, 1] 
+            }}
+            transition={{ 
+              duration: 9.5, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 2 
+            }}
+            className="absolute top-1/4 right-1/4"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <FileText className="w-10 h-10 md:w-14 md:h-14 lg:w-18 lg:h-18 text-purple-600/10" />
+          </motion.div>
+
+          {/* Icon 8: Globe - Lower Mid */}
+          <motion.div
+            animate={{ 
+              y: [0, -23, 0], 
+              rotate: [0, -11, 11, 0],
+              scale: [1, 1.06, 1] 
+            }}
+            transition={{ 
+              duration: 8.5, 
+              repeat: Infinity, 
+              ease: "easeInOut",
+              delay: 3.5 
+            }}
+            className="absolute bottom-1/3 left-1/4"
+            style={{
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              willChange: 'transform'
+            }}
+          >
+            <Globe className="w-11 h-11 md:w-16 md:h-16 lg:w-22 lg:h-22 text-yellow-500/10" />
+          </motion.div>
+        </div>
+
+        {/* Content Layer - Higher z-index */}
+        <div className="container mx-auto px-6 sm:px-8 lg:px-8 max-w-6xl relative z-10">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
@@ -322,6 +548,102 @@ const DevisPage = () => {
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
               Remplissez vos informations et sélectionnez le service souhaité
             </p>
+          </motion.div>
+
+          {/* Progress Path */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-12 max-w-3xl mx-auto"
+          >
+            <div className="relative flex items-center justify-between">
+              {/* Step 1 */}
+              <div className="flex flex-col items-center flex-1">
+                <motion.div
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    boxShadow: [
+                      "0 0 0 0 rgba(75, 44, 127, 0.4)",
+                      "0 0 0 10px rgba(75, 44, 127, 0)",
+                      "0 0 0 0 rgba(75, 44, 127, 0)"
+                    ]
+                  }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center font-bold text-lg shadow-lg z-10"
+                >
+                  1
+                </motion.div>
+                <p className="text-xs font-semibold text-primary mt-2 text-center">Infos<br/>Personnelles</p>
+              </div>
+
+              {/* Animated Path Line */}
+              <div className="flex-1 relative h-1 mx-2">
+                <div className="absolute inset-0 bg-slate-200 rounded-full" />
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: activeService ? 1 : 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="absolute inset-0 bg-accent rounded-full origin-left"
+                />
+                {/* Flying Plane */}
+                <AnimatePresence>
+                  {activeService && (
+                    <motion.div
+                      initial={{ x: "-100%", opacity: 0 }}
+                      animate={{ x: "100%", opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="absolute top-1/2 -translate-y-1/2"
+                    >
+                      <Plane size={20} className="text-primary" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Step 2 */}
+              <div className="flex flex-col items-center flex-1">
+                <motion.div
+                  animate={{
+                    scale: activeService ? [1, 1.1, 1] : 1,
+                    backgroundColor: activeService ? "#4B2C7F" : "#E2E8F0",
+                    color: activeService ? "#FFFFFF" : "#64748B",
+                  }}
+                  transition={{ duration: 0.5 }}
+                  className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shadow-lg z-10"
+                >
+                  2
+                </motion.div>
+                <p className="text-xs font-semibold text-slate-600 mt-2 text-center">Choix du<br/>Service</p>
+              </div>
+
+              {/* Animated Path Line */}
+              <div className="flex-1 relative h-1 mx-2">
+                <div className="absolute inset-0 bg-slate-200 rounded-full" />
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: activeService && (activeService !== "visa" || visaType) ? 1 : 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="absolute inset-0 bg-accent rounded-full origin-left"
+                />
+              </div>
+
+              {/* Step 3 */}
+              <div className="flex flex-col items-center flex-1">
+                <motion.div
+                  animate={{
+                    scale: activeService && (activeService !== "visa" || visaType) ? [1, 1.1, 1] : 1,
+                    backgroundColor: activeService && (activeService !== "visa" || visaType) ? "#4B2C7F" : "#E2E8F0",
+                    color: activeService && (activeService !== "visa" || visaType) ? "#FFFFFF" : "#64748B",
+                  }}
+                  transition={{ duration: 0.5 }}
+                  className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shadow-lg z-10"
+                >
+                  3
+                </motion.div>
+                <p className="text-xs font-semibold text-slate-600 mt-2 text-center">Finalisation</p>
+              </div>
+            </div>
           </motion.div>
 
           {/* Personal Info Section */}
@@ -430,12 +752,36 @@ const DevisPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
                     onClick={() => handleServiceClick(service.id)}
+                    onHoverStart={() => setHoveredCard(service.id)}
+                    onHoverEnd={() => setHoveredCard(null)}
+                    whileHover={{
+                      scale: 1.05,
+                      rotateY: 5,
+                      rotateX: 5,
+                      z: 50,
+                    }}
+                    whileTap={{ scale: 0.95 }}
+                    style={{
+                      transformStyle: "preserve-3d",
+                      perspective: 1000,
+                    }}
                     className={`group relative bg-white rounded-2xl p-6 border-2 transition-all duration-300 text-left ${
                       isActive
-                        ? "border-primary shadow-2xl scale-105"
+                        ? "border-primary shadow-2xl"
                         : "border-slate-200 hover:border-accent hover:shadow-xl"
                     }`}
                   >
+                    {/* Glow effect on hover */}
+                    {hoveredCard === service.id && !isActive && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl blur-xl"
+                        style={{ zIndex: -1 }}
+                      />
+                    )}
+
                     <div className={`w-14 h-14 mb-4 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center transition-transform ${
                       isActive ? "scale-110" : "group-hover:scale-110"
                     }`}>
@@ -449,17 +795,22 @@ const DevisPage = () => {
 
                     {isActive && (
                       <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute top-4 right-4 w-6 h-6 bg-accent rounded-full flex items-center justify-center"
+                        initial={{ scale: 0, rotate: -180 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                        className="absolute top-4 right-4 w-8 h-8 bg-accent rounded-full flex items-center justify-center shadow-lg"
                       >
-                        <CheckCircle size={16} className="text-primary" />
+                        <CheckCircle size={20} className="text-primary" />
                       </motion.div>
                     )}
 
-                    <div className={`absolute bottom-0 left-0 right-0 h-1 bg-accent transform transition-transform rounded-b-2xl ${
-                      isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                    }`} />
+                    <motion.div
+                      className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-accent to-primary rounded-b-2xl`}
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: isActive ? 1 : 0 }}
+                      whileHover={{ scaleX: 1 }}
+                      transition={{ duration: 0.3 }}
+                    />
                   </motion.button>
                 );
               })}
@@ -1219,13 +1570,31 @@ const DevisPage = () => {
                     transition={{ duration: 0.4, ease: "easeOut" }}
                     className="text-center"
                   >
-                    <button
+                    <motion.button
                       type="submit"
-                      className="group inline-flex items-center justify-center gap-3 bg-accent text-primary px-10 py-5 rounded-2xl font-bold text-lg hover:bg-accent/90 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+                      whileHover={{
+                        scale: 1.05,
+                        boxShadow: "0 20px 40px rgba(75, 44, 127, 0.3)",
+                      }}
+                      whileTap={{ scale: 0.95 }}
+                      className="group relative inline-flex items-center justify-center gap-3 bg-gradient-to-r from-accent via-yellow-400 to-accent text-primary px-12 py-6 rounded-2xl font-bold text-lg hover:shadow-2xl transition-all duration-300 overflow-hidden"
                     >
-                      Envoyer ma demande
-                      <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
-                    </button>
+                      {/* Animated background shimmer */}
+                      <motion.div
+                        animate={{
+                          x: ["-100%", "200%"],
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                        className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+                      />
+                      
+                      <span className="relative z-10">Envoyer ma demande</span>
+                      <ArrowRight size={24} className="relative z-10 group-hover:translate-x-2 transition-transform" />
+                    </motion.button>
                   </motion.div>
                 )}
               </motion.form>
