@@ -116,6 +116,12 @@ export interface SejourRequest {
 
 export type ServiceRequest = BilletterieRequest | VisaRequest | HotelRequest | SejourRequest;
 
+// Admin Credentials Interface
+export interface AdminCredentials {
+  email: string;
+  password: string;
+}
+
 interface DataContextType {
   voyages: Voyage[];
   messages: Message[];
@@ -124,6 +130,7 @@ interface DataContextType {
   eVisaCountries: EVisaCountry[];
   dossierCountries: DossierCountry[];
   requests: ServiceRequest[];
+  adminCredentials: AdminCredentials;
   addVoyage: (voyage: Voyage) => void;
   updateVoyage: (id: string, voyage: Partial<Voyage>) => void;
   deleteVoyage: (id: string) => void;
@@ -143,12 +150,25 @@ interface DataContextType {
   markRequestAsRead: (id: string) => void;
   toggleRequestStatus: (id: string) => void;
   deleteRequest: (id: string) => void;
+  validateAdminLogin: (email: string, password: string) => boolean;
+  updateAdminPassword: (currentPassword: string, newPassword: string) => boolean;
+  verifyAdminRecoveryCode: (code: string) => boolean;
+  resetAdminPassword: (newPassword: string) => boolean;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 // Data version for schema migration
 const DATA_VERSION = "2.0"; // Updated for new request system
+
+// Default Admin Credentials
+const DEFAULT_ADMIN_CREDENTIALS: AdminCredentials = {
+  email: "Houseoftravel@admin.dz",
+  password: "admin1234"
+};
+
+// Admin Recovery Code (Static Secret)
+const ADMIN_RECOVERY_CODE = "123456";
 
 // ============================================================================
 // GOLD MASTER PRESENTATION DATA (VOLATILE - RESETS ON REFRESH)
@@ -339,6 +359,11 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [sejourServices, setSejourServices] = useState<SejourService[]>(defaultServices);
   const [dossierCountries, setDossierCountries] = useState<DossierCountry[]>(defaultDossierCountries);
+  
+  // ============================================================================
+  // ADMIN CREDENTIALS STATE (PERSISTENT)
+  // ============================================================================
+  const [adminCredentials, setAdminCredentials] = useState<AdminCredentials>(DEFAULT_ADMIN_CREDENTIALS);
 
   // ============================================================================
   // LOAD PERSISTENT DATA FROM LOCALSTORAGE (ON MOUNT)
@@ -403,12 +428,33 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
           console.error("Error parsing Dossier countries from localStorage", e);
         }
       }
+      
+      // Load Admin Credentials (persistent)
+      const savedAdminCredentials = localStorage.getItem("adminCredentials");
+      if (savedAdminCredentials) {
+        try {
+          const parsed = JSON.parse(savedAdminCredentials);
+          if (parsed.email && parsed.password) {
+            setAdminCredentials(parsed);
+          } else {
+            // Initialize with defaults if invalid
+            localStorage.setItem("adminCredentials", JSON.stringify(DEFAULT_ADMIN_CREDENTIALS));
+          }
+        } catch (e) {
+          console.error("Error parsing admin credentials from localStorage", e);
+          localStorage.setItem("adminCredentials", JSON.stringify(DEFAULT_ADMIN_CREDENTIALS));
+        }
+      } else {
+        // Initialize admin credentials if not present
+        localStorage.setItem("adminCredentials", JSON.stringify(DEFAULT_ADMIN_CREDENTIALS));
+      }
     } catch (error) {
       console.error("Critical error loading data from localStorage:", error);
       // Reset to defaults on critical error
       setMessages(mockMessages);
       setSejourServices(defaultServices);
       setDossierCountries(defaultDossierCountries);
+      setAdminCredentials(DEFAULT_ADMIN_CREDENTIALS);
     }
   }, []);
 
@@ -429,6 +475,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     localStorage.setItem("dossierCountries", JSON.stringify(dossierCountries));
   }, [dossierCountries]);
+  
+  useEffect(() => {
+    localStorage.setItem("adminCredentials", JSON.stringify(adminCredentials));
+  }, [adminCredentials]);
 
   const addVoyage = (voyage: Voyage) => {
     setVoyages((prev) => [voyage, ...prev]);
@@ -548,6 +598,53 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     setRequests((prev) => prev.filter((r) => r.id !== id));
   };
 
+  // ============================================================================
+  // ADMIN AUTHENTICATION FUNCTIONS
+  // ============================================================================
+  
+  const validateAdminLogin = (email: string, password: string): boolean => {
+    return email === adminCredentials.email && password === adminCredentials.password;
+  };
+
+  const updateAdminPassword = (currentPassword: string, newPassword: string): boolean => {
+    // Validate current password
+    if (currentPassword !== adminCredentials.password) {
+      return false;
+    }
+    
+    // Validate new password
+    if (!newPassword || newPassword.trim().length < 6) {
+      return false;
+    }
+    
+    // Update password
+    setAdminCredentials({
+      ...adminCredentials,
+      password: newPassword
+    });
+    
+    return true;
+  };
+
+  const verifyAdminRecoveryCode = (code: string): boolean => {
+    return code === ADMIN_RECOVERY_CODE;
+  };
+
+  const resetAdminPassword = (newPassword: string): boolean => {
+    // Validate new password
+    if (!newPassword || newPassword.trim().length < 6) {
+      return false;
+    }
+    
+    // Update password without requiring current password
+    setAdminCredentials({
+      ...adminCredentials,
+      password: newPassword
+    });
+    
+    return true;
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -558,6 +655,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         eVisaCountries,
         dossierCountries,
         requests,
+        adminCredentials,
         addVoyage,
         updateVoyage,
         deleteVoyage,
@@ -577,6 +675,10 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
         markRequestAsRead,
         toggleRequestStatus,
         deleteRequest,
+        validateAdminLogin,
+        updateAdminPassword,
+        verifyAdminRecoveryCode,
+        resetAdminPassword,
       }}
     >
       {children}

@@ -17,7 +17,7 @@ import { formatPrice } from "@/lib/formatters";
 import { generateMessagePDF } from "@/lib/pdfGenerator";
 import InboxView from "@/components/admin/inbox/InboxView";
 
-type Tab = "inbox" | "users" | "voyages" | "sejour-config" | "visa-config";
+type Tab = "inbox" | "users" | "voyages" | "sejour-config" | "visa-config" | "settings";
 
 const AdminPage = () => {
   const navigate = useNavigate();
@@ -51,6 +51,7 @@ const AdminPage = () => {
   const [tab, setTab] = useState<Tab>("inbox");
   const [showAddForm, setShowAddForm] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Safety check for critical data
   if (!voyages || !messages || !requests) {
@@ -74,6 +75,7 @@ const AdminPage = () => {
   const handleLogout = () => {
     // Nettoyage de la session
     setLoggedIn(false);
+    setShowLogoutConfirm(false);
     // Redirection vers la page d'accueil
     navigate("/");
     // Notification de confirmation
@@ -90,6 +92,7 @@ const AdminPage = () => {
     { id: "voyages", label: "Gérer les Voyages Organisés", icon: Plane },
     { id: "sejour-config", label: "Configuration Séjour", icon: Settings2 },
     { id: "visa-config", label: "Configuration Visa", icon: FileText },
+    { id: "settings", label: "Paramètres Admin", icon: Settings2 },
   ];
 
   const handleTabChange = (newTab: Tab) => {
@@ -158,13 +161,65 @@ const AdminPage = () => {
         </nav>
         <div className="p-3 border-t border-accent/20">
           <button
-            onClick={handleLogout}
+            onClick={() => setShowLogoutConfirm(true)}
             className="w-full flex items-center gap-3 px-3 py-3 lg:py-2.5 rounded-lg text-sm text-foreground hover:text-primary hover:bg-muted/50 transition-colors touch-manipulation"
           >
             <LogOut size={20} className="lg:w-[18px] lg:h-[18px]" /> Déconnexion
           </button>
         </div>
       </aside>
+
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/50"
+              onClick={() => setShowLogoutConfirm(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 max-w-md w-full">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <LogOut size={24} className="text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2">
+                      Confirmer la déconnexion
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      Êtes-vous sûr de vouloir vous déconnecter ?
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col-reverse sm:flex-row gap-3">
+                  <button
+                    onClick={() => setShowLogoutConfirm(false)}
+                    className="flex-1 px-4 py-2.5 border-2 border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  >
+                    Se déconnecter
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Content */}
       <div className="flex-1 overflow-auto pt-16 lg:pt-0">
@@ -197,6 +252,8 @@ const AdminPage = () => {
               updateDossierCountry={updateDossierCountry}
               deleteDossierCountry={deleteDossierCountry}
             />
+          ) : tab === "settings" ? (
+            <AdminSettingsView />
           ) : (
             <VoyagesView
               voyages={voyages}
@@ -216,12 +273,109 @@ const AdminPage = () => {
 /* Login */
 const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
   const navigate = useNavigate();
+  const { validateAdminLogin, verifyAdminRecoveryCode, resetAdminPassword } = useData();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  // Forgot Password Modal States
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState<"code" | "password">("code");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [recoveryErrors, setRecoveryErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email && password) onLogin();
+    
+    if (!email || !password) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+    
+    setLoading(true);
+    
+    // Simulate network delay for better UX
+    setTimeout(() => {
+      if (validateAdminLogin(email, password)) {
+        toast.success("Connexion réussie !");
+        onLogin();
+      } else {
+        toast.error("Identifiants incorrects");
+        setPassword(""); // Clear password on error
+      }
+      setLoading(false);
+    }, 800);
+  };
+
+  const handleVerifyRecoveryCode = () => {
+    setRecoveryErrors({});
+    
+    if (!recoveryCode.trim()) {
+      setRecoveryErrors({ code: "Veuillez entrer le code de sécurité" });
+      return;
+    }
+    
+    setRecoveryLoading(true);
+    
+    setTimeout(() => {
+      if (verifyAdminRecoveryCode(recoveryCode)) {
+        toast.success("Code vérifié avec succès !");
+        setRecoveryStep("password");
+        setRecoveryCode("");
+      } else {
+        toast.error("Code de sécurité incorrect");
+        setRecoveryErrors({ code: "Code incorrect" });
+      }
+      setRecoveryLoading(false);
+    }, 800);
+  };
+
+  const handleResetPassword = () => {
+    setRecoveryErrors({});
+    
+    const newErrors: Record<string, string> = {};
+    
+    if (!newPassword.trim()) {
+      newErrors.newPassword = "Le nouveau mot de passe est requis";
+    } else if (newPassword.length < 6) {
+      newErrors.newPassword = "Le mot de passe doit contenir au moins 6 caractères";
+    }
+    
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = "Veuillez confirmer le mot de passe";
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = "Les mots de passe ne correspondent pas";
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setRecoveryErrors(newErrors);
+      return;
+    }
+    
+    setRecoveryLoading(true);
+    
+    setTimeout(() => {
+      if (resetAdminPassword(newPassword)) {
+        toast.success("Mot de passe réinitialisé avec succès ✅");
+        closeForgotPasswordModal();
+      } else {
+        toast.error("Erreur lors de la réinitialisation");
+      }
+      setRecoveryLoading(false);
+    }, 800);
+  };
+
+  const closeForgotPasswordModal = () => {
+    setShowForgotPassword(false);
+    setRecoveryStep("code");
+    setRecoveryCode("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setRecoveryErrors({});
+    setRecoveryLoading(false);
   };
 
   return (
@@ -254,11 +408,426 @@ const AdminLogin = ({ onLogin }: { onLogin: () => void }) => {
             <label className="block text-sm font-medium mb-1.5">Mot de passe</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="form-input" placeholder="••••••••" required />
           </div>
-          <button type="submit" className="w-full bg-primary text-primary-foreground px-6 py-3.5 rounded-lg font-semibold hover:scale-[1.01] active:scale-[0.99] transition-all touch-manipulation">
-            Se connecter
+          <button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground px-6 py-3.5 rounded-lg font-semibold hover:scale-[1.01] active:scale-[0.99] transition-all touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            {loading ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Connexion...
+              </>
+            ) : (
+              "Se connecter"
+            )}
           </button>
+          
+          {/* Forgot Password Link */}
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-sm text-slate-500 hover:text-primary transition-colors underline"
+            >
+              Mot de passe oublié ?
+            </button>
+          </div>
         </form>
       </motion.div>
+
+      {/* Forgot Password Modal */}
+      <AnimatePresence>
+        {showForgotPassword && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/50"
+              onClick={closeForgotPasswordModal}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 max-w-md w-full">
+                {/* Phase 1: Code Entry */}
+                {recoveryStep === "code" && (
+                  <>
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Settings2 size={24} className="text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">
+                          Récupération du compte
+                        </h3>
+                        <p className="text-sm text-slate-600">
+                          Entrez le code de sécurité pour réinitialiser votre mot de passe
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                          Code de sécurité (6 chiffres) *
+                        </label>
+                        <input
+                          type="text"
+                          value={recoveryCode}
+                          onChange={(e) => {
+                            setRecoveryCode(e.target.value);
+                            if (recoveryErrors.code) {
+                              setRecoveryErrors({ ...recoveryErrors, code: "" });
+                            }
+                          }}
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-center text-lg tracking-widest font-mono ${
+                            recoveryErrors.code ? "border-red-500" : "border-slate-300"
+                          }`}
+                          placeholder="000000"
+                          maxLength={6}
+                        />
+                        {recoveryErrors.code && (
+                          <p className="text-red-500 text-xs mt-1">{recoveryErrors.code}</p>
+                        )}
+                      </div>
+
+                      {/* Security Notice */}
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-xs text-yellow-800">
+                          <strong>Note:</strong> Contactez le service technique si vous n'avez pas le code
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                        <button
+                          onClick={closeForgotPasswordModal}
+                          className="flex-1 px-4 py-2.5 border-2 border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                        >
+                          Annuler
+                        </button>
+                        <button
+                          onClick={handleVerifyRecoveryCode}
+                          disabled={recoveryLoading}
+                          className="flex-1 px-4 py-2.5 bg-primary text-white rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {recoveryLoading ? (
+                            <>
+                              <Loader2 size={18} className="animate-spin" />
+                              Vérification...
+                            </>
+                          ) : (
+                            "Vérifier le code"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Phase 2: New Password */}
+                {recoveryStep === "password" && (
+                  <>
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle size={24} className="text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-slate-900 mb-2">
+                          Nouveau mot de passe
+                        </h3>
+                        <p className="text-sm text-slate-600">
+                          Choisissez un nouveau mot de passe sécurisé
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                          Nouveau mot de passe *
+                        </label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => {
+                            setNewPassword(e.target.value);
+                            if (recoveryErrors.newPassword) {
+                              setRecoveryErrors({ ...recoveryErrors, newPassword: "" });
+                            }
+                          }}
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                            recoveryErrors.newPassword ? "border-red-500" : "border-slate-300"
+                          }`}
+                          placeholder="Minimum 6 caractères"
+                        />
+                        {recoveryErrors.newPassword && (
+                          <p className="text-red-500 text-xs mt-1">{recoveryErrors.newPassword}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                          Confirmer le mot de passe *
+                        </label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => {
+                            setConfirmPassword(e.target.value);
+                            if (recoveryErrors.confirmPassword) {
+                              setRecoveryErrors({ ...recoveryErrors, confirmPassword: "" });
+                            }
+                          }}
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                            recoveryErrors.confirmPassword ? "border-red-500" : "border-slate-300"
+                          }`}
+                          placeholder="Confirmez votre mot de passe"
+                        />
+                        {recoveryErrors.confirmPassword && (
+                          <p className="text-red-500 text-xs mt-1">{recoveryErrors.confirmPassword}</p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
+                        <button
+                          onClick={closeForgotPasswordModal}
+                          className="flex-1 px-4 py-2.5 border-2 border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                        >
+                          Annuler
+                        </button>
+                        <button
+                          onClick={handleResetPassword}
+                          disabled={recoveryLoading}
+                          className="flex-1 px-4 py-2.5 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {recoveryLoading ? (
+                            <>
+                              <Loader2 size={18} className="animate-spin" />
+                              Réinitialisation...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle size={18} />
+                              Réinitialiser
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+/* Admin Settings View - Password Change */
+const AdminSettingsView = () => {
+  const { adminCredentials, updateAdminPassword } = useData();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!currentPassword.trim()) {
+      newErrors.currentPassword = "Le mot de passe actuel est requis";
+    }
+
+    if (!newPassword.trim()) {
+      newErrors.newPassword = "Le nouveau mot de passe est requis";
+    } else if (newPassword.length < 6) {
+      newErrors.newPassword = "Le mot de passe doit contenir au moins 6 caractères";
+    }
+
+    if (!confirmPassword.trim()) {
+      newErrors.confirmPassword = "Veuillez confirmer le nouveau mot de passe";
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = "Les mots de passe ne correspondent pas";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+
+    setTimeout(() => {
+      const success = updateAdminPassword(currentPassword, newPassword);
+
+      if (success) {
+        toast.success("Mot de passe modifié avec succès !");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setErrors({});
+        
+        // Show success message
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 3000);
+      } else {
+        toast.error("Le mot de passe actuel est incorrect");
+        setErrors({ currentPassword: "Mot de passe incorrect" });
+      }
+
+      setLoading(false);
+    }, 800);
+  };
+
+  return (
+    <div>
+      <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Paramètres Admin</h2>
+
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 max-w-2xl">
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-primary mb-2">Modifier le mot de passe</h3>
+          <p className="text-sm text-slate-600">
+            Changez votre mot de passe administrateur pour sécuriser votre compte
+          </p>
+        </div>
+
+        {/* Current Credentials Display */}
+        <div className="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+          <p className="text-sm font-medium text-slate-700 mb-2">Email administrateur actuel:</p>
+          <p className="text-sm text-slate-900 font-mono">{adminCredentials.email}</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Success Message */}
+          <AnimatePresence>
+            {showSuccess && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="p-4 bg-green-50 border-2 border-green-500 rounded-lg flex items-center gap-3"
+              >
+                <CheckCircle size={24} className="text-green-600 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-green-800">Modifié avec succès ✅</p>
+                  <p className="text-xs text-green-700">Votre mot de passe a été mis à jour</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Ancien mot de passe *
+            </label>
+            <input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => {
+                setCurrentPassword(e.target.value);
+                if (errors.currentPassword) {
+                  setErrors({ ...errors, currentPassword: "" });
+                }
+              }}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                errors.currentPassword ? "border-red-500" : "border-slate-300"
+              }`}
+              placeholder="Entrez votre mot de passe actuel"
+            />
+            {errors.currentPassword && (
+              <p className="text-red-500 text-xs mt-1">{errors.currentPassword}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Nouveau mot de passe *
+            </label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => {
+                setNewPassword(e.target.value);
+                if (errors.newPassword) {
+                  setErrors({ ...errors, newPassword: "" });
+                }
+              }}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                errors.newPassword ? "border-red-500" : "border-slate-300"
+              }`}
+              placeholder="Minimum 6 caractères"
+            />
+            {errors.newPassword && (
+              <p className="text-red-500 text-xs mt-1">{errors.newPassword}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Confirmer le nouveau mot de passe *
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (errors.confirmPassword) {
+                  setErrors({ ...errors, confirmPassword: "" });
+                }
+              }}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                errors.confirmPassword ? "border-red-500" : "border-slate-300"
+              }`}
+              placeholder="Confirmez votre nouveau mot de passe"
+            />
+            {errors.confirmPassword && (
+              <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>
+            )}
+          </div>
+
+          <div className="pt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={18} />
+                  Enregistrer le nouveau mot de passe
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+
+        {/* Security Notice */}
+        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-xs text-yellow-800">
+            <strong>Note de sécurité:</strong> Après avoir changé votre mot de passe, vous devrez utiliser le nouveau mot de passe pour toutes les connexions futures.
+          </p>
+        </div>
+      </div>
     </div>
   );
 };
@@ -744,6 +1313,7 @@ const VoyagesView = ({
   const [editDaysMismatch, setEditDaysMismatch] = useState(false);
   
   const [saving, setSaving] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Helper function to add a new stage
   const addNewStage = () => {
@@ -880,7 +1450,8 @@ const VoyagesView = ({
 
   const handleDelete = (id: string) => {
     deleteVoyage(id);
-    toast.success("Voyage supprimé");
+    setDeleteConfirmId(null);
+    toast.success("Voyage supprimé avec succès");
   };
 
   const openEditModal = (voyage: Voyage) => {
@@ -1431,7 +2002,7 @@ const VoyagesView = ({
                 <Pencil size={16} />
               </button>
               <button 
-                onClick={() => handleDelete(v.id)} 
+                onClick={() => setDeleteConfirmId(v.id)} 
                 className="text-muted-foreground hover:text-destructive transition-colors p-2 touch-manipulation"
                 aria-label="Supprimer"
                 title="Supprimer"
@@ -1442,6 +2013,58 @@ const VoyagesView = ({
           </div>
         ))}
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmId && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/50"
+              onClick={() => setDeleteConfirmId(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 max-w-md w-full">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <Trash2 size={24} className="text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-2">
+                      Supprimer ce voyage ?
+                    </h3>
+                    <p className="text-sm text-slate-600">
+                      Êtes-vous sûr de vouloir supprimer ce voyage ? Cette action est irréversible.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col-reverse sm:flex-row gap-3">
+                  <button
+                    onClick={() => setDeleteConfirmId(null)}
+                    className="flex-1 px-4 py-2.5 border-2 border-slate-300 text-slate-700 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => handleDelete(deleteConfirmId)}
+                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors"
+                  >
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
