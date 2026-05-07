@@ -3,7 +3,7 @@ import { useData } from "@/contexts/DataContext";
 import { Voyage, Message, VoyageCategory, Stage, VoyageStatus } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plane, Inbox, Plus, LogOut, Eye, Trash2, X, CheckCircle, Loader2, Menu, Pencil, FileDown, ArrowLeft, Users,
+  Plane, Inbox, Plus, LogOut, Eye, Trash2, X, CheckCircle, Loader2, Menu, Pencil, FileDown, ArrowLeft, Users, Settings2, FileText,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -16,16 +16,55 @@ import { fr } from "date-fns/locale";
 import { formatPrice } from "@/lib/formatters";
 import { generateMessagePDF } from "@/lib/pdfGenerator";
 
-type Tab = "inbox" | "users" | "voyages";
+type Tab = "inbox" | "users" | "voyages" | "sejour-config" | "visa-config";
 
 const AdminPage = () => {
   const navigate = useNavigate();
-  const { voyages, messages, addVoyage, updateVoyage, deleteVoyage, markMessageAsRead } = useData();
+  const { 
+    voyages, 
+    messages, 
+    sejourDestinations, 
+    sejourServices,
+    eVisaCountries,
+    dossierCountries,
+    addVoyage, 
+    updateVoyage, 
+    deleteVoyage, 
+    markMessageAsRead,
+    addSejourDestination,
+    deleteSejourDestination,
+    addSejourService,
+    deleteSejourService,
+    addEVisaCountry,
+    deleteEVisaCountry,
+    addDossierCountry,
+    updateDossierCountry,
+    deleteDossierCountry
+  } = useData();
+  
   const [loggedIn, setLoggedIn] = useState(false);
   const [tab, setTab] = useState<Tab>("inbox");
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Safety check for critical data only
+  if (!voyages || !messages) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <Loader2 className="animate-spin h-8 w-8 text-primary mx-auto mb-4" />
+          <p className="text-slate-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Ensure arrays are defined with fallbacks
+  const safeSejourDestinations = sejourDestinations || [];
+  const safeSejourServices = sejourServices || [];
+  const safeEVisaCountries = eVisaCountries || [];
+  const safeDossierCountries = dossierCountries || [];
 
   const handleLogout = () => {
     // Nettoyage de la session
@@ -44,6 +83,8 @@ const AdminPage = () => {
     { id: "inbox", label: "Boîte de Réception", icon: Inbox, count: messages.filter((m) => !m.isRead).length },
     { id: "users", label: "Gérer les Comptes", icon: Users },
     { id: "voyages", label: "Gérer les Voyages Organisés", icon: Plane },
+    { id: "sejour-config", label: "Configuration Séjour", icon: Settings2 },
+    { id: "visa-config", label: "Configuration Visa", icon: FileText },
   ];
 
   const handleTabChange = (newTab: Tab) => {
@@ -132,6 +173,25 @@ const AdminPage = () => {
             />
           ) : tab === "users" ? (
             <UsersView />
+          ) : tab === "sejour-config" ? (
+            <SejourConfigView
+              destinations={safeSejourDestinations}
+              services={safeSejourServices}
+              addDestination={addSejourDestination}
+              deleteDestination={deleteSejourDestination}
+              addService={addSejourService}
+              deleteService={deleteSejourService}
+            />
+          ) : tab === "visa-config" ? (
+            <VisaConfigView
+              eVisaCountries={safeEVisaCountries}
+              dossierCountries={safeDossierCountries}
+              addEVisaCountry={addEVisaCountry}
+              deleteEVisaCountry={deleteEVisaCountry}
+              addDossierCountry={addDossierCountry}
+              updateDossierCountry={updateDossierCountry}
+              deleteDossierCountry={deleteDossierCountry}
+            />
           ) : (
             <VoyagesView
               voyages={voyages}
@@ -1690,6 +1750,472 @@ const VoyagesView = ({
           </div>
         ))}
       </div>
+    </div>
+  );
+};
+
+/* Séjour Configuration View */
+interface SejourConfigViewProps {
+  destinations: { id: string; name: string }[];
+  services: { id: string; label: string }[];
+  addDestination: (destination: { name: string }) => void;
+  deleteDestination: (id: string) => void;
+  addService: (service: { label: string }) => void;
+  deleteService: (id: string) => void;
+}
+
+const SejourConfigView = ({
+  destinations,
+  services,
+  addDestination,
+  deleteDestination,
+  addService,
+  deleteService,
+}: SejourConfigViewProps) => {
+  const [newDestName, setNewDestName] = useState("");
+  const [newServiceLabel, setNewServiceLabel] = useState("");
+
+  const handleAddDestination = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newDestName.trim()) {
+      addDestination({ name: newDestName.trim() });
+      setNewDestName("");
+      toast.success("Destination ajoutée avec succès");
+    }
+  };
+
+  const handleAddService = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newServiceLabel.trim()) {
+      addService({ label: newServiceLabel.trim() });
+      setNewServiceLabel("");
+      toast.success("Service ajouté avec succès");
+    }
+  };
+
+  const handleDeleteDestination = (id: string) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer cette destination ?")) {
+      deleteDestination(id);
+      toast.success("Destination supprimée");
+    }
+  };
+
+  const handleDeleteService = (id: string) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce service ?")) {
+      deleteService(id);
+      toast.success("Service supprimé");
+    }
+  };
+
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <div>
+        <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-6 text-primary">Configuration Séjour à la Carte</h2>
+        <p className="text-sm sm:text-base text-slate-600 mb-4 sm:mb-6">
+          Gérez les destinations et services disponibles pour les demandes de séjour personnalisé.
+        </p>
+      </div>
+
+      {/* Destinations Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6"
+      >
+        <h3 className="text-lg sm:text-xl font-bold text-primary mb-4 flex items-center gap-2">
+          <Settings2 size={20} />
+          Destinations
+        </h3>
+
+        {/* Add Destination Form */}
+        <form onSubmit={handleAddDestination} className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+            <input
+              type="text"
+              value={newDestName}
+              onChange={(e) => setNewDestName(e.target.value)}
+              placeholder="Ex: Bali, Indonésie"
+              className="flex-1 px-4 py-3 sm:py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base touch-manipulation"
+            />
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-6 py-3 sm:py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 font-medium touch-manipulation min-h-[48px]"
+            >
+              <Plus size={20} />
+              Ajouter
+            </button>
+          </div>
+        </form>
+
+        {/* Destinations List */}
+        <div className="space-y-2">
+          {destinations.length === 0 ? (
+            <p className="text-slate-500 text-center py-4 text-sm sm:text-base">Aucune destination configurée</p>
+          ) : (
+            destinations.map((dest) => (
+              <motion.div
+                key={dest.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center justify-between p-3 sm:p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-primary/50 transition-all"
+              >
+                <span className="text-slate-700 font-medium text-sm sm:text-base">{dest.name}</span>
+                <button
+                  onClick={() => handleDeleteDestination(dest.id)}
+                  className="text-slate-400 hover:text-red-500 transition-colors p-2 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  aria-label="Supprimer"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </motion.div>
+            ))
+          )}
+        </div>
+      </motion.div>
+
+      {/* Services Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6"
+      >
+        <h3 className="text-lg sm:text-xl font-bold text-primary mb-4 flex items-center gap-2">
+          <Settings2 size={20} />
+          Services Inclus
+        </h3>
+
+        {/* Add Service Form */}
+        <form onSubmit={handleAddService} className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
+            <input
+              type="text"
+              value={newServiceLabel}
+              onChange={(e) => setNewServiceLabel(e.target.value)}
+              placeholder="Ex: Billet d'avion"
+              className="flex-1 px-4 py-3 sm:py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base touch-manipulation"
+            />
+            <button
+              type="submit"
+              className="w-full sm:w-auto px-6 py-3 sm:py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 font-medium touch-manipulation min-h-[48px]"
+            >
+              <Plus size={20} />
+              Ajouter
+            </button>
+          </div>
+        </form>
+
+        {/* Services List */}
+        <div className="space-y-2">
+          {services.length === 0 ? (
+            <p className="text-slate-500 text-center py-4 text-sm sm:text-base">Aucun service configuré</p>
+          ) : (
+            services.map((service) => (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center justify-between p-3 sm:p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-primary/50 transition-all"
+              >
+                <span className="text-slate-700 font-medium text-sm sm:text-base">
+                  {service.label}
+                </span>
+                <button
+                  onClick={() => handleDeleteService(service.id)}
+                  className="text-slate-400 hover:text-red-500 transition-colors p-2 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  aria-label="Supprimer"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </motion.div>
+            ))
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+/* Visa Configuration View */
+interface VisaConfigViewProps {
+  eVisaCountries: { id: string; name: string }[];
+  dossierCountries: { id: string; name: string; documents: string[] }[];
+  addEVisaCountry: (country: { name: string }) => void;
+  deleteEVisaCountry: (id: string) => void;
+  addDossierCountry: (country: { name: string; documents: string[] }) => void;
+  updateDossierCountry: (id: string, country: Partial<{ name: string; documents: string[] }>) => void;
+  deleteDossierCountry: (id: string) => void;
+}
+
+const VisaConfigView = ({
+  eVisaCountries,
+  dossierCountries,
+  addEVisaCountry,
+  deleteEVisaCountry,
+  addDossierCountry,
+  updateDossierCountry,
+  deleteDossierCountry,
+}: VisaConfigViewProps) => {
+  const [activeTab, setActiveTab] = useState<"evisa" | "dossier">("evisa");
+  const [newEVisaCountry, setNewEVisaCountry] = useState("");
+  const [newDossierCountry, setNewDossierCountry] = useState("");
+  const [newDocument, setNewDocument] = useState("");
+  const [editingCountry, setEditingCountry] = useState<string | null>(null);
+
+  // Safety checks
+  const safeEVisaCountries = eVisaCountries || [];
+  const safeDossierCountries = dossierCountries || [];
+
+  const handleAddEVisaCountry = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newEVisaCountry.trim()) {
+      addEVisaCountry({ name: newEVisaCountry.trim() });
+      setNewEVisaCountry("");
+      toast.success("Pays ajouté avec succès");
+    }
+  };
+
+  const handleDeleteEVisaCountry = (id: string) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce pays ?")) {
+      deleteEVisaCountry(id);
+      toast.success("Pays supprimé");
+    }
+  };
+
+  const handleAddDossierCountry = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newDossierCountry.trim()) {
+      addDossierCountry({ name: newDossierCountry.trim(), documents: [] });
+      setNewDossierCountry("");
+      toast.success("Pays ajouté avec succès");
+    }
+  };
+
+  const handleAddDocument = (countryId: string) => {
+    if (newDocument.trim()) {
+      const country = safeDossierCountries.find(c => c.id === countryId);
+      if (country) {
+        updateDossierCountry(countryId, {
+          documents: [...(country.documents || []), newDocument.trim()]
+        });
+        setNewDocument("");
+        toast.success("Document ajouté");
+      }
+    }
+  };
+
+  const handleDeleteDocument = (countryId: string, docIndex: number) => {
+    const country = safeDossierCountries.find(c => c.id === countryId);
+    if (country && country.documents) {
+      const newDocs = country.documents.filter((_, index) => index !== docIndex);
+      updateDossierCountry(countryId, { documents: newDocs });
+      toast.success("Document supprimé");
+    }
+  };
+
+  const handleDeleteDossierCountry = (id: string) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce pays et tous ses documents ?")) {
+      deleteDossierCountry(id);
+      setEditingCountry(null);
+      toast.success("Pays supprimé");
+    }
+  };
+
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      <div>
+        <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-6 text-primary">Configuration Assistant Visa</h2>
+        <p className="text-sm sm:text-base text-slate-600 mb-4 sm:mb-6">
+          Gérez les pays disponibles pour les demandes de visa E-visa et Visa Dossier.
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 border-b-2 border-slate-200">
+        <button
+          onClick={() => setActiveTab("evisa")}
+          className={`px-4 sm:px-6 py-3 font-semibold transition-all ${
+            activeTab === "evisa"
+              ? "text-primary border-b-2 border-primary -mb-0.5"
+              : "text-slate-600 hover:text-primary"
+          }`}
+        >
+          E-visa
+        </button>
+        <button
+          onClick={() => setActiveTab("dossier")}
+          className={`px-4 sm:px-6 py-3 font-semibold transition-all ${
+            activeTab === "dossier"
+              ? "text-primary border-b-2 border-primary -mb-0.5"
+              : "text-slate-600 hover:text-primary"
+          }`}
+        >
+          Visa Dossier
+        </button>
+      </div>
+
+      {/* E-visa Tab */}
+      {activeTab === "evisa" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6"
+        >
+          <h3 className="text-lg sm:text-xl font-bold text-primary mb-4">Pays E-visa</h3>
+
+          {/* Add Country Form */}
+          <form onSubmit={handleAddEVisaCountry} className="mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={newEVisaCountry}
+                onChange={(e) => setNewEVisaCountry(e.target.value)}
+                placeholder="Ex: Turquie"
+                className="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base touch-manipulation"
+              />
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 font-medium touch-manipulation min-h-[48px]"
+              >
+                <Plus size={20} />
+                Ajouter
+              </button>
+            </div>
+          </form>
+
+          {/* Countries List */}
+          <div className="space-y-2">
+            {safeEVisaCountries.length === 0 ? (
+              <p className="text-slate-500 text-center py-4 text-sm sm:text-base">Aucun pays configuré</p>
+            ) : (
+              safeEVisaCountries.map((country) => (
+                <motion.div
+                  key={country.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-primary/50 transition-all"
+                >
+                  <span className="text-slate-700 font-medium text-sm sm:text-base">{country.name}</span>
+                  <button
+                    onClick={() => handleDeleteEVisaCountry(country.id)}
+                    className="text-slate-400 hover:text-red-500 transition-colors p-2 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    aria-label="Supprimer"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Visa Dossier Tab */}
+      {activeTab === "dossier" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          {/* Add Country Form */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6">
+            <h3 className="text-lg sm:text-xl font-bold text-primary mb-4">Ajouter un pays</h3>
+            <form onSubmit={handleAddDossierCountry}>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={newDossierCountry}
+                  onChange={(e) => setNewDossierCountry(e.target.value)}
+                  placeholder="Ex: France"
+                  className="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base touch-manipulation"
+                />
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 font-medium touch-manipulation min-h-[48px]"
+                >
+                  <Plus size={20} />
+                  Ajouter
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Countries List with Documents */}
+          <div className="space-y-4">
+            {safeDossierCountries.length === 0 ? (
+              <p className="text-slate-500 text-center py-4 text-sm sm:text-base">Aucun pays configuré</p>
+            ) : (
+              safeDossierCountries.map((country) => (
+                <motion.div
+                  key={country.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-bold text-primary">{country.name}</h4>
+                    <button
+                      onClick={() => handleDeleteDossierCountry(country.id)}
+                      className="text-slate-400 hover:text-red-500 transition-colors p-2 touch-manipulation"
+                      aria-label="Supprimer le pays"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+
+                  {/* Add Document Form */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-primary mb-2">Ajouter un document requis</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editingCountry === country.id ? newDocument : ""}
+                        onChange={(e) => {
+                          setEditingCountry(country.id);
+                          setNewDocument(e.target.value);
+                        }}
+                        placeholder="Ex: Passeport valide"
+                        className="flex-1 px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddDocument(country.id)}
+                        className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all text-sm font-medium"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Documents List */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-slate-700">Documents requis ({(country.documents || []).length})</p>
+                    {(!country.documents || country.documents.length === 0) ? (
+                      <p className="text-slate-500 text-sm italic">Aucun document ajouté</p>
+                    ) : (
+                      country.documents.map((doc, index) => (
+                        <div
+                          key={index}
+                          className="flex items-start justify-between p-2 bg-slate-50 rounded-lg border border-slate-200"
+                        >
+                          <span className="text-sm text-slate-700 flex-1">{doc}</span>
+                          <button
+                            onClick={() => handleDeleteDocument(country.id, index)}
+                            className="text-slate-400 hover:text-red-500 transition-colors p-1 ml-2"
+                            aria-label="Supprimer"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 };

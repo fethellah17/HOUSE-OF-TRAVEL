@@ -2,9 +2,10 @@ import Layout from "@/components/Layout";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Hotel, Map, FileText, Zap, Briefcase, ArrowRight, CheckCircle, Upload, Pencil, MapPin } from "lucide-react";
+import { Users, Hotel, Map, FileText, Zap, Briefcase, ArrowRight, CheckCircle, Upload, Pencil, MapPin, Calendar, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import LoginModal from "@/components/LoginModal";
+import { useData } from "@/contexts/DataContext";
 
 type ServiceType = "hotel" | "sejour" | "visa" | null;
 type VisaType = "e-visa" | "dossier" | null;
@@ -55,6 +56,14 @@ const DESTINATIONS = [
 
 const DevisPage = () => {
   const navigate = useNavigate();
+  const { sejourDestinations, sejourServices, eVisaCountries, dossierCountries } = useData();
+  
+  // Safety checks for data
+  const safeSejourDestinations = sejourDestinations || [];
+  const safeSejourServices = sejourServices || [];
+  const safeEVisaCountries = eVisaCountries || [];
+  const safeDossierCountries = dossierCountries || [];
+  
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [activeService, setActiveService] = useState<ServiceType>(null);
@@ -97,50 +106,22 @@ const DevisPage = () => {
   // Séjour à la Carte Form
   const [sejourForm, setSejourForm] = useState({
     destination: "",
+    typeVoyage: "",
     budget: "",
-    duree: "",
+    dateDepart: "",
+    dateRetour: "",
+    servicesInclus: [] as string[],
     preferences: ""
   });
 
   // Visa Form
   const [visaForm, setVisaForm] = useState({
     pays: "",
-    duree: "",
-    passportFile: null as File | null,
-    photoFile: null as File | null
+    dateVoyage: "",
+    passeportValide: false,
+    situationPro: "",
+    message: ""
   });
-
-  const countries = [
-    "France", "Canada", "USA", "Royaume-Uni", "Allemagne", 
-    "Espagne", "Italie", "Turquie", "Émirats Arabes Unis", "Arabie Saoudite"
-  ];
-
-  const countryRequirements: Record<string, string[]> = {
-    "France": [
-      "Passeport valide (minimum 6 mois)",
-      "2 photos d'identité récentes",
-      "Justificatif de domicile",
-      "Attestation d'assurance voyage",
-      "Relevés bancaires (3 derniers mois)",
-      "Lettre d'invitation ou réservation d'hôtel"
-    ],
-    "Canada": [
-      "Passeport valide",
-      "Formulaire de demande complété",
-      "Photos biométriques",
-      "Preuve de fonds suffisants",
-      "Lettre d'invitation (si applicable)",
-      "Certificat de police"
-    ],
-    "USA": [
-      "Passeport valide",
-      "Formulaire DS-160",
-      "Photo format US",
-      "Preuve de liens avec le pays d'origine",
-      "Relevés bancaires",
-      "Lettre d'employeur"
-    ]
-  };
 
   // Load user data on mount
   useEffect(() => {
@@ -183,9 +164,20 @@ const DevisPage = () => {
     setFilteredCities([]);
   };
 
+  // Handle services checkbox toggle
+  const handleServiceToggle = (service: string) => {
+    setSejourForm(prev => ({
+      ...prev,
+      servicesInclus: prev.servicesInclus.includes(service)
+        ? prev.servicesInclus.filter(s => s !== service)
+        : [...prev.servicesInclus, service]
+    }));
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Hotel city dropdown
       if (
         cityDropdownRef.current &&
         !cityDropdownRef.current.contains(event.target as Node) &&
@@ -253,8 +245,8 @@ const DevisPage = () => {
       setActiveService(null);
       setVisaType(null);
       setHotelForm({ hotelPreference: "specific", hotelName: "", hotelCategory: "", city: "", dateArrivee: "", dateDepart: "", nombreChambres: "1", nombrePersonnes: "1", roomType: "", boardBasis: "", message: "" });
-      setSejourForm({ destination: "", budget: "", duree: "", preferences: "" });
-      setVisaForm({ pays: "", duree: "", passportFile: null, photoFile: null });
+      setSejourForm({ destination: "", typeVoyage: "", budget: "", dateDepart: "", dateRetour: "", servicesInclus: [], preferences: "" });
+      setVisaForm({ pays: "", dateVoyage: "", passeportValide: false, situationPro: "", message: "" });
     }, 2000);
   };
 
@@ -744,47 +736,147 @@ const DevisPage = () => {
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Destination - Select Dropdown */}
                       <div>
-                        <label className="block text-sm font-semibold text-primary mb-2">Destination souhaitée *</label>
-                        <input
-                          type="text"
+                        <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                          <MapPin size={16} />
+                          Destination souhaitée *
+                        </label>
+                        <select
                           value={sejourForm.destination}
                           onChange={(e) => setSejourForm({ ...sejourForm, destination: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
-                          placeholder="Ex: Bali, Indonésie"
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                          required
+                        >
+                          <option value="">Sélectionner une destination</option>
+                          {safeSejourDestinations.length === 0 ? (
+                            <option value="" disabled>Aucune destination disponible</option>
+                          ) : (
+                            safeSejourDestinations.map((dest) => (
+                              <option key={dest.id} value={dest.name}>
+                                {dest.name}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </div>
+
+                      {/* Type de voyage */}
+                      <div>
+                        <label className="block text-sm font-semibold text-primary mb-2">Type de voyage *</label>
+                        <select
+                          value={sejourForm.typeVoyage}
+                          onChange={(e) => setSejourForm({ ...sejourForm, typeVoyage: e.target.value })}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                          required
+                        >
+                          <option value="">Sélectionner</option>
+                          <option value="lune-de-miel">💑 Lune de miel</option>
+                          <option value="famille">👨‍👩‍👧‍👦 Famille</option>
+                          <option value="aventure">🏔️ Aventure & Exploration</option>
+                          <option value="business">💼 Business</option>
+                        </select>
+                      </div>
+
+                      {/* Budget estimé */}
+                      <div>
+                        <label className="block text-sm font-semibold text-primary mb-2">Budget estimé (DA)</label>
+                        <input
+                          type="text"
+                          value={sejourForm.budget}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '');
+                            setSejourForm({ ...sejourForm, budget: value });
+                          }}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                          placeholder="Ex: 400 000 DA"
+                        />
+                      </div>
+
+                      {/* Date de départ */}
+                      <div>
+                        <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                          <Calendar size={16} />
+                          Date de départ *
+                        </label>
+                        <input
+                          type="date"
+                          value={sejourForm.dateDepart}
+                          onChange={(e) => setSejourForm({ ...sejourForm, dateDepart: e.target.value })}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                           required
                         />
                       </div>
 
+                      {/* Date de retour */}
                       <div>
-                        <label className="block text-sm font-semibold text-primary mb-2">Budget estimé</label>
+                        <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                          <Calendar size={16} />
+                          Date de retour *
+                        </label>
                         <input
-                          type="text"
-                          value={sejourForm.budget}
-                          onChange={(e) => setSejourForm({ ...sejourForm, budget: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
-                          placeholder="Ex: 2000€ - 3000€"
+                          type="date"
+                          value={sejourForm.dateRetour}
+                          onChange={(e) => setSejourForm({ ...sejourForm, dateRetour: e.target.value })}
+                          min={sejourForm.dateDepart || undefined}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                          required
                         />
                       </div>
 
+                      {/* Services inclus - Checkboxes */}
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-primary mb-2">Durée du séjour</label>
-                        <input
-                          type="text"
-                          value={sejourForm.duree}
-                          onChange={(e) => setSejourForm({ ...sejourForm, duree: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
-                          placeholder="Ex: 7 jours / 6 nuits"
-                        />
+                        <label className="block text-sm font-semibold text-primary mb-3">Services inclus</label>
+                        {safeSejourServices.length === 0 ? (
+                          <p className="text-slate-500 text-sm italic">Aucun service disponible pour le moment</p>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {safeSejourServices.map((service) => (
+                              <motion.button
+                                key={service.id}
+                                type="button"
+                                onClick={() => handleServiceToggle(service.id)}
+                                className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
+                                  sejourForm.servicesInclus.includes(service.id)
+                                    ? "border-primary bg-primary/5"
+                                    : "border-slate-200 hover:border-primary/50"
+                                }`}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                  sejourForm.servicesInclus.includes(service.id)
+                                    ? "border-primary bg-primary"
+                                    : "border-slate-400"
+                                }`}>
+                                  {sejourForm.servicesInclus.includes(service.id) && (
+                                    <motion.div
+                                      initial={{ scale: 0 }}
+                                      animate={{ scale: 1 }}
+                                    >
+                                      <CheckCircle size={14} className="text-white" />
+                                    </motion.div>
+                                  )}
+                                </div>
+                                <span className={`text-sm font-medium ${
+                                  sejourForm.servicesInclus.includes(service.id) ? "text-primary" : "text-slate-700"
+                                }`}>
+                                  {service.label}
+                                </span>
+                              </motion.button>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
+                      {/* Préférences particulières */}
                       <div className="md:col-span-2">
                         <label className="block text-sm font-semibold text-primary mb-2">Préférences particulières</label>
                         <textarea
                           value={sejourForm.preferences}
                           onChange={(e) => setSejourForm({ ...sejourForm, preferences: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary min-h-[120px]"
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all min-h-[120px] resize-y"
                           placeholder="Activités souhaitées, type de repas, hébergement préféré..."
+                          maxLength={1000}
                         />
                       </div>
                     </div>
@@ -815,7 +907,7 @@ const DevisPage = () => {
                           <div className="flex items-center gap-3">
                             <Zap size={24} className={visaType === "e-visa" ? "text-accent" : "text-slate-600"} />
                             <div>
-                              <h4 className="font-bold text-primary">Visa Électronique</h4>
+                              <h4 className="font-bold text-primary">E-visa</h4>
                               <p className="text-sm text-slate-600">Processus digital simple</p>
                             </div>
                           </div>
@@ -841,74 +933,145 @@ const DevisPage = () => {
                       </div>
                     </div>
 
-                    {/* Visa Fields */}
-                    {visaType && (
+                    {/* E-visa Fields */}
+                    {visaType === "e-visa" && (
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="space-y-4"
                       >
+                        {/* WhatsApp Information Box */}
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="bg-gradient-to-r from-purple-50 to-yellow-50 border-2 border-primary/30 rounded-xl p-4 flex items-start gap-3"
+                        >
+                          <AlertCircle size={24} className="text-primary flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-primary leading-relaxed">
+                              Veuillez envoyer votre photo et une copie de votre passeport via WhatsApp en utilisant le bouton situé en haut de la page.
+                            </p>
+                          </div>
+                        </motion.div>
+
+                        {/* Pays de destination */}
                         <div>
                           <label className="block text-sm font-semibold text-primary mb-2">Pays de destination *</label>
                           <select
                             value={visaForm.pays}
                             onChange={(e) => setVisaForm({ ...visaForm, pays: e.target.value })}
-                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                             required
                           >
                             <option value="">Sélectionner un pays</option>
-                            {countries.map((country) => (
-                              <option key={country} value={country}>{country}</option>
-                            ))}
+                            {safeEVisaCountries.length === 0 ? (
+                              <option value="" disabled>Aucun pays disponible</option>
+                            ) : (
+                              safeEVisaCountries.map((country) => (
+                                <option key={country.id} value={country.name}>{country.name}</option>
+                              ))
+                            )}
                           </select>
                         </div>
 
-                        {visaType === "e-visa" && (
-                          <>
-                            <div>
-                              <label className="block text-sm font-semibold text-primary mb-2">Durée demandée</label>
+                        {/* Date de voyage prévue */}
+                        <div>
+                          <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                            <Calendar size={16} />
+                            Date de voyage prévue *
+                          </label>
+                          <input
+                            type="date"
+                            value={visaForm.dateVoyage}
+                            onChange={(e) => setVisaForm({ ...visaForm, dateVoyage: e.target.value })}
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            required
+                          />
+                        </div>
+
+                        {/* Validité du passeport */}
+                        <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
+                          <label className="flex items-start gap-3 cursor-pointer">
+                            <div className="relative flex items-center">
                               <input
-                                type="text"
-                                value={visaForm.duree}
-                                onChange={(e) => setVisaForm({ ...visaForm, duree: e.target.value })}
-                                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary"
-                                placeholder="Ex: 30 jours"
+                                type="checkbox"
+                                checked={visaForm.passeportValide}
+                                onChange={(e) => setVisaForm({ ...visaForm, passeportValide: e.target.checked })}
+                                className="w-5 h-5 rounded border-2 border-slate-400 text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                required
                               />
                             </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-semibold text-primary mb-2">Copie du passeport</label>
-                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-primary transition-colors cursor-pointer">
-                                  <Upload size={32} className="mx-auto text-slate-400 mb-2" />
-                                  <p className="text-sm text-slate-600">Cliquez pour télécharger</p>
-                                  <input
-                                    type="file"
-                                    accept="image/*,.pdf"
-                                    onChange={(e) => setVisaForm({ ...visaForm, passportFile: e.target.files?.[0] || null })}
-                                    className="hidden"
-                                  />
-                                </div>
-                              </div>
-
-                              <div>
-                                <label className="block text-sm font-semibold text-primary mb-2">Photo d'identité</label>
-                                <div className="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-primary transition-colors cursor-pointer">
-                                  <Upload size={32} className="mx-auto text-slate-400 mb-2" />
-                                  <p className="text-sm text-slate-600">Cliquez pour télécharger</p>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => setVisaForm({ ...visaForm, photoFile: e.target.files?.[0] || null })}
-                                    className="hidden"
-                                  />
-                                </div>
-                              </div>
+                            <div>
+                              <span className="text-sm font-semibold text-primary block">
+                                Validité du passeport *
+                              </span>
+                              <span className="text-sm text-slate-600 mt-1 block">
+                                Mon passeport est valide pour au moins 6 mois
+                              </span>
                             </div>
-                          </>
-                        )}
+                          </label>
+                        </div>
 
-                        {visaType === "dossier" && visaForm.pays && countryRequirements[visaForm.pays] && (
+                        {/* Message / Demandes particulières */}
+                        <div>
+                          <label className="block text-sm font-semibold text-primary mb-2">Message / Demandes particulières</label>
+                          <textarea
+                            value={visaForm.message}
+                            onChange={(e) => setVisaForm({ ...visaForm, message: e.target.value })}
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all min-h-[120px] resize-y"
+                            placeholder="Décrivez vos besoins spécifiques ou vos questions ici..."
+                            maxLength={1000}
+                          />
+                          <p className="text-xs text-slate-500 mt-1 text-right">
+                            {visaForm.message.length} / 1000 caractères
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Visa Dossier Fields */}
+                    {visaType === "dossier" && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-4"
+                      >
+                        {/* WhatsApp Information Box */}
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="bg-gradient-to-r from-purple-50 to-yellow-50 border-2 border-primary/30 rounded-xl p-4 flex items-start gap-3"
+                        >
+                          <AlertCircle size={24} className="text-primary flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-primary leading-relaxed">
+                              Veuillez envoyer votre photo et une copie de votre passeport via WhatsApp en utilisant le bouton situé en haut de la page.
+                            </p>
+                          </div>
+                        </motion.div>
+
+                        {/* Pays de destination */}
+                        <div>
+                          <label className="block text-sm font-semibold text-primary mb-2">Pays de destination *</label>
+                          <select
+                            value={visaForm.pays}
+                            onChange={(e) => setVisaForm({ ...visaForm, pays: e.target.value })}
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            required
+                          >
+                            <option value="">Sélectionner un pays</option>
+                            {safeDossierCountries.length === 0 ? (
+                              <option value="" disabled>Aucun pays disponible</option>
+                            ) : (
+                              safeDossierCountries.map((country) => (
+                                <option key={country.id} value={country.name}>{country.name}</option>
+                              ))
+                            )}
+                          </select>
+                        </div>
+
+                        {/* Document Requirements - Show when country is selected */}
+                        {visaForm.pays && safeDossierCountries.find(c => c.name === visaForm.pays) && (
                           <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -916,7 +1079,7 @@ const DevisPage = () => {
                           >
                             <h4 className="font-bold text-primary mb-4">Documents requis pour {visaForm.pays}</h4>
                             <ul className="space-y-2">
-                              {countryRequirements[visaForm.pays].map((req, index) => (
+                              {(safeDossierCountries.find(c => c.name === visaForm.pays)?.documents || []).map((req, index) => (
                                 <li key={index} className="flex items-start gap-2 text-sm text-slate-700">
                                   <CheckCircle size={16} className="text-accent mt-0.5 flex-shrink-0" />
                                   <span>{req}</span>
@@ -925,21 +1088,101 @@ const DevisPage = () => {
                             </ul>
                           </motion.div>
                         )}
+
+                        {/* Date de voyage prévue */}
+                        <div>
+                          <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                            <Calendar size={16} />
+                            Date de voyage prévue *
+                          </label>
+                          <input
+                            type="date"
+                            value={visaForm.dateVoyage}
+                            onChange={(e) => setVisaForm({ ...visaForm, dateVoyage: e.target.value })}
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            required
+                          />
+                        </div>
+
+                        {/* Situation professionnelle - Dossier Only */}
+                        <div>
+                          <label className="block text-sm font-semibold text-primary mb-2">Situation professionnelle *</label>
+                          <select
+                            value={visaForm.situationPro}
+                            onChange={(e) => setVisaForm({ ...visaForm, situationPro: e.target.value })}
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            required
+                          >
+                            <option value="">Sélectionner</option>
+                            <option value="salarie">Salarié</option>
+                            <option value="fonctionnaire">Fonctionnaire</option>
+                            <option value="retraite">Retraité</option>
+                            <option value="commercant">Commerçant/Libéral</option>
+                            <option value="etudiant">Étudiant</option>
+                            <option value="sans-profession">Sans profession</option>
+                          </select>
+                        </div>
+
+                        {/* Validité du passeport */}
+                        <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">
+                          <label className="flex items-start gap-3 cursor-pointer">
+                            <div className="relative flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={visaForm.passeportValide}
+                                onChange={(e) => setVisaForm({ ...visaForm, passeportValide: e.target.checked })}
+                                className="w-5 h-5 rounded border-2 border-slate-400 text-primary focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                                required
+                              />
+                            </div>
+                            <div>
+                              <span className="text-sm font-semibold text-primary block">
+                                Validité du passeport *
+                              </span>
+                              <span className="text-sm text-slate-600 mt-1 block">
+                                Mon passeport est valide pour au moins 6 mois
+                              </span>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Message / Demandes particulières */}
+                        <div>
+                          <label className="block text-sm font-semibold text-primary mb-2">Message / Demandes particulières</label>
+                          <textarea
+                            value={visaForm.message}
+                            onChange={(e) => setVisaForm({ ...visaForm, message: e.target.value })}
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all min-h-[120px] resize-y"
+                            placeholder="Décrivez vos besoins spécifiques ou vos questions ici..."
+                            maxLength={1000}
+                          />
+                          <p className="text-xs text-slate-500 mt-1 text-right">
+                            {visaForm.message.length} / 1000 caractères
+                          </p>
+                        </div>
                       </motion.div>
                     )}
                   </div>
                 )}
 
-                {/* Submit Button */}
-                <div className="text-center">
-                  <button
-                    type="submit"
-                    className="group inline-flex items-center justify-center gap-3 bg-accent text-primary px-10 py-5 rounded-2xl font-bold text-lg hover:bg-accent/90 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+                {/* Submit Button - Conditional for Visa Service */}
+                {(activeService !== "visa" || (activeService === "visa" && visaType)) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className="text-center"
                   >
-                    Envoyer ma demande
-                    <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
+                    <button
+                      type="submit"
+                      className="group inline-flex items-center justify-center gap-3 bg-accent text-primary px-10 py-5 rounded-2xl font-bold text-lg hover:bg-accent/90 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+                    >
+                      Envoyer ma demande
+                      <ArrowRight size={24} className="group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </motion.div>
+                )}
               </motion.form>
             )}
           </AnimatePresence>
