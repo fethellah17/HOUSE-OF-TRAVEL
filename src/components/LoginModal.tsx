@@ -20,23 +20,22 @@ interface User {
   createdAt: string;
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2 | 3 | 4;
 type View = "login" | "register" | "forgot-password" | "edit-profile";
-type ForgotPasswordStep = "phone" | "otp" | "new-password";
+type ForgotPasswordStep = "email" | "otp" | "new-password" | "success";
 
 const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: LoginModalProps) => {
   const [view, setView] = useState<View>("login");
   const [step, setStep] = useState<Step>(1);
-  const [forgotPasswordStep, setForgotPasswordStep] = useState<ForgotPasswordStep>("phone");
+  const [forgotPasswordStep, setForgotPasswordStep] = useState<ForgotPasswordStep>("email");
   const [loading, setLoading] = useState(false);
-  const [showOTP, setShowOTP] = useState(false);
   
   // Form data - Split fullName into nom and prenom
   const [nom, setNom] = useState("");
   const [prenom, setPrenom] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
+  const [emailOtp, setEmailOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   
@@ -45,7 +44,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
   const [loginPassword, setLoginPassword] = useState("");
   
   // Forgot password data
-  const [forgotPhone, setForgotPhone] = useState("");
+  const [forgotEmail, setForgotEmail] = useState("");
   const [forgotOtp, setForgotOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -59,22 +58,21 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
       setTimeout(() => {
         setView("login");
         setStep(1);
-        setForgotPasswordStep("phone");
+        setForgotPasswordStep("email");
         setNom("");
         setPrenom("");
         setEmail("");
         setPhone("");
-        setOtp("");
+        setEmailOtp("");
         setPassword("");
         setConfirmPassword("");
         setLoginEmail("");
         setLoginPassword("");
-        setForgotPhone("");
+        setForgotEmail("");
         setForgotOtp("");
         setNewPassword("");
         setConfirmNewPassword("");
         setErrors({});
-        setShowOTP(false);
       }, 300);
     }
   }, [isOpen]);
@@ -138,7 +136,41 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
     return Object.keys(newErrors).length === 0;
   };
 
+  const validateEditProfile = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!nom.trim()) {
+      newErrors.nom = "Le nom est requis";
+    }
+    
+    if (!prenom.trim()) {
+      newErrors.prenom = "Le prénom est requis";
+    }
+    
+    if (!phone.trim()) {
+      newErrors.phone = "Le numéro de téléphone est requis";
+    } else if (!/^[0-9]{10}$/.test(phone.replace(/\s/g, ""))) {
+      newErrors.phone = "Numéro invalide (10 chiffres requis)";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const validateStep2 = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!emailOtp.trim()) {
+      newErrors.emailOtp = "Le code de vérification est requis";
+    } else if (emailOtp.length !== 6) {
+      newErrors.emailOtp = "Le code doit contenir 6 chiffres";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep3 = () => {
     const newErrors: Record<string, string> = {};
     
     if (!phone.trim()) {
@@ -147,17 +179,11 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
       newErrors.phone = "Numéro invalide (10 chiffres requis)";
     }
     
-    if (showOTP && !otp.trim()) {
-      newErrors.otp = "Le code de vérification est requis";
-    } else if (showOTP && otp.length !== 6) {
-      newErrors.otp = "Le code doit contenir 6 chiffres";
-    }
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const validateStep3 = () => {
+  const validateStep4 = () => {
     const newErrors: Record<string, string> = {};
     
     if (!password.trim()) {
@@ -225,13 +251,13 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
   };
 
   // Forgot Password Handlers
-  const handleForgotPasswordPhone = () => {
+  const handleForgotPasswordEmail = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!forgotPhone.trim()) {
-      newErrors.forgotPhone = "Le numéro de téléphone est requis";
-    } else if (!/^[0-9]{10}$/.test(forgotPhone.replace(/\s/g, ""))) {
-      newErrors.forgotPhone = "Numéro invalide (10 chiffres requis)";
+    if (!forgotEmail.trim()) {
+      newErrors.forgotEmail = "L'email est requis";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail)) {
+      newErrors.forgotEmail = "Email invalide";
     }
     
     setErrors(newErrors);
@@ -239,19 +265,19 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
       
+      // Frontend simulation: Check if email exists
       setTimeout(() => {
-        // Check if phone exists
         const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-        const user = existingUsers.find((u: any) => u.phone === forgotPhone);
+        const user = existingUsers.find((u: any) => u.email === forgotEmail);
         
         if (user) {
           setLoading(false);
           setForgotPasswordStep("otp");
-          toast.success(`Code envoyé par SMS au ${forgotPhone}`);
+          toast.success("Code de vérification envoyé à votre Gmail");
         } else {
           setLoading(false);
-          toast.error("Aucun compte associé à ce numéro");
-          setErrors({ forgotPhone: "Numéro non trouvé" });
+          toast.error("Aucun compte associé à cet email");
+          setErrors({ forgotEmail: "Email non trouvé" });
         }
       }, 1000);
     }
@@ -271,8 +297,8 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
       
+      // SUPABASE: supabase.auth.verifyOtp({ email, token: forgotOtp, type: 'recovery' })
       setTimeout(() => {
-        // Simulate OTP verification
         setLoading(false);
         setForgotPasswordStep("new-password");
         toast.success("Code vérifié avec succès !");
@@ -300,28 +326,45 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
       
+      // SUPABASE: supabase.auth.updateUser({ password: newPassword })
       setTimeout(() => {
         // Update password in localStorage
         const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-        const userIndex = existingUsers.findIndex((u: any) => u.phone === forgotPhone);
+        const userIndex = existingUsers.findIndex((u: any) => u.email === forgotEmail);
         
         if (userIndex !== -1) {
           existingUsers[userIndex].password = newPassword;
           localStorage.setItem("users", JSON.stringify(existingUsers));
           
+          // AUTO-LOGIN: Set currentUser immediately
+          const updatedUser = existingUsers[userIndex];
+          localStorage.setItem("currentUser", JSON.stringify({
+            id: updatedUser.id,
+            nom: updatedUser.nom,
+            prenom: updatedUser.prenom,
+            fullName: updatedUser.fullName,
+            email: updatedUser.email,
+            phone: updatedUser.phone,
+            createdAt: updatedUser.createdAt,
+            dateInsc: updatedUser.dateInsc,
+          }));
+          
           setLoading(false);
-          toast.success("Mot de passe réinitialisé avec succès !");
+          setForgotPasswordStep("success");
+          toast.success("Mot de passe mis à jour. Bienvenue dans votre espace !");
           
-          // Reset forgot password fields
-          setForgotPhone("");
-          setForgotOtp("");
-          setNewPassword("");
-          setConfirmNewPassword("");
-          setForgotPasswordStep("phone");
+          // Dispatch event for immediate data sync
+          window.dispatchEvent(new Event("userLoggedIn"));
           
-          // Return to login view
+          // Call onLoginSuccess if provided
+          if (onLoginSuccess) {
+            onLoginSuccess(updatedUser);
+          }
+          
+          // Close modal and redirect to home
           setTimeout(() => {
-            setView("login");
+            onClose();
+            window.location.href = "/";
           }, 1500);
         }
       }, 1000);
@@ -329,7 +372,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
   };
 
   const handleUpdateProfile = () => {
-    if (validateStep1()) {
+    if (validateEditProfile()) {
       setLoading(true);
       
       setTimeout(() => {
@@ -339,14 +382,14 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
           try {
             const currentUser = JSON.parse(currentUserStr);
             
-            // Update user data
+            // Update user data (email is NOT updated - read-only)
             const updatedUser = {
               ...currentUser,
               nom,
               prenom,
               fullName: `${prenom} ${nom}`,
-              email,
               phone,
+              // email remains unchanged
             };
             
             // Update in localStorage
@@ -361,8 +404,8 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                 nom,
                 prenom,
                 fullName: `${prenom} ${nom}`,
-                email,
                 phone,
+                // email remains unchanged
               };
               localStorage.setItem("users", JSON.stringify(existingUsers));
             }
@@ -393,7 +436,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
   const handleGoogleLogin = () => {
     setLoading(true);
     
-    // Simulate Google OAuth
+    // SUPABASE PLACEHOLDER: Replace with supabase.auth.signInWithOAuth({ provider: 'google' })
     setTimeout(() => {
       const mockUser = {
         id: `user-${Date.now()}`,
@@ -401,7 +444,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
         prenom: "Utilisateur",
         fullName: "Utilisateur Google",
         email: "user@gmail.com",
-        phone: "0600000000",
+        phone: "",
         password: "",
         createdAt: new Date().toISOString(),
         dateInsc: new Date().toLocaleDateString("fr-FR"),
@@ -441,32 +484,52 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
 
   const handleStep1Next = () => {
     if (validateStep1()) {
-      setStep(2);
+      // Check for duplicate email before proceeding
+      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      const emailExists = existingUsers.some((u: any) => u.email.toLowerCase() === email.toLowerCase());
+      
+      if (emailExists) {
+        setErrors({ email: "Cet e-mail est déjà utilisé. Vous avez déjà créé un compte avec cet e-mail." });
+        toast.error("Cet e-mail est déjà utilisé");
+        return;
+      }
+      
+      setLoading(true);
+      
+      // SUPABASE PLACEHOLDER: Replace with supabase.auth.signUp({ email, password: 'temp' })
+      // This will trigger email OTP
+      setTimeout(() => {
+        setLoading(false);
+        setStep(2);
+        toast.success("Code de vérification envoyé à votre email !");
+      }, 1000);
     }
   };
 
   const handleStep2Verify = () => {
-    if (!showOTP) {
-      if (validateStep2()) {
-        setLoading(true);
-        // Simulate sending OTP
-        setTimeout(() => {
-          setLoading(false);
-          setShowOTP(true);
-          toast.success("Code de vérification envoyé !");
-        }, 1000);
-      }
-    } else {
-      if (validateStep2()) {
+    if (validateStep2()) {
+      setLoading(true);
+      
+      // SUPABASE PLACEHOLDER: Replace with supabase.auth.verifyOtp({ email, token: emailOtp, type: 'signup' })
+      setTimeout(() => {
+        setLoading(false);
         setStep(3);
-      }
+        toast.success("Email vérifié avec succès !");
+      }, 1000);
     }
   };
 
-  const handleStep3Complete = () => {
+  const handleStep3Next = () => {
     if (validateStep3()) {
+      setStep(4);
+    }
+  };
+
+  const handleStep4Complete = () => {
+    if (validateStep4()) {
       setLoading(true);
       
+      // SUPABASE PLACEHOLDER: Replace with supabase.auth.updateUser({ password, data: { nom, prenom, phone } })
       setTimeout(() => {
         const newUser = {
           id: `user-${Date.now()}`,
@@ -474,11 +537,14 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
           prenom: prenom,
           fullName: `${prenom} ${nom}`,
           email,
-          phone,
+          phone: phone, // Required field
           password,
           createdAt: new Date().toISOString(),
           dateInsc: new Date().toLocaleDateString("fr-FR"),
         };
+        
+        // Console log for debugging
+        console.log("Registration Complete - User Data:", newUser);
         
         // Save to localStorage with separate nom/prenom
         const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
@@ -492,7 +558,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
           prenom: prenom,
           fullName: newUser.fullName,
           email,
-          phone,
+          phone: phone,
           createdAt: newUser.createdAt,
           dateInsc: newUser.dateInsc,
         };
@@ -555,7 +621,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
             {/* Step Indicator - Only show in register view */}
             {view === "register" && (
               <div className="flex items-center gap-2 mt-6 max-w-xs mx-auto">
-                {[1, 2, 3].map((s) => (
+                {[1, 2, 3, 4].map((s) => (
                   <div
                     key={s}
                     className={`h-2 flex-1 rounded-full transition-all duration-300 ${
@@ -569,11 +635,11 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
             {/* Step Indicator - Forgot Password */}
             {view === "forgot-password" && (
               <div className="flex items-center gap-2 mt-6 max-w-xs mx-auto">
-                {["phone", "otp", "new-password"].map((s, index) => (
+                {["email", "otp", "new-password", "success"].map((s, index) => (
                   <div
                     key={s}
                     className={`h-2 flex-1 rounded-full transition-all duration-300 ${
-                      ["phone", "otp", "new-password"].indexOf(forgotPasswordStep) >= index ? "bg-primary" : "bg-gray-300 dark:bg-slate-700"
+                      ["email", "otp", "new-password", "success"].indexOf(forgotPasswordStep) >= index ? "bg-primary" : "bg-gray-300 dark:bg-slate-700"
                     }`}
                   />
                 ))}
@@ -681,43 +747,43 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                   transition={{ duration: 0.3 }}
                   className="space-y-6"
                 >
-                  {/* Step A: Phone Input */}
-                  {forgotPasswordStep === "phone" && (
+                  {/* Step 1: Email Input */}
+                  {forgotPasswordStep === "email" && (
                     <div className="space-y-4">
                       <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                        Entrez le numéro de téléphone associé à votre compte
+                        Entrez l'email associé à votre compte
                       </p>
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                          Numéro de Téléphone *
+                          Email *
                         </label>
                         <input
-                          type="tel"
-                          value={forgotPhone}
-                          onChange={(e) => setForgotPhone(e.target.value)}
+                          type="email"
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
                           className={`w-full px-4 py-3 md:py-3 min-h-[48px] text-base border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
-                            errors.forgotPhone ? "border-red-500" : "border-gray-300 dark:border-slate-600"
+                            errors.forgotEmail ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                           }`}
-                          placeholder="Ex: 0600000000"
+                          placeholder="Ex: ahmed@example.com"
                         />
-                        {errors.forgotPhone && (
-                          <p className="text-red-500 text-xs mt-1">{errors.forgotPhone}</p>
+                        {errors.forgotEmail && (
+                          <p className="text-red-500 text-xs mt-1">{errors.forgotEmail}</p>
                         )}
                       </div>
 
                       <button
-                        onClick={handleForgotPasswordPhone}
+                        onClick={handleForgotPasswordEmail}
                         disabled={loading}
                         className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 md:py-4 min-h-[48px] px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
                       >
                         {loading ? (
                           <>
                             <Loader2 size={18} className="animate-spin" />
-                            Envoi...
+                            Vérification...
                           </>
                         ) : (
-                          "Envoyer le code"
+                          "Vérifier le compte"
                         )}
                       </button>
 
@@ -732,11 +798,11 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                     </div>
                   )}
 
-                  {/* Step B: OTP Verification */}
+                  {/* Step 2: OTP Verification */}
                   {forgotPasswordStep === "otp" && (
                     <div className="space-y-4">
                       <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                        Un code de vérification a été envoyé au {forgotPhone}
+                        Entrez le code à 6 chiffres envoyé à votre Gmail
                       </p>
                       
                       <div>
@@ -757,7 +823,8 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                           <p className="text-red-500 text-xs mt-1">{errors.forgotOtp}</p>
                         )}
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                          Entrez le code à 6 chiffres
+                          {/* SUPABASE: supabase.auth.verifyOtp({ email, token: forgotOtp, type: 'recovery' }) */}
+                          Vérifiez votre boîte de réception Gmail
                         </p>
                       </div>
 
@@ -772,13 +839,22 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                             Vérification...
                           </>
                         ) : (
-                          "Vérifier"
+                          "Vérifier le code"
                         )}
                       </button>
+
+                      <div className="text-center">
+                        <button
+                          onClick={() => setForgotPasswordStep("email")}
+                          className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+                        >
+                          ← Retour
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  {/* Step C: New Password */}
+                  {/* Step 3: New Password */}
                   {forgotPasswordStep === "new-password" && (
                     <div className="space-y-4">
                       <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
@@ -793,7 +869,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                           type="password"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
-                          className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                          className={`w-full px-4 py-3 md:py-3 min-h-[48px] text-base border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
                             errors.newPassword ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                           }`}
                           placeholder="Minimum 6 caractères"
@@ -811,7 +887,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                           type="password"
                           value={confirmNewPassword}
                           onChange={(e) => setConfirmNewPassword(e.target.value)}
-                          className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
+                          className={`w-full px-4 py-3 md:py-3 min-h-[48px] text-base border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
                             errors.confirmNewPassword ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                           }`}
                           placeholder="Confirmez votre mot de passe"
@@ -824,17 +900,48 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                       <button
                         onClick={handleResetPassword}
                         disabled={loading}
-                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-3 md:py-4 min-h-[48px] px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
                       >
                         {loading ? (
                           <>
                             <Loader2 size={18} className="animate-spin" />
-                            Réinitialisation...
+                            Mise à jour...
                           </>
                         ) : (
-                          "Réinitialiser le mot de passe"
+                          "Mettre à jour"
                         )}
                       </button>
+
+                      <div className="text-center">
+                        <button
+                          onClick={() => setForgotPasswordStep("otp")}
+                          className="text-sm text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
+                        >
+                          ← Retour
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 4: Success & Auto-Login */}
+                  {forgotPasswordStep === "success" && (
+                    <div className="space-y-6">
+                      <div className="text-center py-8">
+                        <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
+                          <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                          Mot de passe mis à jour !
+                        </h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 max-w-sm mx-auto">
+                          Votre mot de passe a été mis à jour avec succès. Vous allez être redirigé vers votre espace client...
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-2 text-primary">
+                        <Loader2 size={20} className="animate-spin" />
+                        <span className="text-sm font-medium">Connexion en cours...</span>
+                      </div>
                     </div>
                   )}
                 </motion.div>
@@ -891,20 +998,18 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                      Email *
+                      Email
                     </label>
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
-                        errors.email ? "border-red-500" : "border-gray-300 dark:border-slate-600"
-                      }`}
+                      disabled
+                      className="w-full px-4 py-3 border rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-slate-600 cursor-not-allowed transition-all"
                       placeholder="Ex: ahmed@example.com"
                     />
-                    {errors.email && (
-                      <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-                    )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      L'adresse email ne peut pas être modifiée
+                    </p>
                   </div>
 
                   <div>
@@ -959,42 +1064,6 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  {/* Google Sign In Button */}
-                  <button
-                    onClick={handleGoogleLogin}
-                    disabled={loading}
-                    className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 hover:border-[#2C5F2D] dark:hover:border-[#D4AF37] text-gray-700 dark:text-gray-200 font-semibold py-4 px-4 rounded-xl transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mb-6"
-                  >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-              Continuer avec Google
-            </button>
-
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300 dark:border-slate-700"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white dark:bg-slate-900 text-gray-500 dark:text-gray-400">ou</span>
-              </div>
-            </div>
-
             {/* Step Content */}
             <AnimatePresence mode="wait">
               {step === 1 && (
@@ -1091,55 +1160,31 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                    Entrez le code à 6 chiffres envoyé par Gmail
+                  </p>
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                      Numéro de Téléphone *
+                      Code de Vérification *
                     </label>
                     <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
-                        errors.phone ? "border-red-500" : "border-gray-300 dark:border-slate-600"
+                      type="text"
+                      value={emailOtp}
+                      onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all text-center text-2xl tracking-widest font-semibold ${
+                        errors.emailOtp ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                       }`}
-                      placeholder="Ex: 0600000000"
-                      disabled={showOTP}
+                      placeholder="000000"
+                      maxLength={6}
                     />
-                    {errors.phone && (
-                      <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                    {errors.emailOtp && (
+                      <p className="text-red-500 text-xs mt-1">{errors.emailOtp}</p>
                     )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                      Vérifiez votre boîte de réception Gmail
+                    </p>
                   </div>
-
-                  <AnimatePresence>
-                    {showOTP && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                      >
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                          Code de Vérification *
-                        </label>
-                        <input
-                          type="text"
-                          value={otp}
-                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                          className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all text-center text-2xl tracking-widest font-semibold ${
-                            errors.otp ? "border-red-500" : "border-gray-300 dark:border-slate-600"
-                          }`}
-                          placeholder="000000"
-                          maxLength={6}
-                        />
-                        {errors.otp && (
-                          <p className="text-red-500 text-xs mt-1">{errors.otp}</p>
-                        )}
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                          Entrez le code à 6 chiffres envoyé par SMS
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
                   <div className="flex flex-col-reverse md:flex-row gap-3 mt-6">
                     <button
@@ -1156,15 +1201,13 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                       {loading ? (
                         <>
                           <Loader2 size={18} className="animate-spin" />
-                          Envoi...
+                          Vérification...
                         </>
-                      ) : showOTP ? (
+                      ) : (
                         <>
                           Vérifier
                           <CheckCircle size={18} />
                         </>
-                      ) : (
-                        "Vérifier"
                       )}
                     </button>
                   </div>
@@ -1180,6 +1223,63 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                    Informations de contact
+                  </p>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      Numéro de Téléphone *
+                    </label>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
+                        errors.phone ? "border-red-500" : "border-gray-300 dark:border-slate-600"
+                      }`}
+                      placeholder="Ex: 0600000000"
+                    />
+                    {errors.phone && (
+                      <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                    )}
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Entrez un numéro de téléphone valide (10 chiffres)
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col-reverse md:flex-row gap-3 mt-6">
+                    <button
+                      onClick={() => setStep(2)}
+                      className="w-full md:w-auto bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-bold py-4 px-4 rounded-lg transition-all duration-200 touch-manipulation"
+                    >
+                      Retour
+                    </button>
+                    <button
+                      onClick={handleStep3Next}
+                      disabled={loading}
+                      className="w-full md:flex-1 bg-[#2C5F2D] hover:bg-[#234d24] text-white font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
+                    >
+                      Suivant
+                      <ArrowRight size={18} />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+              {step === 4 && (
+                <motion.div
+                  key="step4"
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -20, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                    Sécurisez votre compte avec un mot de passe
+                  </p>
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                       Mot de Passe *
@@ -1218,17 +1318,13 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
 
                   <div className="flex flex-col-reverse md:flex-row gap-3 mt-6">
                     <button
-                      onClick={() => {
-                        setStep(2);
-                        setShowOTP(false);
-                        setOtp("");
-                      }}
+                      onClick={() => setStep(3)}
                       className="w-full md:w-auto bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-bold py-4 px-4 rounded-lg transition-all duration-200 touch-manipulation"
                     >
                       Retour
                     </button>
                     <button
-                      onClick={handleStep3Complete}
+                      onClick={handleStep4Complete}
                       disabled={loading}
                       className="w-full md:flex-1 bg-[#2C5F2D] hover:bg-[#234d24] text-white font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
                     >

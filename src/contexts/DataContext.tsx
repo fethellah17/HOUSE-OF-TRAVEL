@@ -178,6 +178,41 @@ const ADMIN_RECOVERY_CODE = "123456";
 // these hardcoded "Gold Master" values.
 // ============================================================================
 
+// GOLD MASTER: Static Demo Users (Gérer les Comptes)
+// These 3 accounts are for demonstration only and reset on page refresh
+const GOLD_MASTER_USERS = [
+  {
+    id: "demo-user-001",
+    nom: "Fethellah",
+    prenom: "Hadj",
+    fullName: "Hadj Fethellah",
+    email: "hadj.fethellah@email.dz",
+    phone: "+213 555 111 222",
+    createdAt: "2026-04-15T10:00:00.000Z",
+    dateInsc: "15/04/2026",
+  },
+  {
+    id: "demo-user-002",
+    nom: "Benali",
+    prenom: "Sarah",
+    fullName: "Sarah Benali",
+    email: "sarah.benali@email.dz",
+    phone: "+213 666 333 444",
+    createdAt: "2026-04-20T14:30:00.000Z",
+    dateInsc: "20/04/2026",
+  },
+  {
+    id: "demo-user-003",
+    nom: "Mansouri",
+    prenom: "Karim",
+    fullName: "Karim Mansouri",
+    email: "user@gmail.com",
+    phone: "+213 777 555 666",
+    createdAt: "2026-04-25T09:15:00.000Z",
+    dateInsc: "25/04/2026",
+  },
+];
+
 // GOLD MASTER: Presentation Requests (Boîte de Réception)
 const GOLD_MASTER_REQUESTS: ServiceRequest[] = [
   {
@@ -351,6 +386,21 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [requests, setRequests] = useState<ServiceRequest[]>(GOLD_MASTER_REQUESTS);
   const [sejourDestinations, setSejourDestinations] = useState<SejourDestination[]>(GOLD_MASTER_DESTINATIONS);
   const [eVisaCountries, setEVisaCountries] = useState<EVisaCountry[]>(GOLD_MASTER_EVISA_COUNTRIES);
+
+  // ============================================================================
+  // USER ACCOUNTS INITIALIZATION (PERSISTENT WITH GOLD MASTER BASE)
+  // ============================================================================
+  // Initialize with Gold Master demo users if localStorage is empty
+  // Otherwise, keep existing data (Gold Master + new registrations)
+  useEffect(() => {
+    const existingUsers = localStorage.getItem("users");
+    
+    if (!existingUsers) {
+      // First time: Initialize with Gold Master demo users
+      localStorage.setItem("users", JSON.stringify(GOLD_MASTER_USERS));
+    }
+    // If users exist, keep them (Gold Master + any new registrations)
+  }, []);
 
   // ============================================================================
   // PERSISTENT STATE (LOCALSTORAGE ENABLED)
