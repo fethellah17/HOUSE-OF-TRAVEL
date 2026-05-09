@@ -1,7 +1,41 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Trash2, Mail, Phone, Calendar, Users, Plane, FileText, Hotel, Map, CheckCircle, XCircle } from "lucide-react";
+import { X, Trash2, Mail, Phone, Calendar, Users, Plane, FileText, Hotel, Map, CheckCircle, XCircle, MessageCircle } from "lucide-react";
 import type { ServiceRequest, BilletterieRequest, VisaRequest, HotelRequest, SejourRequest } from "@/contexts/DataContext";
 import { toast } from "sonner";
+
+interface RequestDetailModalProps {
+  request: ServiceRequest | null;
+  onClose: () => void;
+  onDelete: (id: string) => void;
+}
+
+// Helper function to format phone number for WhatsApp
+const formatPhoneForWhatsApp = (phone: string): string => {
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.startsWith('0')) {
+    return '213' + cleaned.substring(1);
+  }
+  if (cleaned.startsWith('213')) {
+    return cleaned;
+  }
+  return '213' + cleaned;
+};
+
+// Helper function to generate WhatsApp message
+const generateWhatsAppMessage = (request: ServiceRequest): string => {
+  const clientName = `${request.personalInfo.prenom} ${request.personalInfo.nom}`;
+  const serviceType = request.serviceType.charAt(0).toUpperCase() + request.serviceType.slice(1);
+  return encodeURIComponent(
+    `Bonjour ${clientName}, c'est House of Travel. Nous avons bien reçu votre demande pour ${serviceType}. Comment pouvons-nous vous aider ?`
+  );
+};
+
+// Helper function to open WhatsApp
+const openWhatsApp = (phone: string, message: string) => {
+  const formattedPhone = formatPhoneForWhatsApp(phone);
+  const url = `https://wa.me/${formattedPhone}?text=${message}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+};
 
 interface RequestDetailModalProps {
   request: ServiceRequest | null;
@@ -18,6 +52,11 @@ const RequestDetailModal = ({ request, onClose, onDelete }: RequestDetailModalPr
       onClose();
       toast.success("Demande supprimée");
     }
+  };
+
+  const handleWhatsApp = () => {
+    const message = generateWhatsAppMessage(request);
+    openWhatsApp(request.personalInfo.telephone, message);
   };
 
   return (
@@ -79,9 +118,19 @@ const RequestDetailModal = ({ request, onClose, onDelete }: RequestDetailModalPr
                 </div>
                 <div className="flex items-start gap-2">
                   <Phone size={16} className="text-slate-400 mt-0.5 flex-shrink-0" />
-                  <div>
+                  <div className="flex-1">
                     <p className="text-xs text-slate-500">Téléphone</p>
-                    <p className="text-sm font-medium text-slate-900">{request.personalInfo.telephone}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-slate-900">{request.personalInfo.telephone}</p>
+                      <button
+                        onClick={handleWhatsApp}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-xs font-medium"
+                        title="Contacter via WhatsApp"
+                      >
+                        <MessageCircle size={14} />
+                        WhatsApp
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
