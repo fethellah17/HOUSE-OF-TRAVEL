@@ -368,13 +368,13 @@ const Index = () => {
             </p>
           </motion.div>
 
-          {/* Service Cards - Mobile: 1 Column, Tablet: 2x2, Desktop: 4 Columns */}
+          {/* Service Cards - Mobile: 1 Column, Tablet: 2x2, Desktop: 5 Columns */}
           <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={staggerContainer}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8"
           >
             {/* Card 1: Visa Assistant */}
             <motion.div
@@ -466,6 +466,30 @@ const Index = () => {
               {/* Description */}
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                 Des circuits sur mesure pour explorer le monde en toute sérénité.
+              </p>
+
+              {/* Hover Indicator */}
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-accent transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 rounded-b-2xl" />
+            </motion.div>
+
+            {/* Card 5: Séjour à la carte - Static Display Only */}
+            <motion.div
+              variants={fadeInUp}
+              className="group relative bg-white rounded-2xl p-6 sm:p-8 border-2 border-slate-200 hover:border-accent hover:shadow-2xl transition-all duration-300 text-center"
+            >
+              {/* Icon - Centered */}
+              <div className="w-14 h-14 sm:w-16 sm:h-16 mb-5 sm:mb-6 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 mx-auto">
+                <Map size={28} className="sm:w-8 sm:h-8 text-primary" />
+              </div>
+
+              {/* Title */}
+              <h3 className="text-lg sm:text-xl font-bold text-primary mb-2 sm:mb-3">
+                Séjour à la carte
+              </h3>
+
+              {/* Description */}
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Personnalisez chaque détail de votre voyage selon vos envies et votre budget pour une expérience unique.
               </p>
 
               {/* Hover Indicator */}
