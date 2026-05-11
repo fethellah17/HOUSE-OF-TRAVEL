@@ -235,10 +235,7 @@ const AdminPage = () => {
             <UsersView />
           ) : tab === "sejour-config" ? (
             <SejourConfigView
-              destinations={safeSejourDestinations}
               services={safeSejourServices}
-              addDestination={addSejourDestination}
-              deleteDestination={deleteSejourDestination}
               addService={addSejourService}
               deleteService={deleteSejourService}
             />
@@ -2071,33 +2068,17 @@ const VoyagesView = ({
 
 /* Séjour Configuration View */
 interface SejourConfigViewProps {
-  destinations: { id: string; name: string }[];
   services: { id: string; label: string }[];
-  addDestination: (destination: { name: string }) => void;
-  deleteDestination: (id: string) => void;
   addService: (service: { label: string }) => void;
   deleteService: (id: string) => void;
 }
 
 const SejourConfigView = ({
-  destinations,
   services,
-  addDestination,
-  deleteDestination,
   addService,
   deleteService,
 }: SejourConfigViewProps) => {
-  const [newDestName, setNewDestName] = useState("");
   const [newServiceLabel, setNewServiceLabel] = useState("");
-
-  const handleAddDestination = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newDestName.trim()) {
-      addDestination({ name: newDestName.trim() });
-      setNewDestName("");
-      toast.success("Destination ajoutée avec succès");
-    }
-  };
 
   const handleAddService = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2105,13 +2086,6 @@ const SejourConfigView = ({
       addService({ label: newServiceLabel.trim() });
       setNewServiceLabel("");
       toast.success("Service ajouté avec succès");
-    }
-  };
-
-  const handleDeleteDestination = (id: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer cette destination ?")) {
-      deleteDestination(id);
-      toast.success("Destination supprimée");
     }
   };
 
@@ -2127,66 +2101,9 @@ const SejourConfigView = ({
       <div>
         <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-6 text-primary">Configuration Séjour à la Carte</h2>
         <p className="text-sm sm:text-base text-slate-600 mb-4 sm:mb-6">
-          Gérez les destinations et services disponibles pour les demandes de séjour personnalisé.
+          Gérez les services disponibles pour les demandes de séjour personnalisé.
         </p>
       </div>
-
-      {/* Destinations Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6"
-      >
-        <h3 className="text-lg sm:text-xl font-bold text-primary mb-4 flex items-center gap-2">
-          <Settings2 size={20} />
-          Destinations
-        </h3>
-
-        {/* Add Destination Form */}
-        <form onSubmit={handleAddDestination} className="mb-4 sm:mb-6">
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-2">
-            <input
-              type="text"
-              value={newDestName}
-              onChange={(e) => setNewDestName(e.target.value)}
-              placeholder="Ex: Bali, Indonésie"
-              className="flex-1 px-4 py-3 sm:py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base touch-manipulation"
-            />
-            <button
-              type="submit"
-              className="w-full sm:w-auto px-6 py-3 sm:py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 font-medium touch-manipulation min-h-[48px]"
-            >
-              <Plus size={20} />
-              Ajouter
-            </button>
-          </div>
-        </form>
-
-        {/* Destinations List */}
-        <div className="space-y-2">
-          {destinations.length === 0 ? (
-            <p className="text-slate-500 text-center py-4 text-sm sm:text-base">Aucune destination configurée</p>
-          ) : (
-            destinations.map((dest) => (
-              <motion.div
-                key={dest.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center justify-between p-3 sm:p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-primary/50 transition-all"
-              >
-                <span className="text-slate-700 font-medium text-sm sm:text-base">{dest.name}</span>
-                <button
-                  onClick={() => handleDeleteDestination(dest.id)}
-                  className="text-slate-400 hover:text-red-500 transition-colors p-2 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  aria-label="Supprimer"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </motion.div>
-            ))
-          )}
-        </div>
-      </motion.div>
 
       {/* Services Section */}
       <motion.div
