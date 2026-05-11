@@ -168,7 +168,6 @@ export const generateRequestPDF = (request: ServiceRequest) => {
     const req = request as SejourRequest;
     serviceData = [
       ["Destination", req.destination],
-      ["Type de voyage", req.typeVoyage],
       ["Budget estimé", `${req.budget} DA`],
       ["Date de départ", new Date(req.dateDepart).toLocaleDateString("fr-FR")],
       ["Date de retour", new Date(req.dateRetour).toLocaleDateString("fr-FR")],

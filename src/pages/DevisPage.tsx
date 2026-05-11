@@ -73,6 +73,8 @@ const DevisPage = () => {
   // Refs for autocomplete
   const cityInputRef = useRef<HTMLInputElement>(null);
   const cityDropdownRef = useRef<HTMLDivElement>(null);
+  const sejourDestInputRef = useRef<HTMLInputElement>(null);
+  const sejourDestDropdownRef = useRef<HTMLDivElement>(null);
   
   // Ref for form section (auto-scroll)
   const formRef = useRef<HTMLDivElement>(null);
@@ -80,6 +82,8 @@ const DevisPage = () => {
   // Autocomplete state
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [filteredCities, setFilteredCities] = useState<string[]>([]);
+  const [showSejourDestDropdown, setShowSejourDestDropdown] = useState(false);
+  const [filteredSejourDest, setFilteredSejourDest] = useState<string[]>([]);
   
   // 3D Tilt effect for service cards
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
@@ -142,7 +146,6 @@ const DevisPage = () => {
   // Séjour à la Carte Form
   const [sejourForm, setSejourForm] = useState({
     destination: "",
-    typeVoyage: "",
     budget: "",
     dateDepart: "",
     dateRetour: "",
@@ -222,6 +225,28 @@ const DevisPage = () => {
     setFilteredCities([]);
   };
 
+  // Handle séjour destination autocomplete
+  const handleSejourDestChange = (value: string) => {
+    setSejourForm({ ...sejourForm, destination: value });
+    
+    if (value.trim().length > 0) {
+      const filtered = DESTINATIONS.filter(dest =>
+        dest.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 10);
+      setFilteredSejourDest(filtered);
+      setShowSejourDestDropdown(filtered.length > 0);
+    } else {
+      setFilteredSejourDest([]);
+      setShowSejourDestDropdown(false);
+    }
+  };
+
+  const handleSejourDestSelect = (destination: string) => {
+    setSejourForm({ ...sejourForm, destination });
+    setShowSejourDestDropdown(false);
+    setFilteredSejourDest([]);
+  };
+
   // Handle services checkbox toggle
   const handleServiceToggle = (service: string) => {
     setSejourForm(prev => ({
@@ -243,6 +268,16 @@ const DevisPage = () => {
         !cityInputRef.current.contains(event.target as Node)
       ) {
         setShowCityDropdown(false);
+      }
+      
+      // Séjour destination dropdown
+      if (
+        sejourDestDropdownRef.current &&
+        !sejourDestDropdownRef.current.contains(event.target as Node) &&
+        sejourDestInputRef.current &&
+        !sejourDestInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSejourDestDropdown(false);
       }
     };
 
@@ -319,7 +354,6 @@ const DevisPage = () => {
           telephone: personalInfo.telephone,
         },
         destination: sejourForm.destination,
-        typeVoyage: sejourForm.typeVoyage,
         budget: sejourForm.budget,
         dateDepart: sejourForm.dateDepart,
         dateRetour: sejourForm.dateRetour,
@@ -351,7 +385,7 @@ const DevisPage = () => {
       setActiveService(null);
       setVisaType(null);
       setHotelForm({ hotelPreference: "specific", hotelName: "", hotelCategory: "", city: "", dateArrivee: "", dateDepart: "", nombreChambres: "1", nombrePersonnes: "1", roomType: "", boardBasis: "", message: "" });
-      setSejourForm({ destination: "", typeVoyage: "", budget: "", dateDepart: "", dateRetour: "", servicesInclus: [], preferences: "" });
+      setSejourForm({ destination: "", budget: "", dateDepart: "", dateRetour: "", servicesInclus: [], preferences: "" });
       setVisaForm({ pays: "", dateVoyage: "", passeportValide: false, situationPro: "", message: "" });
     }, 2000);
   };
@@ -1154,46 +1188,59 @@ const DevisPage = () => {
                     </h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Destination - Select Dropdown */}
-                      <div>
+                      {/* Destination - Autocomplete Search */}
+                      <div className="relative md:col-span-2">
                         <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
                           <MapPin size={16} />
-                          Destination souhaitée *
+                          Destination *
                         </label>
-                        <select
-                          value={sejourForm.destination}
-                          onChange={(e) => setSejourForm({ ...sejourForm, destination: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                          required
-                        >
-                          <option value="">Sélectionner une destination</option>
-                          {safeSejourDestinations.length === 0 ? (
-                            <option value="" disabled>Aucune destination disponible</option>
-                          ) : (
-                            safeSejourDestinations.map((dest) => (
-                              <option key={dest.id} value={dest.name}>
-                                {dest.name}
-                              </option>
-                            ))
-                          )}
-                        </select>
-                      </div>
-
-                      {/* Type de voyage */}
-                      <div>
-                        <label className="block text-sm font-semibold text-primary mb-2">Type de voyage *</label>
-                        <select
-                          value={sejourForm.typeVoyage}
-                          onChange={(e) => setSejourForm({ ...sejourForm, typeVoyage: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-                          required
-                        >
-                          <option value="">Sélectionner</option>
-                          <option value="lune-de-miel">💑 Lune de miel</option>
-                          <option value="famille">👨‍👩‍👧‍👦 Famille</option>
-                          <option value="aventure">🏔️ Aventure & Exploration</option>
-                          <option value="business">💼 Business</option>
-                        </select>
+                        <div className="relative">
+                          <input
+                            ref={sejourDestInputRef}
+                            type="text"
+                            value={sejourForm.destination}
+                            onChange={(e) => handleSejourDestChange(e.target.value)}
+                            onFocus={() => {
+                              if (sejourForm.destination.trim().length > 0) {
+                                const filtered = DESTINATIONS.filter(dest =>
+                                  dest.toLowerCase().includes(sejourForm.destination.toLowerCase())
+                                ).slice(0, 10);
+                                setFilteredSejourDest(filtered);
+                                setShowSejourDestDropdown(filtered.length > 0);
+                              }
+                            }}
+                            className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                            placeholder="Ex: Paris, Istanbul, Dubai..."
+                            autoComplete="off"
+                            required
+                          />
+                          
+                          {/* Autocomplete Dropdown */}
+                          <AnimatePresence>
+                            {showSejourDestDropdown && filteredSejourDest.length > 0 && (
+                              <motion.div
+                                ref={sejourDestDropdownRef}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="absolute z-50 w-full mt-1 bg-white border-2 border-slate-200 rounded-xl shadow-lg max-h-60 overflow-y-auto"
+                              >
+                                {filteredSejourDest.map((destination, index) => (
+                                  <button
+                                    key={index}
+                                    type="button"
+                                    onClick={() => handleSejourDestSelect(destination)}
+                                    className="w-full text-left px-4 py-3 hover:bg-purple-50 transition-colors border-b border-slate-100 last:border-b-0 flex items-center gap-2 text-sm"
+                                  >
+                                    <MapPin size={14} className="text-primary flex-shrink-0" />
+                                    <span className="text-gray-700">{destination}</span>
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                       </div>
 
                       {/* Budget estimé */}

@@ -419,10 +419,6 @@ const SejourDetails = ({ request }: { request: SejourRequest }) => (
           <span className="font-medium text-slate-900">{request.destination}</span>
         </div>
         <div className="flex justify-between py-2 border-b border-slate-100">
-          <span className="text-slate-600">Type de voyage:</span>
-          <span className="font-medium text-slate-900">{request.typeVoyage}</span>
-        </div>
-        <div className="flex justify-between py-2 border-b border-slate-100">
           <span className="text-slate-600">Budget estimé:</span>
           <span className="font-medium text-slate-900">{request.budget} DA</span>
         </div>

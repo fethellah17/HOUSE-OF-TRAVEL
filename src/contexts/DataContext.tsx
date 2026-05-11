@@ -111,7 +111,6 @@ export interface SejourRequest {
     telephone: string;
   };
   destination: string;
-  typeVoyage: string;
   budget: string;
   dateDepart: string;
   dateRetour: string;

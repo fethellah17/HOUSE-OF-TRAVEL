@@ -87,7 +87,6 @@ const SejourTable = ({ requests, onOpen, onToggleStatus }: SejourTableProps) => 
             <tr>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Client</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Destination</th>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Type</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Dates</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Budget</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Services</th>
@@ -115,12 +114,6 @@ const SejourTable = ({ requests, onOpen, onToggleStatus }: SejourTableProps) => 
                   </div>
                 </td>
                 <td className={`px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium text-slate-900 whitespace-nowrap ${req.completed ? "opacity-60" : ""}`}>{req.destination}</td>
-                <td className={`px-2 sm:px-4 py-2 sm:py-3 ${req.completed ? "opacity-60" : ""}`}>
-                  <div className="flex items-center gap-1 whitespace-nowrap">
-                    {getTripTypeIcon(req.typeVoyage)}
-                    <span className="text-xs sm:text-sm text-slate-700">{req.typeVoyage}</span>
-                  </div>
-                </td>
                 <td className={`px-2 sm:px-4 py-2 sm:py-3 ${req.completed ? "opacity-60" : ""}`}>
                   <div className="text-xs sm:text-sm text-slate-700">
                     <div className="flex items-center gap-1 whitespace-nowrap">
