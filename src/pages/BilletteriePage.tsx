@@ -717,7 +717,7 @@ const BilletteriePage = () => {
                     </div>
                   </div>
 
-                  <div className="p-6 pb-96 space-y-6 min-h-[600px]">
+                  <div className="p-6 pb-2 space-y-6 min-h-[600px]">
                     {/* Departure, Arrival, and Switch Button */}
                     <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-end">
                       {/* Ville de départ */}
