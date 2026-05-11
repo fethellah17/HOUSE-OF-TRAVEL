@@ -385,6 +385,23 @@ const BilletteriePage = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showPassengersDropdown]);
 
+  // Lock body scroll on mobile when passengers dropdown is open
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile && showPassengersDropdown) {
+      // Lock body scroll
+      document.body.style.overflow = "hidden";
+      document.body.style.touchAction = "none";
+      
+      return () => {
+        // Restore body scroll
+        document.body.style.overflow = "";
+        document.body.style.touchAction = "";
+      };
+    }
+  }, [showPassengersDropdown]);
+
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.nom.trim()) e.nom = "Le nom est obligatoire.";
@@ -1066,6 +1083,7 @@ const BilletteriePage = () => {
                                   exit={{ y: "100%" }}
                                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
                                   className="bg-white rounded-t-3xl w-full max-h-[70vh] overflow-y-auto p-6 space-y-6"
+                                  style={{ overscrollBehaviorY: "contain" }}
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
