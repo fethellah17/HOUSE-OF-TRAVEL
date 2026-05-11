@@ -625,7 +625,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                   <div
                     key={s}
                     className={`h-2 flex-1 rounded-full transition-all duration-300 ${
-                      s <= step ? "bg-[#2C5F2D]" : "bg-gray-300 dark:bg-slate-700"
+                      s <= step ? "bg-[#4B2C7F]" : "bg-gray-300 dark:bg-slate-700"
                     }`}
                   />
                 ))}
@@ -669,10 +669,10 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                         type="email"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
-                        className={`w-full px-4 py-3 md:py-3 min-h-[48px] text-base border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
+                        className={`w-full px-4 py-3 md:py-3 min-h-[48px] text-base border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
                           errors.loginEmail ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                         }`}
-                        placeholder="Ex: ahmed@example.com"
+                        placeholder="Ex: fethellahhadjbouziane@gmail.com"
                         onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
                       />
                       {errors.loginEmail && (
@@ -765,7 +765,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                           className={`w-full px-4 py-3 md:py-3 min-h-[48px] text-base border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
                             errors.forgotEmail ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                           }`}
-                          placeholder="Ex: ahmed@example.com"
+                          placeholder="Ex: fethellahhadjbouziane@gmail.com"
                         />
                         {errors.forgotEmail && (
                           <p className="text-red-500 text-xs mt-1">{errors.forgotEmail}</p>
@@ -927,8 +927,8 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                   {forgotPasswordStep === "success" && (
                     <div className="space-y-6">
                       <div className="text-center py-8">
-                        <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
-                          <CheckCircle size={32} className="text-green-600 dark:text-green-400" />
+                        <div className="mx-auto w-16 h-16 bg-[#4B2C7F]/10 dark:bg-[#4B2C7F]/30 rounded-full flex items-center justify-center mb-4">
+                          <CheckCircle size={32} className="text-[#4B2C7F] dark:text-[#9B7FD4]" />
                         </div>
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                           Mot de passe mis à jour !
@@ -970,7 +970,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                         className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
                           errors.nom ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                         }`}
-                        placeholder="Ex: Benali"
+                        placeholder="Ex: Hadj-bouziane"
                       />
                       {errors.nom && (
                         <p className="text-red-500 text-xs mt-1">{errors.nom}</p>
@@ -988,7 +988,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                         className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all ${
                           errors.prenom ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                         }`}
-                        placeholder="Ex: Ahmed"
+                        placeholder="Ex: Fethellah"
                       />
                       {errors.prenom && (
                         <p className="text-red-500 text-xs mt-1">{errors.prenom}</p>
@@ -1005,7 +1005,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                       value={email}
                       disabled
                       className="w-full px-4 py-3 border rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 border-gray-300 dark:border-slate-600 cursor-not-allowed transition-all"
-                      placeholder="Ex: ahmed@example.com"
+                      placeholder="Ex: fethellahhadjbouziane@gmail.com"
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       L'adresse email ne peut pas être modifiée
@@ -1084,10 +1084,10 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                         type="text"
                         value={nom}
                         onChange={(e) => setNom(e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
+                        className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
                           errors.nom ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                         }`}
-                        placeholder="Ex: Benali"
+                        placeholder="Ex: Hadj-bouziane"
                       />
                       {errors.nom && (
                         <p className="text-red-500 text-xs mt-1">{errors.nom}</p>
@@ -1102,10 +1102,10 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                         type="text"
                         value={prenom}
                         onChange={(e) => setPrenom(e.target.value)}
-                        className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
+                        className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
                           errors.prenom ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                         }`}
-                        placeholder="Ex: Ahmed"
+                        placeholder="Ex: Fethellah"
                       />
                       {errors.prenom && (
                         <p className="text-red-500 text-xs mt-1">{errors.prenom}</p>
@@ -1121,10 +1121,10 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
                         errors.email ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                       }`}
-                      placeholder="Ex: ahmed@example.com"
+                      placeholder="Ex: fethellahhadjbouziane@gmail.com"
                     />
                     {errors.email && (
                       <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -1133,7 +1133,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
 
                   <button
                     onClick={handleStep1Next}
-                    className="w-full bg-[#2C5F2D] hover:bg-[#234d24] text-white font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg touch-manipulation"
+                    className="w-full bg-[#4B2C7F] hover:bg-[#3D1E63] text-white font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg touch-manipulation"
                   >
                     Suivant
                     <ArrowRight size={18} />
@@ -1196,7 +1196,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                     <button
                       onClick={handleStep2Verify}
                       disabled={loading}
-                      className="w-full md:flex-1 bg-[#2C5F2D] hover:bg-[#234d24] text-white font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
+                      className="w-full md:flex-1 bg-[#4B2C7F] hover:bg-[#3D1E63] text-white font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
                     >
                       {loading ? (
                         <>
@@ -1235,7 +1235,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
                         errors.phone ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="Ex: 0600000000"
@@ -1258,7 +1258,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                     <button
                       onClick={handleStep3Next}
                       disabled={loading}
-                      className="w-full md:flex-1 bg-[#2C5F2D] hover:bg-[#234d24] text-white font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
+                      className="w-full md:flex-1 bg-[#4B2C7F] hover:bg-[#3D1E63] text-white font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
                     >
                       Suivant
                       <ArrowRight size={18} />
@@ -1288,7 +1288,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
                         errors.password ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="Minimum 6 caractères"
@@ -1306,7 +1306,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#2C5F2D] dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
+                      className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary dark:focus:ring-[#D4AF37] focus:border-transparent transition-all ${
                         errors.confirmPassword ? "border-red-500" : "border-gray-300 dark:border-slate-600"
                       }`}
                       placeholder="Confirmez votre mot de passe"
@@ -1326,7 +1326,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                     <button
                       onClick={handleStep4Complete}
                       disabled={loading}
-                      className="w-full md:flex-1 bg-[#2C5F2D] hover:bg-[#234d24] text-white font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
+                      className="w-full md:flex-1 bg-[#4B2C7F] hover:bg-[#3D1E63] text-white font-bold py-4 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-lg disabled:opacity-50 touch-manipulation"
                     >
                       {loading ? (
                         <>

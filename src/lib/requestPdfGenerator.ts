@@ -148,7 +148,8 @@ export const generateRequestPDF = (request: ServiceRequest) => {
       ["Pays de destination", req.pays],
       ["Date de voyage", new Date(req.dateVoyage).toLocaleDateString("fr-FR")],
       ["Passeport valide (6 mois)", req.passeportValide ? "Oui" : "Non"],
-      ...(req.situationPro ? [["Situation professionnelle", req.situationPro]] : [])
+      ...(req.situationPro ? [["Situation professionnelle", req.situationPro]] : []),
+      ...(req.situationGarant ? [["Situation professionnelle du Garant", req.situationGarant]] : [])
     ];
   } else if (request.serviceType === "hotel") {
     const req = request as HotelRequest;

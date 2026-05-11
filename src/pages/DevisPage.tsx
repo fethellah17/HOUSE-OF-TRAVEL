@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import confetti from "canvas-confetti";
 import LoginModal from "@/components/LoginModal";
 import { useData } from "@/contexts/DataContext";
+import type { HotelRequest, SejourRequest, VisaRequest } from "@/contexts/DataContext";
 
 type ServiceType = "hotel" | "sejour" | "visa" | null;
 type VisaType = "e-visa" | "dossier" | null;
@@ -77,7 +78,7 @@ const DevisPage = () => {
   const sejourDestDropdownRef = useRef<HTMLDivElement>(null);
   
   // Ref for form section (auto-scroll)
-  const formRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   
   // Autocomplete state
   const [showCityDropdown, setShowCityDropdown] = useState(false);
@@ -159,6 +160,7 @@ const DevisPage = () => {
     dateVoyage: "",
     passeportValide: false,
     situationPro: "",
+    situationGarant: "",
     message: ""
   });
 
@@ -343,7 +345,7 @@ const DevisPage = () => {
         roomType: hotelForm.roomType,
         boardBasis: hotelForm.boardBasis,
         message: hotelForm.message,
-      });
+      } as Omit<HotelRequest, "id" | "createdAt" | "isRead" | "completed">);
     } else if (activeService === "sejour") {
       addRequest({
         serviceType: "sejour",
@@ -359,7 +361,7 @@ const DevisPage = () => {
         dateRetour: sejourForm.dateRetour,
         servicesInclus: sejourForm.servicesInclus,
         preferences: sejourForm.preferences,
-      });
+      } as Omit<SejourRequest, "id" | "createdAt" | "isRead" | "completed">);
     } else if (activeService === "visa" && visaType) {
       addRequest({
         serviceType: "visa",
@@ -374,8 +376,9 @@ const DevisPage = () => {
         dateVoyage: visaForm.dateVoyage,
         passeportValide: visaForm.passeportValide,
         situationPro: visaForm.situationPro,
+        situationGarant: visaForm.situationGarant,
         message: visaForm.message,
-      });
+      } as Omit<VisaRequest, "id" | "createdAt" | "isRead" | "completed">);
     }
 
     toast.success("Votre demande a été envoyée avec succès !");
@@ -386,7 +389,7 @@ const DevisPage = () => {
       setVisaType(null);
       setHotelForm({ hotelPreference: "specific", hotelName: "", hotelCategory: "", city: "", dateArrivee: "", dateDepart: "", nombreChambres: "1", nombrePersonnes: "1", roomType: "", boardBasis: "", message: "" });
       setSejourForm({ destination: "", budget: "", dateDepart: "", dateRetour: "", servicesInclus: [], preferences: "" });
-      setVisaForm({ pays: "", dateVoyage: "", passeportValide: false, situationPro: "", message: "" });
+      setVisaForm({ pays: "", dateVoyage: "", passeportValide: false, situationPro: "", situationGarant: "", message: "" });
     }, 2000);
   };
 
@@ -1587,6 +1590,37 @@ const DevisPage = () => {
                             <option value="sans-profession">Sans profession</option>
                           </select>
                         </div>
+
+                        {/* Situation professionnelle du Garant - Conditional Field */}
+                        {(visaForm.situationPro === "etudiant" || visaForm.situationPro === "sans-profession") && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                          >
+                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200">
+                              <label className="block text-sm font-semibold text-primary mb-3">
+                                Situation professionnelle du Garant *
+                              </label>
+                              <p className="text-xs text-slate-600 mb-3 italic">
+                                Veuillez indiquer la profession de votre garant (parrain/parrraine)
+                              </p>
+                              <select
+                                value={visaForm.situationGarant}
+                                onChange={(e) => setVisaForm({ ...visaForm, situationGarant: e.target.value })}
+                                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all bg-white"
+                                required
+                              >
+                                <option value="">Sélectionner</option>
+                                <option value="salarie">Salarié</option>
+                                <option value="fonctionnaire">Fonctionnaire</option>
+                                <option value="retraite">Retraité</option>
+                                <option value="commercant">Commerçant / Libéral</option>
+                              </select>
+                            </div>
+                          </motion.div>
+                        )}
 
                         {/* Validité du passeport */}
                         <div className="bg-slate-50 rounded-xl p-4 border-2 border-slate-200">

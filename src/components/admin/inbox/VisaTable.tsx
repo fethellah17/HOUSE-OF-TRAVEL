@@ -115,7 +115,12 @@ const VisaTable = ({ requests, onOpen, onToggleStatus }: VisaTableProps) => {
                   </div>
                 </td>
                 <td className={`px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-slate-600 whitespace-nowrap ${req.completed ? "opacity-60" : ""}`}>
-                  {req.situationPro || <span className="text-slate-400 italic">N/A</span>}
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-medium text-slate-900">{req.situationPro || <span className="text-slate-400 italic">N/A</span>}</span>
+                    {req.situationGarant && (
+                      <span className="text-xs text-blue-700 font-semibold">Garant: {req.situationGarant}</span>
+                    )}
+                  </div>
                 </td>
                 <td className={`px-2 sm:px-4 py-2 sm:py-3 text-center ${req.completed ? "opacity-60" : ""}`}>
                   {req.passeportValide ? (

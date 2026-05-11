@@ -324,6 +324,12 @@ const VisaDetails = ({ request }: { request: VisaRequest }) => (
             <span className="font-medium text-slate-900">{request.situationPro}</span>
           </div>
         )}
+        {request.situationGarant && (
+          <div className="flex justify-between py-2 border-b border-slate-100 bg-blue-50 px-2 py-2 rounded">
+            <span className="text-slate-600 font-semibold">Situation du Garant:</span>
+            <span className="font-medium text-blue-700">{request.situationGarant}</span>
+          </div>
+        )}
       </div>
     </div>
     {request.message && (

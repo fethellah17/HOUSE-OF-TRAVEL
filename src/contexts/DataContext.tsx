@@ -70,6 +70,7 @@ export interface VisaRequest {
   dateVoyage: string;
   passeportValide: boolean;
   situationPro?: string;
+  situationGarant?: string;
   message?: string;
 }
 
