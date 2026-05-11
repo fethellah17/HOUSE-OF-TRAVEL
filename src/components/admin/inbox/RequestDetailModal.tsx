@@ -170,68 +170,114 @@ const RequestDetailModal = ({ request, onClose, onDelete }: RequestDetailModalPr
 };
 
 // Billetterie Details Component
-const BilletterieDetails = ({ request }: { request: BilletterieRequest }) => (
-  <div className="space-y-4">
-    <div>
-      <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b-2 border-primary/20 flex items-center gap-2">
-        <Plane size={16} />
-        Détails du Vol
-      </h4>
-      <div className="space-y-2 text-sm">
-        <div className="flex justify-between py-2 border-b border-slate-100">
-          <span className="text-slate-600">Type de voyage:</span>
-          <span className="font-medium text-slate-900">{request.tripType}</span>
-        </div>
-        <div className="flex justify-between py-2 border-b border-slate-100">
-          <span className="text-slate-600">Destination:</span>
-          <span className="font-medium text-slate-900">{request.destination}</span>
-        </div>
-        <div className="flex justify-between py-2 border-b border-slate-100">
-          <span className="text-slate-600">Date de départ:</span>
-          <span className="font-medium text-slate-900">{new Date(request.dateDepart).toLocaleDateString("fr-FR")}</span>
-        </div>
-        {request.dateRetour && (
-          <div className="flex justify-between py-2 border-b border-slate-100">
-            <span className="text-slate-600">Date de retour:</span>
-            <span className="font-medium text-slate-900">{new Date(request.dateRetour).toLocaleDateString("fr-FR")}</span>
-          </div>
-        )}
-        <div className="flex justify-between py-2 border-b border-slate-100">
-          <span className="text-slate-600">Adultes:</span>
-          <span className="font-medium text-slate-900">{request.nombreAdultes}</span>
-        </div>
-        <div className="flex justify-between py-2 border-b border-slate-100">
-          <span className="text-slate-600">Enfants:</span>
-          <span className="font-medium text-slate-900">{request.nombreEnfants}</span>
-        </div>
-        {request.ageEnfants && (
-          <div className="flex justify-between py-2 border-b border-slate-100">
-            <span className="text-slate-600">Âge des enfants:</span>
-            <span className="font-medium text-slate-900">{request.ageEnfants}</span>
-          </div>
-        )}
-        {request.compagnie && (
-          <div className="flex justify-between py-2 border-b border-slate-100">
-            <span className="text-slate-600">Compagnie aérienne:</span>
-            <span className="font-medium text-slate-900">{request.compagnie}</span>
-          </div>
-        )}
-        {request.besoinVisa && (
-          <div className="flex justify-between py-2 border-b border-slate-100">
-            <span className="text-slate-600">Besoin de visa:</span>
-            <span className="font-medium text-slate-900">{request.besoinVisa}</span>
-          </div>
-        )}
-      </div>
-    </div>
-    {request.message && (
+const BilletterieDetails = ({ request }: { request: BilletterieRequest }) => {
+  // Parse birth dates from comma-separated strings
+  const enfantsDates = request.enfantsDates ? request.enfantsDates.split(", ").filter(d => d.trim()) : [];
+  const bebesDates = request.bebesDates ? request.bebesDates.split(", ").filter(d => d.trim()) : [];
+  
+  return (
+    <div className="space-y-4">
       <div>
-        <h4 className="text-sm font-semibold text-primary mb-2">Message</h4>
-        <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg">{request.message}</p>
+        <h4 className="text-sm font-semibold text-primary mb-3 pb-2 border-b-2 border-primary/20 flex items-center gap-2">
+          <Plane size={16} />
+          Détails du Vol
+        </h4>
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between py-2 border-b border-slate-100">
+            <span className="text-slate-600">Type de voyage:</span>
+            <span className="font-medium text-slate-900">{request.tripType}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b border-slate-100">
+            <span className="text-slate-600">Ville de départ:</span>
+            <span className="font-medium text-slate-900">{request.villeDepart || request.destination}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b border-slate-100">
+            <span className="text-slate-600">Ville d'arrivée:</span>
+            <span className="font-medium text-slate-900">{request.villeArrivee || request.destination}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b border-slate-100">
+            <span className="text-slate-600">Date de départ:</span>
+            <span className="font-medium text-slate-900">{new Date(request.dateDepart).toLocaleDateString("fr-FR")}</span>
+          </div>
+          {request.dateRetour && (
+            <div className="flex justify-between py-2 border-b border-slate-100">
+              <span className="text-slate-600">Date de retour:</span>
+              <span className="font-medium text-slate-900">{new Date(request.dateRetour).toLocaleDateString("fr-FR")}</span>
+            </div>
+          )}
+          <div className="flex justify-between py-2 border-b border-slate-100">
+            <span className="text-slate-600">Adultes:</span>
+            <span className="font-medium text-slate-900">{request.nombreAdultes}</span>
+          </div>
+          <div className="flex justify-between py-2 border-b border-slate-100">
+            <span className="text-slate-600">Enfants (moins de 12 ans):</span>
+            <span className="font-medium text-slate-900">{request.nombreEnfants}</span>
+          </div>
+          {enfantsDates.length > 0 && (
+            <div className="py-2 border-b border-slate-100">
+              <span className="text-slate-600 block mb-2">Dates de naissance des enfants:</span>
+              <div className="space-y-1 ml-4">
+                {enfantsDates.map((date, index) => (
+                  <div key={index} className="text-sm">
+                    <span className="text-slate-500">Enfant {index + 1}:</span>{" "}
+                    <span className="font-medium text-slate-900">
+                      {new Date(date).toLocaleDateString("fr-FR")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {request.nombreBebes && parseInt(request.nombreBebes) > 0 && (
+            <div className="flex justify-between py-2 border-b border-slate-100">
+              <span className="text-slate-600">Bébés (moins de 2 ans):</span>
+              <span className="font-medium text-slate-900">{request.nombreBebes}</span>
+            </div>
+          )}
+          {bebesDates.length > 0 && (
+            <div className="py-2 border-b border-slate-100">
+              <span className="text-slate-600 block mb-2">Dates de naissance des bébés:</span>
+              <div className="space-y-1 ml-4">
+                {bebesDates.map((date, index) => (
+                  <div key={index} className="text-sm">
+                    <span className="text-slate-500">Bébé {index + 1}:</span>{" "}
+                    <span className="font-medium text-slate-900">
+                      {new Date(date).toLocaleDateString("fr-FR")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {request.ageEnfants && (
+            <div className="flex justify-between py-2 border-b border-slate-100">
+              <span className="text-slate-600">Âge des enfants:</span>
+              <span className="font-medium text-slate-900">{request.ageEnfants}</span>
+            </div>
+          )}
+          {request.compagnie && (
+            <div className="flex justify-between py-2 border-b border-slate-100">
+              <span className="text-slate-600">Compagnie aérienne:</span>
+              <span className="font-medium text-slate-900">{request.compagnie}</span>
+            </div>
+          )}
+          {request.besoinVisa && (
+            <div className="flex justify-between py-2 border-b border-slate-100">
+              <span className="text-slate-600">Besoin de visa:</span>
+              <span className="font-medium text-slate-900">{request.besoinVisa}</span>
+            </div>
+          )}
+        </div>
       </div>
-    )}
-  </div>
-);
+      {request.message && (
+        <div>
+          <h4 className="text-sm font-semibold text-primary mb-2">Message</h4>
+          <p className="text-sm text-slate-700 bg-slate-50 p-3 rounded-lg">{request.message}</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Visa Details Component
 const VisaDetails = ({ request }: { request: VisaRequest }) => (

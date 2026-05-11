@@ -768,7 +768,7 @@ const Index = () => {
             </p>
 
             {/* Social Media Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 max-w-5xl mx-auto">
               {/* Instagram Card */}
               <motion.a
                 href="https://www.instagram.com/houseoftravel1?igsh=MTlzaHZvamo0cWY5OQ=="
@@ -840,6 +840,44 @@ const Index = () => {
                 
                 {/* CTA */}
                 <div className="flex items-center gap-2 text-slate-900 font-semibold group-hover:gap-3 transition-all">
+                  <span>Suivre</span>
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              </motion.a>
+
+              {/* Facebook Card */}
+              <motion.a
+                href="https://www.facebook.com/HOUSETRAVEL219"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative overflow-hidden bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-8 sm:p-10 border-2 border-transparent hover:border-blue-600 min-h-[200px] sm:min-h-[240px] flex flex-col items-center justify-center"
+                whileHover={{ scale: 1.03, y: -5 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {/* Gradient Background on Hover */}
+                <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-5 transition-opacity duration-300" />
+                
+                {/* Icon */}
+                <motion.div
+                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-blue-600 flex items-center justify-center mb-6 shadow-lg"
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                >
+                  <svg viewBox="0 0 24 24" fill="white" className="w-10 h-10 sm:w-12 sm:h-12">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </motion.div>
+
+                {/* Text */}
+                <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
+                  Facebook
+                </h3>
+                <p className="text-sm sm:text-base text-muted-foreground mb-4">
+                  Rejoignez notre page pour ne rien rater de nos offres exclusives
+                </p>
+                
+                {/* CTA */}
+                <div className="flex items-center gap-2 text-blue-600 font-semibold group-hover:gap-3 transition-all">
                   <span>Suivre</span>
                   <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </div>

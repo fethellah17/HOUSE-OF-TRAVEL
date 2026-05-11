@@ -38,10 +38,15 @@ export interface BilletterieRequest {
   };
   tripType: string;
   destination: string;
+  villeDepart?: string;
+  villeArrivee?: string;
   dateDepart: string;
   dateRetour?: string;
   nombreAdultes: string;
   nombreEnfants: string;
+  nombreBebes?: string;
+  enfantsDates?: string;
+  bebesDates?: string;
   ageEnfants?: string;
   compagnie?: string;
   besoinVisa?: string;

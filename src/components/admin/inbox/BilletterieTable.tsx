@@ -81,7 +81,8 @@ const BilletterieTable = ({ requests, onOpen, onToggleStatus }: BilletterieTable
             <tr>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Client</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Type</th>
-              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Destination</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Départ</th>
+              <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Arrivée</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Dates</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Passagers</th>
               <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap">Compagnie</th>
@@ -113,7 +114,12 @@ const BilletterieTable = ({ requests, onOpen, onToggleStatus }: BilletterieTable
                     {req.tripType}
                   </span>
                 </td>
-                <td className={`px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium text-slate-900 whitespace-nowrap ${req.completed ? "opacity-60" : ""}`}>{req.destination}</td>
+                <td className={`px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium text-slate-900 whitespace-nowrap ${req.completed ? "opacity-60" : ""}`}>
+                  {req.villeDepart || req.destination || "N/A"}
+                </td>
+                <td className={`px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium text-slate-900 whitespace-nowrap ${req.completed ? "opacity-60" : ""}`}>
+                  {req.villeArrivee || req.destination || "N/A"}
+                </td>
                 <td className={`px-2 sm:px-4 py-2 sm:py-3 ${req.completed ? "opacity-60" : ""}`}>
                   <div className="text-xs sm:text-sm text-slate-700">
                     <div className="flex items-center gap-1 whitespace-nowrap">
@@ -133,6 +139,9 @@ const BilletterieTable = ({ requests, onOpen, onToggleStatus }: BilletterieTable
                     <span>{req.nombreAdultes}A</span>
                     {parseInt(req.nombreEnfants) > 0 && (
                       <span className="text-slate-500">/ {req.nombreEnfants}E</span>
+                    )}
+                    {req.nombreBebes && parseInt(req.nombreBebes) > 0 && (
+                      <span className="text-slate-500">/ {req.nombreBebes}B</span>
                     )}
                   </div>
                 </td>

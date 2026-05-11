@@ -93,7 +93,6 @@ const BilletteriePage = () => {
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
   const [showPassengersDropdown, setShowPassengersDropdown] = useState(false);
   const passengersDropdownRef = useRef<HTMLDivElement>(null);
-  const passengersButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const loadUserData = () => {
@@ -240,7 +239,7 @@ const BilletteriePage = () => {
     });
   };
 
-  // Handle passengers count changes with proper event handling
+  // Handle passengers count changes
   const handleAdultesChange = (increment: boolean) => {
     const newCount = increment 
       ? form.nombreAdultes + 1 
@@ -262,18 +261,6 @@ const BilletteriePage = () => {
     }
     
     setForm({ ...form, nombreEnfants: newCount, enfantsDates: newDates });
-    
-    // Auto-scroll to bottom when adding a child
-    if (increment && passengersDropdownRef.current) {
-      setTimeout(() => {
-        if (passengersDropdownRef.current) {
-          passengersDropdownRef.current.scrollTo({
-            top: passengersDropdownRef.current.scrollHeight,
-            behavior: 'smooth'
-          });
-        }
-      }, 100);
-    }
   };
 
   const handleBebesChange = (increment: boolean) => {
@@ -290,32 +277,6 @@ const BilletteriePage = () => {
     }
     
     setForm({ ...form, nombreBebes: newCount, bebesDates: newDates });
-    
-    // Auto-scroll to bottom when adding a baby
-    if (increment && passengersDropdownRef.current) {
-      setTimeout(() => {
-        if (passengersDropdownRef.current) {
-          passengersDropdownRef.current.scrollTo({
-            top: passengersDropdownRef.current.scrollHeight,
-            behavior: 'smooth'
-          });
-        }
-      }, 100);
-    }
-  };
-
-  // Wrapper functions to prevent event bubbling
-  const handleCounterClick = (e: React.MouseEvent, callback: () => void) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
-    callback();
-  };
-
-  const handleDateInputClick = (e: React.MouseEvent) => {
-    // Only stop propagation to prevent dropdown from closing
-    // Do NOT preventDefault - it blocks the native date picker
-    e.stopPropagation();
   };
 
   const handleEnfantDateChange = (index: number, value: string) => {
@@ -368,22 +329,16 @@ const BilletteriePage = () => {
         // Passengers dropdown (desktop only)
         if (
           passengersDropdownRef.current &&
-          !passengersDropdownRef.current.contains(event.target as Node) &&
-          passengersButtonRef.current &&
-          !passengersButtonRef.current.contains(event.target as Node)
+          !passengersDropdownRef.current.contains(event.target as Node)
         ) {
-          console.log("Closed by outside click", event.target);
           setShowPassengersDropdown(false);
         }
       }
     };
 
-    if (showPassengersDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    
+    document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showPassengersDropdown]);
+  }, []);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -395,27 +350,6 @@ const BilletteriePage = () => {
     if (!form.villeArrivee.trim()) e.villeArrivee = "La ville d'arrivée est obligatoire.";
     if (!form.dateDepart) e.dateDepart = "La date de départ est obligatoire.";
     if (form.typeVoyage === "aller-retour" && !form.dateRetour) e.dateRetour = "La date de retour est obligatoire.";
-    
-    // Validate birth dates for children
-    if (form.nombreEnfants > 0) {
-      for (let i = 0; i < form.nombreEnfants; i++) {
-        if (!form.enfantsDates[i] || form.enfantsDates[i].trim() === "") {
-          e.enfantsDates = `Veuillez renseigner toutes les dates de naissance des enfants.`;
-          break;
-        }
-      }
-    }
-    
-    // Validate birth dates for babies
-    if (form.nombreBebes > 0) {
-      for (let i = 0; i < form.nombreBebes; i++) {
-        if (!form.bebesDates[i] || form.bebesDates[i].trim() === "") {
-          e.bebesDates = `Veuillez renseigner toutes les dates de naissance des bébés.`;
-          break;
-        }
-      }
-    }
-    
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -445,17 +379,7 @@ const BilletteriePage = () => {
       return;
     }
     
-    if (!validate()) {
-      // Show specific error messages for birth dates
-      if (errors.enfantsDates) {
-        toast.error(errors.enfantsDates, { duration: 5000 });
-      }
-      if (errors.bebesDates) {
-        toast.error(errors.bebesDates, { duration: 5000 });
-      }
-      return;
-    }
-    
+    if (!validate()) return;
     setStatus("loading");
     
     setTimeout(() => {
@@ -536,7 +460,7 @@ const BilletteriePage = () => {
 
   return (
     <Layout>
-      <section className="relative py-24 bg-gradient-to-b from-slate-50 to-white min-h-screen">
+      <section className="relative py-24 bg-gradient-to-b from-slate-50 to-white min-h-screen overflow-hidden">
         {/* Floating Decorative Icons - Background Layer */}
         <div className="absolute inset-0 z-0 pointer-events-none">
           {/* Icon 1: Plane - Top Left */}
@@ -697,7 +621,7 @@ const BilletteriePage = () => {
               </motion.div>
             ) : (
               <motion.form key="form" onSubmit={handleSubmit} className="space-y-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <div className="bg-white rounded-2xl shadow-2xl border border-slate-200">
+                <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
                   <div className="bg-primary px-6 py-4">
                     <div className="flex items-center justify-between flex-wrap gap-4">
                       <h2 className="text-white font-semibold text-lg flex items-center gap-2">
@@ -717,9 +641,9 @@ const BilletteriePage = () => {
                     </div>
                   </div>
 
-                  <div className="p-6 pb-96 space-y-6 min-h-[600px]">
+                  <div className="p-6 space-y-6 overflow-visible">
                     {/* Departure, Arrival, and Switch Button */}
-                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-end">
+                    <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-4 items-end overflow-visible">
                       {/* Ville de départ */}
                       <div className="relative">
                         <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
@@ -845,14 +769,14 @@ const BilletteriePage = () => {
                       </div>
                     </div>
 
-                    {/* Dates */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Dates and Passengers */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 overflow-visible">
                       <div className="relative">
                         <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
                           <Calendar size={16} />
                           Date de départ *
                         </label>
-                        <input type="date" value={form.dateDepart} onChange={(e) => setForm({ ...form, dateDepart: e.target.value })} onClick={(e) => e.stopPropagation()} className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base" />
+                        <input type="date" value={form.dateDepart} onChange={(e) => setForm({ ...form, dateDepart: e.target.value })} className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base" />
                         {errors.dateDepart && <p className="text-sm text-red-600 mt-1">{errors.dateDepart}</p>}
                       </div>
                       
@@ -862,56 +786,40 @@ const BilletteriePage = () => {
                             <Calendar size={16} />
                             Date de retour *
                           </label>
-                          <input type="date" value={form.dateRetour} onChange={(e) => setForm({ ...form, dateRetour: e.target.value })} onClick={(e) => e.stopPropagation()} className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base" />
+                          <input type="date" value={form.dateRetour} onChange={(e) => setForm({ ...form, dateRetour: e.target.value })} className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base" />
                           {errors.dateRetour && <p className="text-sm text-red-600 mt-1">{errors.dateRetour}</p>}
                         </div>
                       )}
-                    </div>
 
-                    {/* Passengers Dropdown - Full Width Row */}
-                    <div className="relative">
-                      <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
-                        <Users size={16} />
-                        Personnes
-                      </label>
-                      <button
-                        ref={passengersButtonRef}
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setShowPassengersDropdown(!showPassengersDropdown);
-                        }}
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base text-left flex items-center justify-between bg-white hover:border-primary"
-                      >
-                        <span className="text-gray-700">{getPassengersSummary()}</span>
-                        <Users size={18} className="text-primary" />
-                      </button>
+                      {/* Passengers Dropdown */}
+                      <div className="relative">
+                        <label className="block text-sm font-semibold text-primary mb-2 flex items-center gap-2">
+                          <Users size={16} />
+                          Personnes
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowPassengersDropdown(!showPassengersDropdown)}
+                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base text-left flex items-center justify-between bg-white hover:border-primary"
+                        >
+                          <span className="text-gray-700">{getPassengersSummary()}</span>
+                          <Users size={18} className="text-primary" />
+                        </button>
 
-                      {/* Passengers Dropdown Panel - Desktop */}
-                      <AnimatePresence>
-                        {showPassengersDropdown && (
-                          <>
-                            {/* Desktop Dropdown */}
-                            <motion.div
-                              ref={passengersDropdownRef}
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ duration: 0.2 }}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                e.nativeEvent.stopImmediatePropagation();
-                              }}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                              className="hidden md:block absolute left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-xl shadow-2xl z-50"
-                              style={{ minWidth: '100%' }}
-                            >
-                              <div className="p-4 space-y-4">
+                        {/* Passengers Dropdown Panel - Desktop */}
+                        <AnimatePresence>
+                          {showPassengersDropdown && (
+                            <>
+                              {/* Desktop Dropdown */}
+                              <motion.div
+                                ref={passengersDropdownRef}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                transition={{ duration: 0.2 }}
+                                className="hidden md:block absolute left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-xl shadow-2xl p-4 space-y-4 max-h-[500px] overflow-y-auto z-[100]"
+                                style={{ minWidth: '320px' }}
+                              >
                                 {/* Adultes */}
                                 <div className="flex items-center justify-between">
                                   <div>
@@ -921,7 +829,7 @@ const BilletteriePage = () => {
                                   <div className="flex items-center gap-3">
                                     <button
                                       type="button"
-                                      onClick={(e) => handleCounterClick(e, () => handleAdultesChange(false))}
+                                      onClick={() => handleAdultesChange(false)}
                                       disabled={form.nombreAdultes <= 1}
                                       className="w-8 h-8 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                                     >
@@ -930,7 +838,7 @@ const BilletteriePage = () => {
                                     <span className="w-8 text-center font-semibold">{form.nombreAdultes}</span>
                                     <button
                                       type="button"
-                                      onClick={(e) => handleCounterClick(e, () => handleAdultesChange(true))}
+                                      onClick={() => handleAdultesChange(true)}
                                       className="w-8 h-8 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all"
                                     >
                                       +
@@ -948,7 +856,7 @@ const BilletteriePage = () => {
                                     <div className="flex items-center gap-3">
                                       <button
                                         type="button"
-                                        onClick={(e) => handleCounterClick(e, () => handleEnfantsChange(false))}
+                                        onClick={() => handleEnfantsChange(false)}
                                         disabled={form.nombreEnfants <= 0}
                                         className="w-8 h-8 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                                       >
@@ -957,7 +865,7 @@ const BilletteriePage = () => {
                                       <span className="w-8 text-center font-semibold">{form.nombreEnfants}</span>
                                       <button
                                         type="button"
-                                        onClick={(e) => handleCounterClick(e, () => handleEnfantsChange(true))}
+                                        onClick={() => handleEnfantsChange(true)}
                                         className="w-8 h-8 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all"
                                       >
                                         +
@@ -977,16 +885,10 @@ const BilletteriePage = () => {
                                             type="date"
                                             value={form.enfantsDates[index] || ""}
                                             onChange={(e) => handleEnfantDateChange(index, e.target.value)}
-                                            onClick={handleDateInputClick}
-                                            className={`w-full px-3 py-2 border rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 ${
-                                              errors.enfantsDates ? "border-red-500" : "border-slate-200"
-                                            }`}
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/20"
                                           />
                                         </div>
                                       ))}
-                                      {errors.enfantsDates && (
-                                        <p className="text-xs text-red-600 mt-1">{errors.enfantsDates}</p>
-                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -1001,7 +903,7 @@ const BilletteriePage = () => {
                                     <div className="flex items-center gap-3">
                                       <button
                                         type="button"
-                                        onClick={(e) => handleCounterClick(e, () => handleBebesChange(false))}
+                                        onClick={() => handleBebesChange(false)}
                                         disabled={form.nombreBebes <= 0}
                                         className="w-8 h-8 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                                       >
@@ -1010,7 +912,7 @@ const BilletteriePage = () => {
                                       <span className="w-8 text-center font-semibold">{form.nombreBebes}</span>
                                       <button
                                         type="button"
-                                        onClick={(e) => handleCounterClick(e, () => handleBebesChange(true))}
+                                        onClick={() => handleBebesChange(true)}
                                         className="w-8 h-8 rounded-full border-2 border-primary text-primary font-bold hover:bg-primary hover:text-white transition-all"
                                       >
                                         +
@@ -1030,21 +932,14 @@ const BilletteriePage = () => {
                                             type="date"
                                             value={form.bebesDates[index] || ""}
                                             onChange={(e) => handleBebeDateChange(index, e.target.value)}
-                                            onClick={handleDateInputClick}
-                                            className={`w-full px-3 py-2 border rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/20 ${
-                                              errors.bebesDates ? "border-red-500" : "border-slate-200"
-                                            }`}
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-primary focus:ring-1 focus:ring-primary/20"
                                           />
                                         </div>
                                       ))}
-                                      {errors.bebesDates && (
-                                        <p className="text-xs text-red-600 mt-1">{errors.bebesDates}</p>
-                                      )}
                                     </div>
                                   )}
                                 </div>
-                              </div>
-                            </motion.div>
+                              </motion.div>
 
                               {/* Mobile Modal */}
                               <motion.div
@@ -1053,11 +948,7 @@ const BilletteriePage = () => {
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.2 }}
                                 className="md:hidden fixed inset-0 bg-black/50 z-[100] flex items-end"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setShowPassengersDropdown(false);
-                                }}
+                                onClick={() => setShowPassengersDropdown(false)}
                               >
                                 <motion.div
                                   ref={passengersDropdownRef}
@@ -1065,31 +956,15 @@ const BilletteriePage = () => {
                                   animate={{ y: 0 }}
                                   exit={{ y: "100%" }}
                                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                                  className="bg-white rounded-t-3xl w-full max-h-[70vh] overflow-y-auto p-6 space-y-6"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    e.nativeEvent.stopImmediatePropagation();
-                                  }}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                  }}
-                                  onTouchStart={(e) => {
-                                    e.stopPropagation();
-                                  }}
+                                  className="bg-white rounded-t-3xl w-full max-h-[80vh] overflow-y-auto p-6 space-y-6"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   {/* Header */}
                                   <div className="flex items-center justify-between pb-4 border-b">
                                     <h3 className="text-xl font-bold text-primary">Sélectionner les personnes</h3>
                                     <button
                                       type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        e.nativeEvent.stopImmediatePropagation();
-                                        setShowPassengersDropdown(false);
-                                      }}
+                                      onClick={() => setShowPassengersDropdown(false)}
                                       className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors"
                                     >
                                       ✕
@@ -1105,7 +980,7 @@ const BilletteriePage = () => {
                                     <div className="flex items-center gap-4">
                                       <button
                                         type="button"
-                                        onClick={(e) => handleCounterClick(e, () => handleAdultesChange(false))}
+                                        onClick={() => handleAdultesChange(false)}
                                         disabled={form.nombreAdultes <= 1}
                                         className="w-12 h-12 rounded-full border-2 border-primary text-primary font-bold text-xl hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                                       >
@@ -1114,7 +989,7 @@ const BilletteriePage = () => {
                                       <span className="w-10 text-center font-bold text-xl">{form.nombreAdultes}</span>
                                       <button
                                         type="button"
-                                        onClick={(e) => handleCounterClick(e, () => handleAdultesChange(true))}
+                                        onClick={() => handleAdultesChange(true)}
                                         className="w-12 h-12 rounded-full border-2 border-primary text-primary font-bold text-xl hover:bg-primary hover:text-white transition-all"
                                       >
                                         +
@@ -1132,7 +1007,7 @@ const BilletteriePage = () => {
                                       <div className="flex items-center gap-4">
                                         <button
                                           type="button"
-                                          onClick={(e) => handleCounterClick(e, () => handleEnfantsChange(false))}
+                                          onClick={() => handleEnfantsChange(false)}
                                           disabled={form.nombreEnfants <= 0}
                                           className="w-12 h-12 rounded-full border-2 border-primary text-primary font-bold text-xl hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                                         >
@@ -1141,7 +1016,7 @@ const BilletteriePage = () => {
                                         <span className="w-10 text-center font-bold text-xl">{form.nombreEnfants}</span>
                                         <button
                                           type="button"
-                                          onClick={(e) => handleCounterClick(e, () => handleEnfantsChange(true))}
+                                          onClick={() => handleEnfantsChange(true)}
                                           className="w-12 h-12 rounded-full border-2 border-primary text-primary font-bold text-xl hover:bg-primary hover:text-white transition-all"
                                         >
                                           +
@@ -1161,16 +1036,10 @@ const BilletteriePage = () => {
                                               type="date"
                                               value={form.enfantsDates[index] || ""}
                                               onChange={(e) => handleEnfantDateChange(index, e.target.value)}
-                                              onClick={handleDateInputClick}
-                                              className={`w-full px-4 py-3 border-2 rounded-xl text-base focus:border-primary focus:ring-2 focus:ring-primary/20 ${
-                                                errors.enfantsDates ? "border-red-500" : "border-slate-200"
-                                              }`}
+                                              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-base focus:border-primary focus:ring-2 focus:ring-primary/20"
                                             />
                                           </div>
                                         ))}
-                                        {errors.enfantsDates && (
-                                          <p className="text-sm text-red-600 mt-2">{errors.enfantsDates}</p>
-                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -1185,7 +1054,7 @@ const BilletteriePage = () => {
                                       <div className="flex items-center gap-4">
                                         <button
                                           type="button"
-                                          onClick={(e) => handleCounterClick(e, () => handleBebesChange(false))}
+                                          onClick={() => handleBebesChange(false)}
                                           disabled={form.nombreBebes <= 0}
                                           className="w-12 h-12 rounded-full border-2 border-primary text-primary font-bold text-xl hover:bg-primary hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                                         >
@@ -1194,7 +1063,7 @@ const BilletteriePage = () => {
                                         <span className="w-10 text-center font-bold text-xl">{form.nombreBebes}</span>
                                         <button
                                           type="button"
-                                          onClick={(e) => handleCounterClick(e, () => handleBebesChange(true))}
+                                          onClick={() => handleBebesChange(true)}
                                           className="w-12 h-12 rounded-full border-2 border-primary text-primary font-bold text-xl hover:bg-primary hover:text-white transition-all"
                                         >
                                           +
@@ -1214,16 +1083,10 @@ const BilletteriePage = () => {
                                               type="date"
                                               value={form.bebesDates[index] || ""}
                                               onChange={(e) => handleBebeDateChange(index, e.target.value)}
-                                              onClick={handleDateInputClick}
-                                              className={`w-full px-4 py-3 border-2 rounded-xl text-base focus:border-primary focus:ring-2 focus:ring-primary/20 ${
-                                                errors.bebesDates ? "border-red-500" : "border-slate-200"
-                                              }`}
+                                              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl text-base focus:border-primary focus:ring-2 focus:ring-primary/20"
                                             />
                                           </div>
                                         ))}
-                                        {errors.bebesDates && (
-                                          <p className="text-sm text-red-600 mt-2">{errors.bebesDates}</p>
-                                        )}
                                       </div>
                                     )}
                                   </div>
@@ -1232,12 +1095,7 @@ const BilletteriePage = () => {
                                   <div className="pt-4">
                                     <button
                                       type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        e.nativeEvent.stopImmediatePropagation();
-                                        setShowPassengersDropdown(false);
-                                      }}
+                                      onClick={() => setShowPassengersDropdown(false)}
                                       className="w-full bg-primary text-white px-6 py-4 rounded-xl font-bold text-lg hover:bg-primary/90 transition-all"
                                     >
                                       Confirmer
@@ -1249,6 +1107,7 @@ const BilletteriePage = () => {
                           )}
                         </AnimatePresence>
                       </div>
+                    </div>
 
                     <div>
                       <label className="block text-sm font-semibold text-primary mb-3 flex items-center gap-2">
@@ -1410,36 +1269,6 @@ const BilletteriePage = () => {
         
         .airline-scroll-container:hover::-webkit-scrollbar-thumb:hover {
           background: #3a2260;
-        }
-
-        /* Custom scrollbar for Personnes dropdown */
-        .custom-scrollbar {
-          scrollbar-width: thin;
-          scrollbar-color: #4B2C7F #f1f5f9;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 10px;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-          border-radius: 5px;
-          margin: 4px 0;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #4B2C7F;
-          border-radius: 5px;
-          border: 2px solid #f1f5f9;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #3a2260;
-        }
-        
-        .custom-scrollbar::-webkit-scrollbar-thumb:active {
-          background: #2d1a4d;
         }
       `}</style>
     </Layout>

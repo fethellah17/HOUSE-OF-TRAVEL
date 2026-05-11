@@ -106,17 +106,41 @@ export const generateRequestPDF = (request: ServiceRequest) => {
 
   if (request.serviceType === "billetterie") {
     const req = request as BilletterieRequest;
+    
+    // Parse birth dates
+    const enfantsDates = req.enfantsDates ? req.enfantsDates.split(", ").filter(d => d.trim()) : [];
+    const bebesDates = req.bebesDates ? req.bebesDates.split(", ").filter(d => d.trim()) : [];
+    
     serviceData = [
       ["Type de voyage", req.tripType],
-      ["Destination", req.destination],
+      ["Ville de départ", req.villeDepart || req.destination || "N/A"],
+      ["Ville d'arrivée", req.villeArrivee || req.destination || "N/A"],
       ["Date de départ", new Date(req.dateDepart).toLocaleDateString("fr-FR")],
       ...(req.dateRetour ? [["Date de retour", new Date(req.dateRetour).toLocaleDateString("fr-FR")]] : []),
       ["Nombre d'adultes", req.nombreAdultes],
       ["Nombre d'enfants", req.nombreEnfants],
+      ...(req.nombreBebes && parseInt(req.nombreBebes) > 0 ? [["Nombre de bébés", req.nombreBebes]] : []),
       ...(req.ageEnfants ? [["Âge des enfants", req.ageEnfants]] : []),
       ...(req.compagnie ? [["Compagnie aérienne", req.compagnie]] : []),
       ...(req.besoinVisa ? [["Besoin de visa", req.besoinVisa]] : [])
     ];
+    
+    // Add birth dates section if they exist
+    if (enfantsDates.length > 0) {
+      serviceData.push(["", ""]);  // Empty row for spacing
+      serviceData.push(["Dates de naissance - Enfants", ""]);
+      enfantsDates.forEach((date, index) => {
+        serviceData.push([`  Enfant ${index + 1}`, new Date(date).toLocaleDateString("fr-FR")]);
+      });
+    }
+    
+    if (bebesDates.length > 0) {
+      serviceData.push(["", ""]);  // Empty row for spacing
+      serviceData.push(["Dates de naissance - Bébés", ""]);
+      bebesDates.forEach((date, index) => {
+        serviceData.push([`  Bébé ${index + 1}`, new Date(date).toLocaleDateString("fr-FR")]);
+      });
+    }
   } else if (request.serviceType === "visa") {
     const req = request as VisaRequest;
     serviceData = [
