@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, Loader2, Pencil, MapPin, Calendar, Users, Plane, ArrowLeftRight, ArrowRight, Ticket, Globe, Luggage, Map } from "lucide-react";
 import { useData } from "@/contexts/DataContext";
 import { toast } from "sonner";
+import { submitBilletterieRequest } from "@/lib/formsService";
+import { getCurrentUser } from "@/services/authService";
 
 // Comprehensive list of popular travel destinations
 const DESTINATIONS = [
@@ -437,7 +439,7 @@ const BilletteriePage = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isLoggedIn) {
@@ -475,56 +477,93 @@ const BilletteriePage = () => {
     
     setStatus("loading");
     
-    setTimeout(() => {
-      addRequest({
-        serviceType: "billetterie",
-        personalInfo: {
-          nom: form.nom,
-          prenom: form.prenom,
-          email: form.email,
-          telephone: form.telephone,
-        },
-        tripType: form.typeVoyage,
-        villeDepart: form.villeDepart,
-        villeArrivee: form.villeArrivee,
-        dateDepart: form.dateDepart,
-        dateRetour: form.dateRetour,
-        nombreAdultes: form.nombreAdultes.toString(),
-        nombreEnfants: form.nombreEnfants.toString(),
-        nombreBebes: form.nombreBebes.toString(),
-        enfantsDates: form.enfantsDates.join(", "),
-        bebesDates: form.bebesDates.join(", "),
-        compagnie: form.compagnie,
-        besoinVisa: form.besoinVisa,
-        message: form.message,
+    try {
+      // Get current user ID from Supabase Auth
+      const authUser = await getCurrentUser();
+      const userId = authUser.success ? authUser.user?.id : undefined;
+
+      console.log("📋 Form Data:", {
+        nom: form.nom,
+        prenom: form.prenom,
+        email: form.email,
+        phone: form.telephone,
+        departure_city: form.villeDepart,
+        arrival_city: form.villeArrivee,
+        trip_type: form.typeVoyage,
+        departure_date: form.dateDepart,
+        return_date: form.dateRetour,
+        number_of_adults: form.nombreAdultes,
+        number_of_children: form.nombreEnfants,
+        number_of_babies: form.nombreBebes,
+        children_age: form.enfantsDates,
+        babies_age: form.bebesDates,
+        airline_preference: form.compagnie,
+        visa_needed: form.besoinVisa,
+        special_requests: form.message,
+        user_id: userId,
+      });
+
+      const result = await submitBilletterieRequest({
+        user_id: userId,
+        nom: form.nom,
+        prenom: form.prenom,
+        email: form.email,
+        phone: form.telephone,
+        departure_city: form.villeDepart,
+        arrival_city: form.villeArrivee,
+        trip_type: form.typeVoyage,
+        departure_date: form.dateDepart,
+        return_date: form.dateRetour,
+        number_of_adults: form.nombreAdultes,
+        number_of_children: form.nombreEnfants,
+        number_of_babies: form.nombreBebes,
+        children_age: form.enfantsDates.join(", "),
+        babies_age: form.bebesDates.join(", "),
+        airline_preference: form.compagnie,
+        visa_needed: form.besoinVisa === "Oui",
+        special_requests: form.message,
       });
       
-      setStatus("success");
-      toast.success("Votre demande a été envoyée avec succès !");
-      
-      setTimeout(() => {
-        setForm({ 
-          nom: "", 
-          prenom: "", 
-          email: "", 
-          telephone: "", 
-          typeVoyage: "aller-retour", 
-          villeDepart: "", 
-          villeArrivee: "", 
-          besoinVisa: "", 
-          compagnie: "", 
-          nombreAdultes: 1, 
-          nombreEnfants: 0, 
-          nombreBebes: 0,
-          enfantsDates: [],
-          bebesDates: [],
-          dateDepart: "", 
-          dateRetour: "", 
-          message: "" 
-        });
+      console.log("📬 Billetterie submission result:", result);
+
+      if (result.success) {
+        setStatus("success");
+        toast.success("Votre demande a été envoyée avec succès !");
+        
+        setTimeout(() => {
+          setForm({ 
+            nom: form.nom, 
+            prenom: form.prenom, 
+            email: form.email, 
+            telephone: form.telephone, 
+            typeVoyage: "aller-retour", 
+            villeDepart: "", 
+            villeArrivee: "", 
+            besoinVisa: "", 
+            compagnie: "", 
+            nombreAdultes: 1, 
+            nombreEnfants: 0, 
+            nombreBebes: 0,
+            enfantsDates: [],
+            bebesDates: [],
+            dateDepart: "", 
+            dateRetour: "", 
+            message: "" 
+          });
+          setStatus("idle");
+        }, 2000);
+      } else {
+        console.error("❌ Submission failed:", result.error);
+        toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
         setStatus("idle");
-      }, 2000);
-    }, 1500);
+      }
+    } catch (error: any) {
+      console.error("❌ Error submitting form:", error);
+      console.error("Error message:", error.message);
+      console.error("Error details:", error.details);
+      toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
+      setStatus("idle");
+    }
   };
 
   // Toggle selection logic

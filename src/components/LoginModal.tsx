@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, CheckCircle, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
+import { login, logout, signUp, resetPassword, requestPasswordReset, updateUserProfile, verifyOTP, resendOTP, completeSignUp, verifyRecoveryOTP } from "@/services/authService";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -14,6 +17,8 @@ interface LoginModalProps {
 interface User {
   id: string;
   fullName: string;
+  nom: string;
+  prenom: string;
   email: string;
   phone: string;
   password: string;
@@ -51,6 +56,8 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
   
   // Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [otpResendCount, setOtpResendCount] = useState(0);
+  const [otpResendTimer, setOtpResendTimer] = useState(0);
 
   // Reset form when modal closes
   useEffect(() => {
@@ -97,23 +104,18 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
   }, [isOpen]);
 
   // Check if user is logged in and set edit mode
+  const { user } = useAuth();
   useEffect(() => {
     if (isOpen && editMode) {
-      const currentUserStr = localStorage.getItem("currentUser");
-      if (currentUserStr) {
-        try {
-          const currentUser = JSON.parse(currentUserStr);
-          setView("edit-profile");
-          setNom(currentUser.nom || "");
-          setPrenom(currentUser.prenom || "");
-          setEmail(currentUser.email || "");
-          setPhone(currentUser.phone || "");
-        } catch (error) {
-          console.error("Error loading user data:", error);
-        }
+      if (user) {
+        setView("edit-profile");
+        setNom(user.nom || "");
+        setPrenom(user.prenom || "");
+        setEmail(user.email || "");
+        setPhone(user.phone || "");
       }
     }
-  }, [isOpen, editMode]);
+  }, [isOpen, editMode, user]);
 
   const validateStep1 = () => {
     const newErrors: Record<string, string> = {};
@@ -219,39 +221,39 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (validateLogin()) {
       setLoading(true);
+      const result = await login({ email: loginEmail, password: loginPassword });
+      setLoading(false);
       
-      setTimeout(() => {
-        // Check if user exists in localStorage
-        const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-        const user = existingUsers.find((u: User) => u.email === loginEmail && u.password === loginPassword);
+      if (result.success && result.user) {
+        toast.success("Connexion réussie ! Bienvenue !");
+        window.dispatchEvent(new Event("userLoggedIn"));
         
-        if (user) {
-          localStorage.setItem("currentUser", JSON.stringify(user));
-          setLoading(false);
-          toast.success("Connexion réussie ! Bienvenue !");
-          
-          // Dispatch event for pending request recovery
-          window.dispatchEvent(new Event("userLoggedIn"));
-          
-          if (onLoginSuccess) {
-            onLoginSuccess(user);
-          }
-          
-          onClose();
-        } else {
-          setLoading(false);
-          toast.error("Email ou mot de passe incorrect");
-          setErrors({ loginEmail: "Identifiants incorrects" });
+        if (onLoginSuccess) {
+          onLoginSuccess({
+            id: result.user.id,
+            nom: result.user.user_metadata?.nom || "",
+            prenom: result.user.user_metadata?.prenom || "",
+            email: result.user.email || "",
+            phone: result.user.user_metadata?.phone || "",
+            fullName: `${result.user.user_metadata?.prenom || ""} ${result.user.user_metadata?.nom || ""}`,
+            password: "",
+            createdAt: result.user.created_at || new Date().toISOString(),
+          });
         }
-      }, 1000);
+        
+        onClose();
+      } else {
+        toast.error(result.error || "Email ou mot de passe incorrect");
+        setErrors({ loginEmail: "Identifiants incorrects" });
+      }
     }
   };
 
   // Forgot Password Handlers
-  const handleForgotPasswordEmail = () => {
+  const handleForgotPasswordEmail = async () => {
     const newErrors: Record<string, string> = {};
     
     if (!forgotEmail.trim()) {
@@ -264,26 +266,20 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
     
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
+      const result = await requestPasswordReset(forgotEmail);
+      setLoading(false);
       
-      // Frontend simulation: Check if email exists
-      setTimeout(() => {
-        const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-        const user = existingUsers.find((u: any) => u.email === forgotEmail);
-        
-        if (user) {
-          setLoading(false);
-          setForgotPasswordStep("otp");
-          toast.success("Code de vérification envoyé à votre Gmail");
-        } else {
-          setLoading(false);
-          toast.error("Aucun compte associé à cet email");
-          setErrors({ forgotEmail: "Email non trouvé" });
-        }
-      }, 1000);
+      if (result.success) {
+        setForgotPasswordStep("otp");
+        toast.success("Code de vérification envoyé à votre email");
+      } else {
+        toast.error(result.error || "Aucun compte associé à cet email");
+        setErrors({ forgotEmail: "Email non trouvé" });
+      }
     }
   };
 
-  const handleForgotPasswordOtp = () => {
+  const handleForgotPasswordOtp = async () => {
     const newErrors: Record<string, string> = {};
     
     if (!forgotOtp.trim()) {
@@ -297,16 +293,21 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
       
-      // SUPABASE: supabase.auth.verifyOtp({ email, token: forgotOtp, type: 'recovery' })
-      setTimeout(() => {
-        setLoading(false);
+      // Verify OTP with recovery type - establishes temporary session
+      const result = await verifyRecoveryOTP(forgotEmail, forgotOtp);
+      setLoading(false);
+      
+      if (result.success) {
         setForgotPasswordStep("new-password");
-        toast.success("Code vérifié avec succès !");
-      }, 1000);
+        toast.success(result.message);
+      } else {
+        toast.error(result.error || "Code invalide ou expiré");
+        setErrors({ forgotOtp: "Code invalide" });
+      }
     }
   };
 
-  const handleResetPassword = () => {
+  const handleResetPassword = async () => {
     const newErrors: Record<string, string> = {};
     
     if (!newPassword.trim()) {
@@ -326,198 +327,154 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
     if (Object.keys(newErrors).length === 0) {
       setLoading(true);
       
-      // SUPABASE: supabase.auth.updateUser({ password: newPassword })
-      setTimeout(() => {
-        // Update password in localStorage
-        const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-        const userIndex = existingUsers.findIndex((u: any) => u.email === forgotEmail);
+      // Update password - session is active from verifyRecoveryOTP
+      const result = await resetPassword(newPassword);
+      setLoading(false);
+      
+      if (result.success) {
+        setForgotPasswordStep("success");
+        toast.success("Mot de passe mis à jour avec succès !");
         
-        if (userIndex !== -1) {
-          existingUsers[userIndex].password = newPassword;
-          localStorage.setItem("users", JSON.stringify(existingUsers));
+        // Dispatch event to trigger auth state listener reload
+        // This will cause useAuth hook to fetch the updated user profile
+        window.dispatchEvent(new Event("userLoggedIn"));
+        
+        // Reset form for future use
+        setTimeout(() => {
+          setForgotEmail("");
+          setForgotOtp("");
+          setNewPassword("");
+          setConfirmNewPassword("");
+          setForgotPasswordStep("email");
           
-          // AUTO-LOGIN: Set currentUser immediately
-          const updatedUser = existingUsers[userIndex];
-          localStorage.setItem("currentUser", JSON.stringify({
-            id: updatedUser.id,
-            nom: updatedUser.nom,
-            prenom: updatedUser.prenom,
-            fullName: updatedUser.fullName,
-            email: updatedUser.email,
-            phone: updatedUser.phone,
-            createdAt: updatedUser.createdAt,
-            dateInsc: updatedUser.dateInsc,
-          }));
-          
-          setLoading(false);
-          setForgotPasswordStep("success");
-          toast.success("Mot de passe mis à jour. Bienvenue dans votre espace !");
-          
-          // Dispatch event for immediate data sync
-          window.dispatchEvent(new Event("userLoggedIn"));
-          
-          // Call onLoginSuccess if provided
-          if (onLoginSuccess) {
-            onLoginSuccess(updatedUser);
-          }
-          
-          // Close modal and redirect to home
-          setTimeout(() => {
-            onClose();
-            window.location.href = "/";
-          }, 1500);
-        }
-      }, 1000);
+          // Close modal and redirect to home page
+          // User is already logged in with new password
+          onClose();
+          window.location.href = "/";
+        }, 1500);
+      } else {
+        toast.error(result.error || "Erreur lors de la réinitialisation du mot de passe");
+        setErrors({ newPassword: result.error || "Erreur" });
+      }
     }
   };
 
-  const handleUpdateProfile = () => {
+  const handleUpdateProfile = async () => {
     if (validateEditProfile()) {
       setLoading(true);
+      const result = await updateUserProfile(user!.id, {
+        nom,
+        prenom,
+        phone,
+      });
+      setLoading(false);
       
-      setTimeout(() => {
-        // Get current user
-        const currentUserStr = localStorage.getItem("currentUser");
-        if (currentUserStr) {
-          try {
-            const currentUser = JSON.parse(currentUserStr);
-            
-            // Update user data (email is NOT updated - read-only)
-            const updatedUser = {
-              ...currentUser,
-              nom,
-              prenom,
-              fullName: `${prenom} ${nom}`,
-              phone,
-              // email remains unchanged
-            };
-            
-            // Update in localStorage
-            localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-            
-            // Update in users array
-            const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-            const userIndex = existingUsers.findIndex((u: any) => u.id === currentUser.id);
-            if (userIndex !== -1) {
-              existingUsers[userIndex] = {
-                ...existingUsers[userIndex],
-                nom,
-                prenom,
-                fullName: `${prenom} ${nom}`,
-                phone,
-                // email remains unchanged
-              };
-              localStorage.setItem("users", JSON.stringify(existingUsers));
-            }
-            
-            setLoading(false);
-            toast.success("Profil mis à jour avec succès !");
-            
-            // Trigger a custom event to notify forms
-            window.dispatchEvent(new Event("profileUpdated"));
-            
-            if (onLoginSuccess) {
-              onLoginSuccess(updatedUser);
-            }
-            
-            setTimeout(() => {
-              onClose();
-            }, 1000);
-          } catch (error) {
-            console.error("Error updating profile:", error);
-            setLoading(false);
-            toast.error("Erreur lors de la mise à jour");
-          }
+      if (result.success && result.user) {
+        toast.success("Profil mis à jour avec succès !");
+        
+        // Update localStorage immediately for synchronization
+        localStorage.setItem("currentUser", JSON.stringify(result.user));
+        
+        // Trigger a custom event to notify forms
+        window.dispatchEvent(new Event("profileUpdated"));
+        
+        if (onLoginSuccess) {
+          onLoginSuccess({
+            id: result.user.id,
+            nom: result.user.nom,
+            prenom: result.user.prenom,
+            email: result.user.email,
+            phone: result.user.phone,
+            fullName: `${result.user.prenom} ${result.user.nom}`,
+            password: "",
+            createdAt: result.user.created_at || new Date().toISOString(),
+          });
         }
-      }, 1000);
+        
+        setTimeout(() => {
+          onClose();
+        }, 1200);
+      } else {
+        toast.error(result.error || "Erreur lors de la mise à jour du profil");
+        setErrors({ phone: result.error || "Erreur serveur" });
+      }
     }
   };
 
   const handleGoogleLogin = () => {
-    setLoading(true);
-    
-    // SUPABASE PLACEHOLDER: Replace with supabase.auth.signInWithOAuth({ provider: 'google' })
-    setTimeout(() => {
-      const mockUser = {
-        id: `user-${Date.now()}`,
-        nom: "Google",
-        prenom: "Utilisateur",
-        fullName: "Utilisateur Google",
-        email: "user@gmail.com",
-        phone: "",
-        password: "",
-        createdAt: new Date().toISOString(),
-        dateInsc: new Date().toLocaleDateString("fr-FR"),
-      };
-      
-      // Save to localStorage with separate nom/prenom
-      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-      existingUsers.push(mockUser);
-      localStorage.setItem("users", JSON.stringify(existingUsers));
-      localStorage.setItem("currentUser", JSON.stringify({
-        id: mockUser.id,
-        nom: mockUser.nom,
-        prenom: mockUser.prenom,
-        fullName: mockUser.fullName,
-        email: mockUser.email,
-        phone: mockUser.phone,
-        createdAt: mockUser.createdAt,
-        dateInsc: mockUser.dateInsc,
-      }));
-      
-      setLoading(false);
-      toast.success("Connexion réussie avec Google !");
-      
-      // Dispatch event for admin panel to update user count
-      window.dispatchEvent(new Event("userRegistered"));
-      
-      // Dispatch event for pending request recovery
-      window.dispatchEvent(new Event("userLoggedIn"));
-      
-      if (onLoginSuccess) {
-        onLoginSuccess(mockUser);
-      }
-      
-      onClose();
-    }, 1500);
+    // Note: Supabase OAuth requires backend configuration
+    // This is a placeholder - implement with supabase.auth.signInWithOAuth({ provider: 'google' })
+    toast.info("Google login coming soon! Configure OAuth in Supabase dashboard.");
+    setLoading(false);
   };
 
-  const handleStep1Next = () => {
+  const handleStep1Next = async () => {
     if (validateStep1()) {
-      // Check for duplicate email before proceeding
-      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-      const emailExists = existingUsers.some((u: any) => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (emailExists) {
-        setErrors({ email: "Cet e-mail est déjà utilisé. Vous avez déjà créé un compte avec cet e-mail." });
-        toast.error("Cet e-mail est déjà utilisé");
-        return;
-      }
-      
       setLoading(true);
       
-      // SUPABASE PLACEHOLDER: Replace with supabase.auth.signUp({ email, password: 'temp' })
-      // This will trigger email OTP
-      setTimeout(() => {
-        setLoading(false);
+      const result = await signUp({
+        email,
+        password: "temp_password",
+        nom,
+        prenom,
+        phone: "",
+      });
+      
+      setLoading(false);
+      
+      if (result.success) {
         setStep(2);
-        toast.success("Code de vérification envoyé à votre email !");
-      }, 1000);
+        setOtpResendCount(0);
+        toast.success("Code de vérification envoyé à " + email);
+      } else {
+        toast.error(result.error || "Erreur lors de l'inscription");
+        if (result.error?.toLowerCase().includes("already")) {
+          setErrors({ email: "Cet email est déjà utilisé" });
+        }
+      }
     }
   };
 
-  const handleStep2Verify = () => {
+  const handleStep2Verify = async () => {
     if (validateStep2()) {
       setLoading(true);
       
-      // SUPABASE PLACEHOLDER: Replace with supabase.auth.verifyOtp({ email, token: emailOtp, type: 'signup' })
-      setTimeout(() => {
-        setLoading(false);
+      const result = await verifyOTP(email, emailOtp);
+      setLoading(false);
+      
+      if (result.success) {
         setStep(3);
         toast.success("Email vérifié avec succès !");
-      }, 1000);
+      } else {
+        toast.error(result.error || "Code invalide ou expiré");
+        setErrors({ emailOtp: "Code invalide" });
+      }
     }
   };
+  
+  const handleResendOTP = async () => {
+    if (otpResendTimer > 0) return;
+    
+    setLoading(true);
+    const result = await resendOTP(email);
+    setLoading(false);
+    
+    if (result.success) {
+      setOtpResendCount(otpResendCount + 1);
+      setOtpResendTimer(60);
+      toast.success(result.message);
+    } else {
+      toast.error(result.error || "Erreur lors de l'envoi du code");
+    }
+  };
+  
+  // Timer for resend button
+  useEffect(() => {
+    if (otpResendTimer > 0) {
+      const timer = setTimeout(() => setOtpResendTimer(otpResendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [otpResendTimer]);
 
   const handleStep3Next = () => {
     if (validateStep3()) {
@@ -525,46 +482,42 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
     }
   };
 
-  const handleStep4Complete = () => {
+  const handleStep4Complete = async () => {
     if (validateStep4()) {
       setLoading(true);
       
-      // SUPABASE PLACEHOLDER: Replace with supabase.auth.updateUser({ password, data: { nom, prenom, phone } })
-      setTimeout(() => {
-        const newUser = {
-          id: `user-${Date.now()}`,
-          nom: nom,
-          prenom: prenom,
-          fullName: `${prenom} ${nom}`,
-          email,
-          phone: phone, // Required field
-          password,
-          createdAt: new Date().toISOString(),
-          dateInsc: new Date().toLocaleDateString("fr-FR"),
-        };
-        
-        // Console log for debugging
-        console.log("Registration Complete - User Data:", newUser);
-        
-        // Save to localStorage with separate nom/prenom
-        const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-        existingUsers.push(newUser);
-        localStorage.setItem("users", JSON.stringify(existingUsers));
-        
-        // IMMEDIATE AUTO-LOGIN: Set currentUser BEFORE any other actions
-        const currentUserData = {
-          id: newUser.id,
-          nom: nom,
-          prenom: prenom,
-          fullName: newUser.fullName,
-          email,
-          phone: phone,
-          createdAt: newUser.createdAt,
-          dateInsc: newUser.dateInsc,
-        };
-        localStorage.setItem("currentUser", JSON.stringify(currentUserData));
-        
+      // Get current authenticated user from Supabase Auth
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (!authUser || authError) {
+        toast.error("Erreur: Utilisateur non authentifié");
         setLoading(false);
+        return;
+      }
+
+      // Update auth user password and metadata
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password,
+        data: {
+          nom: nom,
+          prenom: prenom,
+          phone: phone,
+        },
+      });
+
+      if (updateError) {
+        toast.error("Erreur lors de la mise à jour du mot de passe");
+        setLoading(false);
+        return;
+      }
+
+      // Now create the user profile in the database
+      // This is the deferred profile creation - only happens after email verification AND password setup
+      const result = await completeSignUp(authUser.id, email, nom, prenom, phone);
+      
+      setLoading(false);
+      
+      if (result.success && result.user) {
         toast.success("Inscription réussie ! Bienvenue !");
         
         // Dispatch events for immediate data sync
@@ -573,7 +526,16 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
         
         // Call onLoginSuccess with user data for immediate state update
         if (onLoginSuccess) {
-          onLoginSuccess(newUser);
+          onLoginSuccess({
+            id: authUser.id,
+            nom,
+            prenom,
+            email: email,
+            phone: phone || "",
+            fullName: `${prenom} ${nom}`,
+            password: "",
+            createdAt: authUser.created_at || new Date().toISOString(),
+          });
         }
         
         // Close modal and redirect immediately
@@ -583,7 +545,9 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
         setTimeout(() => {
           window.location.href = "/";
         }, 100);
-      }, 1500);
+      } else {
+        toast.error(result.error || "Erreur lors de la finalisation de l'inscription");
+      }
     }
   };
 
@@ -1182,8 +1146,17 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
                       <p className="text-red-500 text-xs mt-1">{errors.emailOtp}</p>
                     )}
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                      Vérifiez votre boîte de réception Gmail
+                      Vérifiez votre boîte de réception
                     </p>
+                    <button
+                      onClick={handleResendOTP}
+                      disabled={otpResendTimer > 0 || loading}
+                      className="text-xs text-primary hover:underline disabled:text-gray-400 mt-2 text-center block w-full transition-colors"
+                    >
+                      {otpResendTimer > 0 
+                        ? `Renvoyer le code dans ${otpResendTimer}s` 
+                        : "Renvoyer le code"}
+                    </button>
                   </div>
 
                   <div className="flex flex-col-reverse md:flex-row gap-3 mt-6">
@@ -1356,3 +1329,4 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess, editMode = false }: Login
 };
 
 export default LoginModal;
+

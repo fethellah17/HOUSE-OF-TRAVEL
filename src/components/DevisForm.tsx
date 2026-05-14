@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import LoginModal from "@/components/LoginModal";
 import TravelModule from "@/components/TravelModule";
 import VisaAssistantModule from "@/components/VisaAssistantModule";
+import { submitDevisRequest, submitVisaRequest } from "@/lib/formsService";
+import { getCurrentUser } from "@/services/authService";
 
 interface DevisFormProps {
   prefilledDestination?: string;
@@ -195,7 +197,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isLoggedIn) {
@@ -212,99 +214,68 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
 
     setStatus("loading");
 
-    setTimeout(() => {
-      const currentUserStr = localStorage.getItem("currentUser");
-      let userInfo = {
-        name: "Visiteur Anonyme",
-        email: formData.email || "Non spécifié",
-        phone: formData.telephone || "Non spécifié",
-        isAnonymous: true,
-      };
+    try {
+      // Get current user ID
+      const authUser = await getCurrentUser();
+      const userId = authUser.success ? authUser.user?.id : undefined;
 
-      if (currentUserStr) {
-        try {
-          const currentUser = JSON.parse(currentUserStr);
-          userInfo = {
-            name: currentUser.fullName || "Utilisateur",
-            email: currentUser.email || formData.email,
-            phone: currentUser.phone || formData.telephone,
-            isAnonymous: false,
-          };
-        } catch (error) {
-          console.error("Error parsing user:", error);
+      // Route to correct service based on path
+      if (formData.servicePath === "travel") {
+        // Submit as devis_request (covers omrah, voyage, sejour)
+        const result = await submitDevisRequest({
+          user_id: userId,
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          phone: formData.telephone,
+          destination: formData.destination || formData.voyageDestination || "",
+          visa_needed: formData.visa_required || false,
+          flight_with_without: formData.flight_included ? "Avec vol" : "Sans vol",
+          hotel_name: formData.hotel_type === "4stars" ? "4 Étoiles" : formData.hotel_type === "5stars" ? "5 Étoiles" : undefined,
+          hotel_stars: formData.hotel_type === "4stars" ? 4 : formData.hotel_type === "5stars" ? 5 : undefined,
+          number_of_rooms: formData.room_count || 1,
+          room_type: formData.room_type,
+          meal_plan: formData.pension_type,
+          number_of_adults: formData.adults_count || 1,
+          number_of_children: formData.children_count || 0,
+          children_ages: formData.children_ages,
+          departure_date: formData.departure_date || "",
+          return_date: formData.return_date || "",
+          special_requests: formData.message,
+        });
+
+        if (result.success) {
+          setStatus("success");
+          toast.success("Votre demande de devis a été envoyée avec succès !");
+        } else {
+          toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
+          setStatus("idle");
+        }
+      } else if (formData.servicePath === "visa" && formData.visaDestination) {
+        // Submit as visa_request
+        const result = await submitVisaRequest({
+          user_id: userId,
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          phone: formData.telephone,
+          visa_type: formData.visaDestination?.includes("USA") ? "e-visa" : "dossier",
+          destination_country: formData.visaDestination || "",
+          passport_number: "N/A",
+          passport_expiry: new Date().toISOString().split("T")[0],
+          travel_date: formData.departure_date || "",
+          professional_status: formData.visaProfession,
+          special_requests: formData.message,
+        });
+
+        if (result.success) {
+          setStatus("success");
+          toast.success("Votre demande visa a été envoyée avec succès !");
+        } else {
+          toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
+          setStatus("idle");
         }
       }
-
-      const requestObject = {
-        id: `req-${Date.now()}`,
-        type: "Devis",
-        userInfo: userInfo,
-        formData: formData,
-        timestamp: new Date().toISOString(),
-        isRead: false,
-      };
-
-      const adminInbox = JSON.parse(localStorage.getItem("admin_inbox") || "[]");
-      adminInbox.push(requestObject);
-      localStorage.setItem("admin_inbox", JSON.stringify(adminInbox));
-
-      // Helper functions to format data
-      const formatHotelType = (type?: string) => {
-        if (type === "4stars") return "4 Étoiles";
-        if (type === "5stars") return "5 Étoiles";
-        return undefined;
-      };
-
-      const formatDistance = (dist?: string) => {
-        if (dist === "close") return "Proche (0-500m)";
-        if (dist === "medium") return "Moyenne (500m-1km)";
-        if (dist === "far") return "Plus de 1km";
-        return undefined;
-      };
-
-      const formatRoomType = (type?: string) => {
-        if (type === "double") return "Double";
-        if (type === "triple") return "Triple";
-        if (type === "quad") return "Quadruple";
-        return undefined;
-      };
-
-      const formatPension = (type?: string) => {
-        if (type === "none") return "Sans pension";
-        if (type === "breakfast") return "Petit déjeuner";
-        if (type === "half") return "Demi-pension";
-        if (type === "full") return "Pension complète";
-        return undefined;
-      };
-
-      addMessage({
-        type: "Devis",
-        name: formData.nom || "Non spécifié",
-        email: formData.email || "Non spécifié",
-        phone: formData.telephone || "Non spécifié",
-        subject: `DEVIS GRATUIT - ${formData.servicePath === "travel" ? "Voyage" : "Visa"}`,
-        content: formData.message || "Aucun message supplémentaire",
-        devisDetails: {
-          prenom: formData.prenom,
-          destination: formData.destination || formData.voyageDestination || formData.visaDestination,
-          besoinVisa: formData.visa_required !== undefined ? (formData.visa_required ? "Oui" : "Non") : undefined,
-          volAvecSans: formData.flight_included !== undefined ? (formData.flight_included ? "Avec vol" : "Sans vol") : undefined,
-          nomHotel: formatHotelType(formData.hotel_type),
-          nombreEtoiles: formatHotelType(formData.hotel_type),
-          distanceHaram: formatDistance(formData.hotel_distance),
-          nombreChambres: formData.room_count?.toString(),
-          typeChambre: formatRoomType(formData.room_type),
-          pension: formatPension(formData.pension_type),
-          nombreAdultes: formData.adults_count?.toString(),
-          nombreEnfants: formData.children_count?.toString() || "0",
-          ageEnfants: formData.children_ages,
-          dateDepart: formData.departure_date,
-          dateRetour: formData.return_date,
-        },
-      });
-
-      setStatus("success");
-      toast.success("Votre demande de devis a été envoyée avec succès !");
 
       setTimeout(() => {
         setFormData({
@@ -317,7 +288,11 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
         });
         setStatus("idle");
       }, 2000);
-    }, 1500);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
+      setStatus("idle");
+    }
   };
 
   const formContent = (

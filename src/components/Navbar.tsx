@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import logo from "@/assets/logo.png";
 import LoginModal from "./LoginModal";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
+import { logout } from "@/services/authService";
 
 const navLinks = [
   { to: "/", label: "Accueil" },
@@ -21,9 +23,9 @@ const whatsappServices = [
 
 const Navbar = () => {
   const location = useLocation();
+  const { user: authUser, isLoading } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [whatsappDropdownOpen, setWhatsappDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -39,36 +41,23 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Check if user is logged in
-  useEffect(() => {
-    const userStr = localStorage.getItem("currentUser");
-    if (userStr) {
-      try {
-        setCurrentUser(JSON.parse(userStr));
-      } catch (error) {
-        console.error("Error parsing user:", error);
-      }
-    }
-  }, []);
-
-  const handleLogout = () => {
+  const handleLogout = async () => {
     // Confirmation dialog
     const confirmed = window.confirm("Êtes-vous sûr de vouloir vous déconnecter ?");
     
     if (confirmed) {
-      localStorage.removeItem("currentUser");
-      setCurrentUser(null);
-      setMobileOpen(false);
-      
-      // Dispatch custom event to notify all forms
-      window.dispatchEvent(new Event("userLoggedOut"));
-      
-      toast.success("Déconnexion réussie !");
+      const result = await logout();
+      if (result.success) {
+        setMobileOpen(false);
+        
+        // Dispatch custom event to notify all forms
+        window.dispatchEvent(new Event("userLoggedOut"));
+        
+        toast.success("Déconnexion réussie !");
+      } else {
+        toast.error(result.error || "Erreur lors de la déconnexion");
+      }
     }
-  };
-
-  const handleLoginSuccess = (user: any) => {
-    setCurrentUser(user);
   };
 
   return (
@@ -109,12 +98,12 @@ const Navbar = () => {
 
         <div className="flex items-center gap-2 md:gap-4">
           {/* User Account Button */}
-          {currentUser ? (
+          {authUser ? (
             <div className="hidden sm:flex items-center gap-2">
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 text-primary">
                 <User size={18} />
                 <span className="text-sm font-medium hidden md:inline">
-                  {currentUser.fullName?.split(" ")[0] || "Utilisateur"}
+                  {authUser.prenom || "Utilisateur"}
                 </span>
               </div>
               <button
@@ -136,10 +125,10 @@ const Navbar = () => {
           )}
 
           {/* Mobile User Greeting - Shows before WhatsApp icon */}
-          {currentUser && (
+          {authUser && (
             <div className="sm:hidden flex items-center">
               <span className="text-xs font-medium text-slate-700 max-w-[70px] truncate">
-                {currentUser.fullName?.split(" ")[0] || "User"}
+                {authUser.prenom || "User"}
               </span>
             </div>
           )}
@@ -284,7 +273,7 @@ const Navbar = () => {
               
               {/* Mobile Login/Logout */}
               <li className="mt-2 pt-2 border-t border-border">
-                {currentUser ? (
+                {authUser ? (
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-purple-50 text-purple-900 hover:bg-purple-100 transition-colors text-sm font-medium"
@@ -314,7 +303,6 @@ const Navbar = () => {
       <LoginModal
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
-        onLoginSuccess={handleLoginSuccess}
       />
     </header>
   );

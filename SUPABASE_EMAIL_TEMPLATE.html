@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HOUSE OF TRAVEL - Verification Code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4B2C7F 0%, #2C5F2D 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .greeting {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .greeting strong {
+            color: #4B2C7F;
+        }
+        
+        .message {
+            font-size: 14px;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            color: #555;
+        }
+        
+        .otp-section {
+            background-color: #f9f9f9;
+            border-left: 4px solid #4B2C7F;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .otp-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #999;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .otp-code {
+            font-size: 42px;
+            font-weight: 700;
+            color: #4B2C7F;
+            letter-spacing: 8px;
+            font-family: 'Courier New', monospace;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 4px;
+            border: 2px dashed #4B2C7F;
+            display: inline-block;
+        }
+        
+        .otp-expiry {
+            font-size: 12px;
+            color: #e74c3c;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        
+        .instruction {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+        
+        .instruction strong {
+            color: #2980b9;
+        }
+        
+        .security-notice {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #856404;
+        }
+        
+        .security-notice strong {
+            color: #d39e00;
+        }
+        
+        .footer {
+            background-color: #f5f5f5;
+            padding: 20px 30px;
+            text-align: center;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .footer-link {
+            color: #4B2C7F;
+            text-decoration: none;
+        }
+        
+        .footer-link:hover {
+            text-decoration: underline;
+        }
+        
+        .social-links {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .social-links a {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background-color: #4B2C7F;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-size: 16px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        
+        .social-links a:hover {
+            background-color: #2C5F2D;
+        }
+        
+        @media (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 25px 20px;
+            }
+            
+            .otp-code {
+                font-size: 32px;
+                letter-spacing: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🌍 HOUSE OF TRAVEL</h1>
+            <p>Vérification de votre compte</p>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Greeting -->
+            <div class="greeting">
+                Bienvenue chez <strong>HOUSE OF TRAVEL</strong>!
+            </div>
+            
+            <!-- Message -->
+            <div class="message">
+                Merci de vous être inscrit(e). Pour confirmer votre adresse email et activer votre compte, veuillez utiliser le code de vérification ci-dessous:
+            </div>
+            
+            <!-- OTP Code Section -->
+            <div class="otp-section">
+                <span class="otp-label">Code de Vérification</span>
+                <div class="otp-code">{{ .Token }}</div>
+                <div class="otp-expiry">⏱️ Ce code expire dans 10 minutes</div>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="instruction">
+                <strong>✓ Comment utiliser ce code:</strong><br>
+                1. Retournez à la page d'inscription<br>
+                2. Entrez le code à 6 chiffres ci-dessus<br>
+                3. Cliquez sur "Vérifier" pour confirmer votre email
+            </div>
+            
+            <!-- Security Notice -->
+            <div class="security-notice">
+                <strong>🔒 Sécurité importante:</strong> Ne partagez jamais ce code avec quiconque. HOUSE OF TRAVEL ne vous demandera jamais ce code par email ou téléphone. Si vous n'avez pas effectué cette demande, ignorez simplement ce message.
+            </div>
+            
+            <!-- Additional Info -->
+            <div class="message">
+                Une fois votre compte confirmé, vous pourrez:<br>
+                ✈️ Réserver des voyages exceptionnels<br>
+                🎫 Accéder à nos services de billetterie<br>
+                📋 Demander des devis gratuits<br>
+                🏨 Consulter nos assistants visa et hôtel
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>© 2026 HOUSE OF TRAVEL. Tous droits réservés.<br>
+            <a href="https://houseoftravel.com" class="footer-link">www.houseoftravel.com</a></p>
+            
+            <div class="social-links">
+                <a href="https://facebook.com" title="Facebook">f</a>
+                <a href="https://instagram.com" title="Instagram">📷</a>
+                <a href="https://whatsapp.com" title="WhatsApp">💬</a>
+            </div>
+            
+            <p style="margin-top: 15px;">Si vous avez des questions, contactez-nous à support@houseoftravel.com</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Voyage, Message, VoyageCategory, Stage, VoyageStatus } from "@/types";
+import type { BilletterieRequest } from "@/contexts/DataContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plane, Inbox, Plus, LogOut, Eye, Trash2, X, CheckCircle, Loader2, Menu, Pencil, FileDown, ArrowLeft, Users, Settings2, FileText,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 import logo from "@/assets/logo.png";
 import { DateRangePicker } from "@/components/ui/date-picker";
 import { MultiImageUpload } from "@/components/MultiImageUpload";
@@ -16,6 +18,7 @@ import { fr } from "date-fns/locale";
 import { formatPrice } from "@/lib/formatters";
 import { generateMessagePDF } from "@/lib/pdfGenerator";
 import InboxView from "@/components/admin/inbox/InboxView";
+import { fetchBilletterieRequests } from "@/lib/formsService";
 
 type Tab = "inbox" | "users" | "voyages" | "sejour-config" | "visa-config" | "settings";
 
@@ -52,6 +55,8 @@ const AdminPage = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [realBilletterieRequests, setRealBilletterieRequests] = useState<BilletterieRequest[]>([]);
+  const [loadingBilletterie, setLoadingBilletterie] = useState(false);
 
   // Safety check for critical data
   if (!voyages || !messages || !requests) {
@@ -64,6 +69,56 @@ const AdminPage = () => {
       </div>
     );
   }
+
+  // Fetch real billetterie requests from Supabase
+  useEffect(() => {
+    if (!loggedIn) return;
+
+    const loadBilletterieRequests = async () => {
+      try {
+        setLoadingBilletterie(true);
+        const supabaseRequests = await fetchBilletterieRequests();
+        
+        // Map Supabase data to BilletterieRequest format
+        const mappedRequests: BilletterieRequest[] = supabaseRequests.map((req: any) => ({
+          id: req.id,
+          serviceType: "billetterie" as const,
+          createdAt: req.created_at,
+          isRead: req.is_read || false,
+          completed: req.status === "completed",
+          personalInfo: {
+            nom: req.nom || "",
+            prenom: req.prenom || "",
+            email: req.email || "",
+            telephone: req.phone || "",
+          },
+          tripType: req.trip_type || "",
+          destination: `${req.departure_city || ""} → ${req.arrival_city || ""}`,
+          villeDepart: req.departure_city || "",
+          villeArrivee: req.arrival_city || "",
+          dateDepart: req.departure_date || "",
+          dateRetour: req.return_date || "",
+          nombreAdultes: (req.number_of_adults || 0).toString(),
+          nombreEnfants: (req.number_of_children || 0).toString(),
+          nombreBebes: (req.number_of_babies || 0).toString(),
+          enfantsDates: req.children_age || "",
+          bebesDates: req.babies_age || "",
+          compagnie: req.airline_preference || "",
+          besoinVisa: req.visa_needed ? "Oui" : "Non",
+          message: req.special_requests || "",
+        }));
+
+        setRealBilletterieRequests(mappedRequests);
+      } catch (error) {
+        console.error("Error loading billetterie requests:", error);
+        toast.error("Erreur lors du chargement des demandes. Vérifiez les permissions RLS dans Supabase.");
+      } finally {
+        setLoadingBilletterie(false);
+      }
+    };
+
+    loadBilletterieRequests();
+  }, [loggedIn]);
 
   // Ensure arrays are defined with fallbacks
   const safeSejourDestinations = sejourDestinations || [];
@@ -225,12 +280,33 @@ const AdminPage = () => {
       <div className="flex-1 overflow-auto pt-16 lg:pt-0">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
           {tab === "inbox" ? (
-            <InboxView
-              requests={safeRequests}
-              markRequestAsRead={markRequestAsRead}
-              toggleRequestStatus={toggleRequestStatus}
-              deleteRequest={deleteRequest}
-            />
+            <div>
+              {loadingBilletterie && (
+                <div className="flex items-center justify-center py-12 bg-white rounded-lg border border-slate-200 mb-6">
+                  <div className="text-center">
+                    <Loader2 className="animate-spin h-8 w-8 text-primary mx-auto mb-3" />
+                    <p className="text-slate-600">Chargement des demandes...</p>
+                  </div>
+                </div>
+              )}
+              <InboxView
+                requests={realBilletterieRequests.length > 0 ? realBilletterieRequests : safeRequests}
+                markRequestAsRead={markRequestAsRead}
+                toggleRequestStatus={toggleRequestStatus}
+                deleteRequest={deleteRequest}
+              />
+              {!loadingBilletterie && realBilletterieRequests.length === 0 && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
+                  <p className="font-semibold mb-2">💡 Conseil RLS</p>
+                  <p>Si les demandes n'apparaissent pas, vérifiez les permissions RLS dans Supabase:</p>
+                  <ol className="mt-2 ml-4 list-decimal space-y-1 text-xs">
+                    <li>Allez dans Supabase → Table <code className="bg-blue-100 px-1 rounded">billetterie_requests</code></li>
+                    <li>Cliquez sur l'onglet <code className="bg-blue-100 px-1 rounded">RLS</code></li>
+                    <li>Créez une policy pour permettre aux utilisateurs connectés (authenticated) d'avoir SELECT</li>
+                  </ol>
+                </div>
+              )}
+            </div>
           ) : tab === "users" ? (
             <UsersView />
           ) : tab === "sejour-config" ? (
@@ -834,11 +910,12 @@ const UsersView = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadUsers();
     
-    // Listen for new user registrations
+    // Listen for new user registrations from Supabase
     const handleUserUpdate = () => {
       loadUsers();
     };
@@ -850,25 +927,59 @@ const UsersView = () => {
     };
   }, []);
 
-  const loadUsers = () => {
-    const allUsers = JSON.parse(localStorage.getItem("users") || "[]");
-    setUsers(allUsers.reverse()); // Most recent first
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      // Query only from the users table - ensures only fully registered users appear
+      // (profiles are only created after email verification AND password setup)
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .order("created_at", { ascending: false }); // Most recent first
+
+      if (error) {
+        console.error("Error loading users:", error);
+        toast.error("Erreur lors du chargement des utilisateurs");
+        setUsers([]);
+      } else {
+        setUsers(data || []);
+      }
+    } catch (error: any) {
+      console.error("Error loading users:", error);
+      toast.error("Erreur lors du chargement des utilisateurs");
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
-    const allUsers = JSON.parse(localStorage.getItem("users") || "[]");
-    const updatedUsers = allUsers.filter((u: any) => u.id !== userId);
-    localStorage.setItem("users", JSON.stringify(updatedUsers));
-    
-    // Also check if this was the current user
-    const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
-    if (currentUser && currentUser.id === userId) {
-      localStorage.removeItem("currentUser");
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      // Delete from users table
+      const { error } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", userId);
+
+      if (error) {
+        toast.error("Erreur lors de la suppression");
+        return;
+      }
+
+      // Also delete from auth if possible (requires admin privileges)
+      try {
+        await supabase.auth.admin.deleteUser(userId);
+      } catch (authError) {
+        console.warn("Could not delete auth user, may require admin privileges:", authError);
+      }
+
+      loadUsers();
+      setShowDeleteConfirm(null);
+      toast.success("Utilisateur supprimé avec succès");
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast.error("Erreur lors de la suppression");
     }
-    
-    loadUsers();
-    setShowDeleteConfirm(null);
-    toast.success("Utilisateur supprimé avec succès");
   };
 
   const formatDate = (dateString: string) => {

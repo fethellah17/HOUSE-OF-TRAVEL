@@ -1,0 +1,473 @@
+# SUPABASE INTEGRATION SETUP GUIDE
+
+## Overview
+Your House of Travel app is now connected with Supabase! This guide explains how to use the Supabase client and services.
+
+## Environment Variables
+
+The following variables are already in your `.env` file:
+
+```
+VITE_SUPABASE_URL = https://tpyoggegxmhkqupdglab.supabase.co
+VITE_SUPABASE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Note:** The `VITE_` prefix makes these variables accessible in the browser.
+
+## Installation
+
+Install the Supabase JavaScript client:
+
+```bash
+npm install @supabase/supabase-js
+```
+
+## Files Created
+
+### Core Files
+- `src/lib/supabase.ts` - Supabase client initialization
+- `src/services/authService.ts` - Authentication operations
+- `src/services/bookingService.ts` - Booking operations
+- `src/services/voyageService.ts` - Voyage/package operations
+- `src/services/requestService.ts` - Devis, Billetterie, Visa, Hotel requests
+
+### React Hooks
+- `src/hooks/useAuth.ts` - Authentication hook
+- `src/hooks/useBookings.ts` - Booking hooks
+- `src/hooks/useVoyages.ts` - Voyage hooks
+- `src/hooks/useRequests.ts` - Request hooks
+
+## Usage Examples
+
+### Authentication
+
+```typescript
+import { useAuth } from "@/hooks/useAuth";
+
+function MyComponent() {
+  const { user, isLoading, isAuthenticated } = useAuth();
+
+  if (isLoading) return <div>Loading...</div>;
+
+  return (
+    <div>
+      {isAuthenticated ? (
+        <p>Welcome, {user?.prenom}!</p>
+      ) : (
+        <p>Please log in</p>
+      )}
+    </div>
+  );
+}
+```
+
+### Sign Up
+
+```typescript
+import { signUp } from "@/services/authService";
+
+const result = await signUp({
+  email: "user@example.com",
+  password: "SecurePassword123!",
+  nom: "Dupont",
+  prenom: "Jean",
+  phone: "+33612345678",
+});
+
+if (result.success) {
+  console.log("Signup successful!");
+} else {
+  console.error(result.error);
+}
+```
+
+### Login
+
+```typescript
+import { login } from "@/services/authService";
+
+const result = await login({
+  email: "user@example.com",
+  password: "SecurePassword123!",
+});
+
+if (result.success) {
+  console.log("Login successful!");
+  console.log(result.session);
+}
+```
+
+### Get User Bookings
+
+```typescript
+import { useUserBookings } from "@/hooks/useBookings";
+
+function BookingsPage() {
+  const { bookings, total, isLoading, error } = useUserBookings(
+    1, // page
+    10 // pageSize
+  );
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <div>
+      {bookings.map((booking) => (
+        <div key={booking.id}>
+          <h3>{booking.voyage.title}</h3>
+          <p>Status: {booking.booking_status}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Get Voyages
+
+```typescript
+import { useVoyages } from "@/hooks/useVoyages";
+
+function VoyagesPage() {
+  const { voyages, total, isLoading } = useVoyages({
+    page: 1,
+    pageSize: 12,
+    category: "Voyage Organisé",
+  });
+
+  return (
+    <div>
+      {voyages.map((voyage) => (
+        <div key={voyage.id}>
+          <h3>{voyage.title}</h3>
+          <p>Price: {voyage.price}€</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Create Booking
+
+```typescript
+import { useCreateBooking } from "@/hooks/useBookings";
+
+function BookingForm() {
+  const { create, isLoading, error } = useCreateBooking();
+
+  const handleSubmit = async () => {
+    const result = await create({
+      voyageId: "voyage-id",
+      totalAdults: 2,
+      totalChildren: 1,
+      totalBabies: 0,
+      departureDate: new Date("2025-06-15"),
+      returnDate: new Date("2025-06-22"),
+      travelers: [
+        {
+          nom: "Dupont",
+          prenom: "Jean",
+          dateOfBirth: new Date("1990-01-01"),
+          gender: "male",
+          passportNumber: "ABC123456",
+          passportExpiry: new Date("2030-01-01"),
+          travelerType: "adult",
+        },
+      ],
+      roomDetails: [
+        {
+          roomType: "Double",
+          numberOfGuests: 2,
+          specialRequests: "View of sea",
+        },
+      ],
+    });
+
+    if (result.success) {
+      alert("Booking created!");
+    } else {
+      alert("Error: " + result.error);
+    }
+  };
+
+  return (
+    <button onClick={handleSubmit} disabled={isLoading}>
+      {isLoading ? "Creating..." : "Book Now"}
+    </button>
+  );
+}
+```
+
+### Create Devis Request
+
+```typescript
+import { useCreateDevisRequest } from "@/hooks/useRequests";
+
+function DevisForm() {
+  const { create, isLoading, error } = useCreateDevisRequest();
+
+  const handleSubmit = async () => {
+    const result = await create({
+      nom: "Dupont",
+      prenom: "Jean",
+      email: "jean@example.com",
+      phone: "+33612345678",
+      destination: "Égypte",
+      voyageId: undefined,
+      visaNeeded: false,
+      flightWithWithout: "avec",
+      hotelName: "Hilton Cairo",
+      hotelStars: 5,
+      numberOfRooms: 2,
+      roomType: "Double",
+      mealPlan: "Pension complète",
+      numberOfAdults: 2,
+      numberOfChildren: 1,
+      childrenAges: "8 ans",
+      departureDate: new Date("2025-06-01"),
+      returnDate: new Date("2025-06-15"),
+      specialRequests: "Halal meals required",
+    });
+
+    if (result.success) {
+      alert("Devis request sent!");
+    }
+  };
+
+  return <button onClick={handleSubmit}>Send Devis Request</button>;
+}
+```
+
+### Search Voyages
+
+```typescript
+import { useVoyageSearch } from "@/hooks/useVoyages";
+
+function SearchVoyages() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const { voyages, isLoading } = useVoyageSearch(searchTerm);
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        placeholder="Search voyages..."
+      />
+
+      {isLoading && <p>Searching...</p>}
+
+      <div>
+        {voyages.map((voyage) => (
+          <div key={voyage.id}>{voyage.title}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Service Functions
+
+### Auth Service
+
+```typescript
+// Sign up
+signUp(request: SignupRequest)
+
+// Login
+login(request: LoginRequest)
+
+// Logout
+logout()
+
+// Get current user
+getCurrentUser()
+
+// Get user profile
+getUserProfile(userId: string)
+
+// Update profile
+updateUserProfile(userId: string, updates: Partial<IUser>)
+
+// Password reset
+requestPasswordReset(email: string)
+resetPassword(newPassword: string)
+
+// Listen for auth changes
+onAuthStateChange(callback: (user: any) => void)
+```
+
+### Booking Service
+
+```typescript
+// Create booking
+createBooking(userId: string, bookingData: CreateBookingRequest)
+
+// Get user bookings
+getUserBookings(userId: string, params?: PaginationParams)
+
+// Get booking details
+getBookingDetails(bookingId: string)
+
+// Update booking status
+updateBookingStatus(bookingId: string, bookingStatus: string, paymentStatus?: string)
+
+// Cancel booking
+cancelBooking(bookingId: string)
+```
+
+### Voyage Service
+
+```typescript
+// Get all voyages
+getAllVoyages(params?: PaginationParams)
+
+// Get voyage by ID
+getVoyageById(voyageId: string)
+
+// Get voyages by category
+getVoyagesByCategory(category: VoyageCategoryEnum, params?: PaginationParams)
+
+// Get available voyages
+getAvailableVoyages(params?: PaginationParams)
+
+// Update voyage capacity
+updateVoyageCapacity(voyageId: string, increment: number)
+
+// Search voyages
+searchVoyages(searchTerm: string, params?: PaginationParams)
+```
+
+### Request Service
+
+```typescript
+// Devis
+createDevisRequest(userId: string | undefined, request: CreateDevisRequest)
+getUserDevisRequests(userId: string, params?: PaginationParams)
+
+// Billetterie
+createBilletterieRequest(userId: string | undefined, request: CreateBilletterieRequest)
+getUserBilletterieRequests(userId: string, params?: PaginationParams)
+
+// Visa
+createVisaRequest(userId: string | undefined, request: CreateVisaRequest)
+getUserVisaRequests(userId: string, params?: PaginationParams)
+
+// Hotel
+createHotelRequest(userId: string | undefined, request: CreateHotelRequest)
+getUserHotelRequests(userId: string, params?: PaginationParams)
+
+// Admin
+getAllDevisRequests(status?: string, params?: PaginationParams)
+updateRequestStatus(table: string, requestId: string, status: string, assignedTo?: string)
+markRequestAsRead(table: string, requestId: string)
+```
+
+## Type Definitions
+
+All TypeScript interfaces are in `src/types/database.ts`:
+
+- `IUser` - User interface
+- `IVoyage` - Voyage interface
+- `IBooking` - Booking interface
+- `IDevisRequest` - Devis request interface
+- `IBilletterieRequest` - Billetterie request interface
+- `IVisaRequest` - Visa request interface
+- `IHotelRequest` - Hotel request interface
+
+## Protected Routes
+
+Use `useRequireAuth()` hook to protect routes:
+
+```typescript
+import { useRequireAuth } from "@/hooks/useAuth";
+
+function ProtectedPage() {
+  const { user, isLoading } = useRequireAuth();
+
+  if (isLoading) return <div>Loading...</div>;
+
+  return <div>Protected content for {user?.prenom}</div>;
+}
+```
+
+## Error Handling
+
+All service functions return an object with:
+
+```typescript
+{
+  success: boolean;
+  data?: any;
+  error?: string;
+}
+```
+
+Example error handling:
+
+```typescript
+const result = await createBooking(userId, bookingData);
+
+if (!result.success) {
+  toast.error(result.error || "Something went wrong");
+  return;
+}
+
+toast.success("Booking created successfully!");
+```
+
+## Database Helpers
+
+Use utility functions from `src/lib/database.ts`:
+
+```typescript
+// Pagination
+getPaginationParams(params: PaginationParams)
+buildPaginationResult<T>(data: T[], total: number, page: number, pageSize: number)
+
+// Formatting
+formatPrice(price: number, currency?: string)
+formatBoolean(value: boolean | null | undefined)
+getStatusLabel(status: string)
+getStatusColor(status: string)
+
+// Validation
+calculateAge(dateOfBirth: Date)
+classifyTraveler(dateOfBirth: Date)
+calculateTripCost(basePrice: number, adults: number, children: number, babies: number)
+
+// Generation
+generateBookingNumber()
+generateInvoiceNumber()
+```
+
+## Troubleshooting
+
+**"Missing Supabase credentials" error:**
+- Ensure `VITE_SUPABASE_URL` and `VITE_SUPABASE_KEY` are in your `.env` file
+- Restart the dev server after adding env variables
+
+**"relation does not exist" error:**
+- Run your SQL schema from `database/schema.sql` in Supabase
+- Check that the table names match your queries
+
+**Authentication not persisting:**
+- Supabase handles session persistence automatically
+- Check browser console for errors
+- Ensure cookies are enabled
+
+## Next Steps
+
+1. ✅ Install `@supabase/supabase-js`
+2. ✅ Add environment variables to `.env`
+3. ✅ Run database schema in Supabase
+4. ✅ Import services/hooks in your components
+5. Start building features!
+
+## Support
+
+For issues with Supabase, visit: https://supabase.com/docs

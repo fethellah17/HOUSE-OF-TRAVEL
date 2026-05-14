@@ -1,0 +1,712 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USERS & AUTHENTICATION
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  nom           String
+  prenom        String
+  phone         String?
+  isEmailVerified Boolean @default(false) @map("is_email_verified")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  lastLogin     DateTime? @map("last_login")
+
+  profile           UserProfile?
+  emailTokens       EmailVerificationToken[]
+  passwordTokens    PasswordResetToken[]
+  bookings          Booking[]
+  devisRequests     DevisRequest[]
+  billeterieRequests BilletterieRequest[]
+  visaRequests      VisaRequest[]
+  hotelRequests     HotelRequest[]
+  adminUser         AdminUser?
+  sentMessages      Message[]            @relation("Sender")
+  receivedMessages  Message[]            @relation("Recipient")
+  notifications     Notification[]
+  payments          Payment[]
+  invoices          Invoice[]
+  activityLogs      ActivityLog[]
+
+  @@index([email])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model UserProfile {
+  id              String    @id @default(cuid())
+  userId          String    @unique @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  passportNumber  String?   @map("passport_number")
+  passportExpiry  DateTime? @map("passport_expiry")
+  nationality     String?
+  dateOfBirth     DateTime? @map("date_of_birth")
+  gender          String?
+  address         String?
+  city            String?
+  postalCode      String?   @map("postal_code")
+  country         String?
+  maritalStatus   String?   @map("marital_status")
+  occupation      String?
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("user_profiles")
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@index([userId])
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([token])
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ============================================
+// VOYAGES & TRAVEL PACKAGES
+// ============================================
+
+enum VoyageCategory {
+  OMRAH
+  VOYAGE_ORGANISE
+  VOYAGE_A_LA_CARTE
+  VOYAGE_NATIONAL
+
+  @@map("voyage_category")
+}
+
+enum VoyageStatus {
+  NORMAL
+  ALMOST_FULL
+  FULL
+  LIMITED_OFFER
+
+  @@map("voyage_status")
+}
+
+model Voyage {
+  id            String    @id @default(cuid())
+  title         String
+  description   String?   @db.Text
+  category      VoyageCategory
+  price         Decimal   @db.Decimal(10, 2)
+  duration      String?
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime  @map("end_date")
+  status        VoyageStatus @default(NORMAL)
+  maxCapacity   Int       @default(0) @map("max_capacity")
+  currentBookings Int     @default(0) @map("current_bookings")
+  imageUrl      String?   @map("image_url")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  createdBy     String?   @map("created_by")
+  createdByAdmin AdminUser? @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  stages        VoyageStage[]
+  features      VoyageFeature[]
+  details       VoyageDetails?
+  bookings      Booking[]
+  devisRequests DevisRequest[]
+
+  @@index([category])
+  @@index([status])
+  @@index([startDate])
+  @@index([createdAt])
+  @@map("voyages")
+}
+
+model VoyageStage {
+  id            String   @id @default(cuid())
+  voyageId      String   @map("voyage_id")
+  voyage        Voyage   @relation(fields: [voyageId], references: [id], onDelete: Cascade)
+  
+  stageNumber   Int      @map("stage_number")
+  name          String
+  hotelName     String?  @map("hotel_name")
+  city          String?
+  googleMapsUrl String?  @map("google_maps_url")
+  durationDays  Int?     @map("duration_days")
+  icon          String?  @default("default")
+  description   String?  @db.Text
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([voyageId])
+  @@map("voyage_stages")
+}
+
+model VoyageFeature {
+  id        String   @id @default(cuid())
+  voyageId  String   @map("voyage_id")
+  voyage    Voyage   @relation(fields: [voyageId], references: [id], onDelete: Cascade)
+  feature   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([voyageId])
+  @@map("voyage_features")
+}
+
+model VoyageDetails {
+  id              String   @id @default(cuid())
+  voyageId        String   @unique @map("voyage_id")
+  voyage          Voyage   @relation(fields: [voyageId], references: [id], onDelete: Cascade)
+  
+  flightType      String?  @map("flight_type")
+  visaRequired    Boolean? @map("visa_required")
+  roomType        String?  @map("room_type")
+  mealPlan        String?  @map("meal_plan")
+  guideLanguage   String?  @map("guide_language")
+  departureCity   String?  @map("departure_city")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([voyageId])
+  @@map("voyage_details")
+}
+
+// ============================================
+// BOOKINGS & ORDERS
+// ============================================
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+
+  @@map("payment_status_enum")
+}
+
+enum BookingStatus {
+  CONFIRMED
+  PENDING
+  CANCELLED
+
+  @@map("booking_status_enum")
+}
+
+model Booking {
+  id              String    @id @default(cuid())
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  voyageId        String    @map("voyage_id")
+  voyage          Voyage    @relation(fields: [voyageId], references: [id], onDelete: Cascade)
+  
+  bookingNumber   String    @unique @map("booking_number")
+  totalAdults     Int       @default(0) @map("total_adults")
+  totalChildren   Int       @default(0) @map("total_children")
+  totalBabies     Int       @default(0) @map("total_babies")
+  totalPrice      Decimal   @db.Decimal(10, 2) @map("total_price")
+  
+  paymentStatus   PaymentStatus @default(PENDING) @map("payment_status")
+  bookingStatus   BookingStatus @default(PENDING) @map("booking_status")
+  
+  departureDate   DateTime? @map("departure_date")
+  returnDate      DateTime? @map("return_date")
+  specialRequests String?   @db.Text @map("special_requests")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  travelers       BookingTraveler[]
+  roomDetails     BookingRoomDetail[]
+  payments        Payment[]
+  invoices        Invoice[]
+
+  @@index([userId])
+  @@index([voyageId])
+  @@index([bookingNumber])
+  @@index([createdAt])
+  @@map("bookings")
+}
+
+model BookingTraveler {
+  id              String   @id @default(cuid())
+  bookingId       String   @map("booking_id")
+  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  nom             String
+  prenom          String
+  dateOfBirth     DateTime? @map("date_of_birth")
+  gender          String?
+  passportNumber  String?   @map("passport_number")
+  passportExpiry  DateTime? @map("passport_expiry")
+  travelerType    String    @map("traveler_type") // adult, child, baby
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@map("booking_travelers")
+}
+
+model BookingRoomDetail {
+  id              String   @id @default(cuid())
+  bookingId       String   @map("booking_id")
+  booking         Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  roomNumber      Int?     @map("room_number")
+  roomType        String?  @map("room_type")
+  numberOfGuests  Int?     @map("number_of_guests")
+  specialRequests String?  @db.Text @map("special_requests")
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([bookingId])
+  @@map("booking_room_details")
+}
+
+// ============================================
+// REQUESTS & COMMUNICATIONS
+// ============================================
+
+enum DevisRequestStatus {
+  PENDING
+  REVIEWED
+  QUOTED
+  CANCELLED
+
+  @@map("devis_request_status")
+}
+
+model DevisRequest {
+  id              String    @id @default(cuid())
+  userId          String?   @map("user_id")
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  nom             String
+  prenom          String
+  email           String
+  phone           String?
+  destination     String?
+  
+  voyageId        String?   @map("voyage_id")
+  voyage          Voyage?   @relation(fields: [voyageId], references: [id], onDelete: SetNull)
+  
+  visaNeeded      Boolean?  @map("visa_needed")
+  flightWithWithout String? @map("flight_with_without") // avec, sans
+  hotelName       String?   @map("hotel_name")
+  hotelStars      Int?      @map("hotel_stars")
+  numberOfRooms   Int?      @map("number_of_rooms")
+  roomType        String?   @map("room_type")
+  mealPlan        String?   @map("meal_plan")
+  
+  numberOfAdults  Int       @default(0) @map("number_of_adults")
+  numberOfChildren Int      @default(0) @map("number_of_children")
+  childrenAges    String?   @map("children_ages")
+  
+  departureDate   DateTime? @map("departure_date")
+  returnDate      DateTime? @map("return_date")
+  specialRequests String?   @db.Text @map("special_requests")
+  
+  status          DevisRequestStatus @default(PENDING)
+  assignedTo      String?   @map("assigned_to")
+  assignedToAdmin AdminUser? @relation("DevisAssignments", fields: [assignedTo], references: [id], onDelete: SetNull)
+  
+  isRead          Boolean   @default(false) @map("is_read")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([createdAt])
+  @@index([isRead])
+  @@map("devis_requests")
+}
+
+enum BilletterieRequestStatus {
+  PENDING
+  QUOTED
+  BOOKED
+  CANCELLED
+
+  @@map("billetterie_request_status")
+}
+
+model BilletterieRequest {
+  id              String    @id @default(cuid())
+  userId          String?   @map("user_id")
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  nom             String
+  prenom          String
+  email           String
+  phone           String?
+  destination     String?
+  
+  departureCity   String?   @map("departure_city")
+  arrivalCity     String?   @map("arrival_city")
+  airlinePreference String? @map("airline_preference")
+  
+  visaNeeded      Boolean?  @map("visa_needed")
+  numberOfAdults  Int       @default(0) @map("number_of_adults")
+  numberOfChildren Int      @default(0) @map("number_of_children")
+  numberOfBabies  Int       @default(0) @map("number_of_babies")
+  childrenAges    String?   @map("children_ages")
+  
+  departureDate   DateTime? @map("departure_date")
+  returnDate      DateTime? @map("return_date")
+  specialRequests String?   @db.Text @map("special_requests")
+  
+  status          BilletterieRequestStatus @default(PENDING)
+  assignedTo      String?   @map("assigned_to")
+  assignedToAdmin AdminUser? @relation("BilletterieAssignments", fields: [assignedTo], references: [id], onDelete: SetNull)
+  
+  isRead          Boolean   @default(false) @map("is_read")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([createdAt])
+  @@index([isRead])
+  @@map("billetterie_requests")
+}
+
+enum VisaRequestStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+
+  @@map("visa_request_status")
+}
+
+enum VisaType {
+  E_VISA
+  DOSSIER
+
+  @@map("visa_type_enum")
+}
+
+model VisaRequest {
+  id              String    @id @default(cuid())
+  userId          String?   @map("user_id")
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  nom             String
+  prenom          String
+  email           String
+  phone           String?
+  
+  visaType        VisaType  @map("visa_type")
+  destinationCountry String  @map("destination_country")
+  
+  passportNumber  String?   @map("passport_number")
+  passportExpiry  DateTime? @map("passport_expiry")
+  travelDate      DateTime? @map("travel_date")
+  
+  professionalStatus String? @map("professional_status")
+  guarantorStatus String?   @map("guarantor_status")
+  specialRequests String?   @db.Text @map("special_requests")
+  
+  status          VisaRequestStatus @default(PENDING)
+  assignedTo      String?   @map("assigned_to")
+  assignedToAdmin AdminUser? @relation("VisaAssignments", fields: [assignedTo], references: [id], onDelete: SetNull)
+  
+  isRead          Boolean   @default(false) @map("is_read")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([createdAt])
+  @@index([isRead])
+  @@map("visa_requests")
+}
+
+enum HotelPreference {
+  SPECIFIC
+  SUGGEST
+
+  @@map("hotel_preference_enum")
+}
+
+enum HotelRequestStatus {
+  PENDING
+  PROPOSED
+  CONFIRMED
+  CANCELLED
+
+  @@map("hotel_request_status")
+}
+
+model HotelRequest {
+  id              String    @id @default(cuid())
+  userId          String?   @map("user_id")
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  nom             String
+  prenom          String
+  email           String
+  phone           String?
+  
+  hotelPreference HotelPreference @map("hotel_preference")
+  hotelName       String?   @map("hotel_name")
+  hotelCategory   String?   @map("hotel_category")
+  city            String
+  
+  checkInDate     DateTime  @map("check_in_date")
+  checkOutDate    DateTime  @map("check_out_date")
+  numberOfRooms   Int       @map("number_of_rooms")
+  numberOfPeople  Int       @map("number_of_people")
+  roomType        String?   @map("room_type")
+  mealBasis       String?   @map("meal_basis")
+  specialRequests String?   @db.Text @map("special_requests")
+  
+  status          HotelRequestStatus @default(PENDING)
+  assignedTo      String?   @map("assigned_to")
+  assignedToAdmin AdminUser? @relation("HotelAssignments", fields: [assignedTo], references: [id], onDelete: SetNull)
+  
+  isRead          Boolean   @default(false) @map("is_read")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([createdAt])
+  @@index([isRead])
+  @@map("hotel_requests")
+}
+
+// ============================================
+// ADMIN & MESSAGING
+// ============================================
+
+enum AdminRole {
+  ADMIN
+  MODERATOR
+  AGENT
+
+  @@map("admin_role_enum")
+}
+
+model AdminUser {
+  id              String    @id @default(cuid())
+  userId          String    @unique @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  role            AdminRole @default(MODERATOR)
+  permissions     Json?
+  isActive        Boolean   @default(true) @map("is_active")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  createdVoyages  Voyage[]
+  devisAssignments DevisRequest[] @relation("DevisAssignments")
+  billetterieAssignments BilletterieRequest[] @relation("BilletterieAssignments")
+  visaAssignments VisaRequest[] @relation("VisaAssignments")
+  hotelAssignments HotelRequest[] @relation("HotelAssignments")
+
+  @@index([userId])
+  @@index([role])
+  @@map("admin_users")
+}
+
+enum MessageType {
+  BILLETTERIE
+  DEVIS
+
+  @@map("message_type_enum")
+}
+
+model Message {
+  id              String    @id @default(cuid())
+  senderId        String    @map("sender_id")
+  sender          User      @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  
+  recipientId     String    @map("recipient_id")
+  recipient       User      @relation("Recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  
+  subject         String?
+  content         String?   @db.Text
+  messageType     MessageType? @map("message_type")
+  relatedRequestId String?  @map("related_request_id")
+  
+  isRead          Boolean   @default(false) @map("is_read")
+  readAt          DateTime? @map("read_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([createdAt])
+  @@index([isRead])
+  @@map("messages")
+}
+
+enum NotificationType {
+  BOOKING
+  DEVIS
+  VISA
+  HOTEL
+  SYSTEM
+
+  @@map("notification_type_enum")
+}
+
+model Notification {
+  id              String    @id @default(cuid())
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  title           String?
+  message         String?   @db.Text
+  type            NotificationType
+  relatedEntityId String?   @map("related_entity_id")
+  
+  isRead          Boolean   @default(false) @map("is_read")
+  readAt          DateTime? @map("read_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ============================================
+// PAYMENTS
+// ============================================
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+  PAYPAL
+
+  @@map("payment_method_enum")
+}
+
+model Payment {
+  id              String    @id @default(cuid())
+  bookingId       String    @map("booking_id")
+  booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  amount          Decimal   @db.Decimal(10, 2)
+  currency        String    @default("EUR")
+  paymentMethod   PaymentMethod @map("payment_method")
+  status          PaymentStatus @default(PENDING)
+  transactionId   String?   @unique @map("transaction_id")
+  
+  paymentDate     DateTime? @map("payment_date")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([bookingId])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  OVERDUE
+  CANCELLED
+
+  @@map("invoice_status_enum")
+}
+
+model Invoice {
+  id              String    @id @default(cuid())
+  bookingId       String    @map("booking_id")
+  booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  userId          String    @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  invoiceNumber   String    @unique @map("invoice_number")
+  amount          Decimal   @db.Decimal(10, 2)
+  
+  issuedDate      DateTime  @map("issued_date")
+  dueDate         DateTime  @map("due_date")
+  status          InvoiceStatus @default(DRAFT)
+  pdfUrl          String?   @map("pdf_url")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([bookingId])
+  @@index([userId])
+  @@index([invoiceNumber])
+  @@index([status])
+  @@map("invoices")
+}
+
+// ============================================
+// AUDIT & LOGS
+// ============================================
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+
+  @@map("audit_action_enum")
+}
+
+model ActivityLog {
+  id              String    @id @default(cuid())
+  userId          String?   @map("user_id")
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  entityType      String    @map("entity_type")
+  entityId        String    @map("entity_id")
+  action          AuditAction
+  changes         Json?
+  ipAddress       String?   @map("ip_address")
+  
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([createdAt])
+  @@map("activity_logs")
+}

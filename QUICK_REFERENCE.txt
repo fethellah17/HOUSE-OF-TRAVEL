@@ -1,0 +1,183 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║               HOUSE OF TRAVEL - SUPABASE INTEGRATION QUICK REF                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📦 INSTALLATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+npm install @supabase/supabase-js
+
+🔐 AUTHENTICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import { useAuth } from "@/hooks/useAuth";
+
+const { user, isLoading, isAuthenticated } = useAuth();
+
+LOGIN:
+  import { login } from "@/services/authService";
+  await login({ email, password });
+
+SIGNUP:
+  import { signUp } from "@/services/authService";
+  await signUp({ email, password, nom, prenom, phone });
+
+LOGOUT:
+  import { logout } from "@/services/authService";
+  await logout();
+
+PROTECTED ROUTE:
+  const { user, isLoading } = useRequireAuth();
+  // Redirects to home if not authenticated
+
+✈️ VOYAGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LIST ALL:
+  import { useVoyages } from "@/hooks/useVoyages";
+  const { voyages, total, isLoading } = useVoyages({ page: 1, pageSize: 12 });
+
+BY CATEGORY:
+  import { useVoyagesByCategory } from "@/hooks/useVoyages";
+  const { voyages } = useVoyagesByCategory("Voyage Organisé", { page: 1 });
+
+AVAILABLE ONLY:
+  import { useAvailableVoyages } from "@/hooks/useVoyages";
+  const { voyages } = useAvailableVoyages({ page: 1 });
+
+SEARCH:
+  import { useVoyageSearch } from "@/hooks/useVoyages";
+  const { voyages } = useVoyageSearch("Egypt");
+
+DETAILS:
+  import { useVoyageDetails } from "@/hooks/useVoyages";
+  const { voyage, isLoading } = useVoyageDetails(voyageId);
+
+📅 BOOKINGS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+USER'S BOOKINGS:
+  import { useUserBookings } from "@/hooks/useBookings";
+  const { bookings, total } = useUserBookings(1, 10);
+
+BOOKING DETAILS:
+  import { useBookingDetails } from "@/hooks/useBookings";
+  const { booking } = useBookingDetails(bookingId);
+
+CREATE BOOKING:
+  import { useCreateBooking } from "@/hooks/useBookings";
+  const { create, isLoading } = useCreateBooking();
+  const result = await create({
+    voyageId, totalAdults, totalChildren, totalBabies,
+    departureDate, returnDate, travelers, roomDetails
+  });
+
+📝 REQUESTS (Devis, Billetterie, Visa, Hotel)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CREATE DEVIS:
+  import { useCreateDevisRequest } from "@/hooks/useRequests";
+  const { create } = useCreateDevisRequest();
+  await create({ nom, prenom, email, destination, ... });
+
+GET DEVIS:
+  import { useUserDevisRequests } from "@/hooks/useRequests";
+  const { requests, total } = useUserDevisRequests(1, 10);
+
+CREATE BILLETTERIE:
+  import { useCreateBilletterieRequest } from "@/hooks/useRequests";
+  const { create } = useCreateBilletterieRequest();
+  await create({ nom, prenom, email, destination, ... });
+
+CREATE VISA:
+  import { useCreateVisaRequest } from "@/hooks/useRequests";
+  const { create } = useCreateVisaRequest();
+  await create({ nom, prenom, email, visaType, ... });
+
+CREATE HOTEL:
+  import { useCreateHotelRequest } from "@/hooks/useRequests";
+  const { create } = useCreateHotelRequest();
+  await create({ nom, prenom, email, city, ... });
+
+🛠️ UTILITIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+import { formatPrice, getStatusLabel, classifyTraveler } from "@/lib/database";
+
+formatPrice(price, currency)      → "100.00€"
+getStatusLabel(status)            → "En attente"
+classifyTraveler(dateOfBirth)     → "adult" | "child" | "baby"
+calculateAge(dateOfBirth)         → number
+generateBookingNumber()           → "BOOK-123456-7890"
+
+🎯 COMMON PATTERNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LOADING STATE:
+  const { voyages, isLoading } = useVoyages();
+  if (isLoading) return <Spinner />;
+
+ERROR HANDLING:
+  const { voyages, error } = useVoyages();
+  if (error) return <Error message={error} />;
+
+FORM SUBMISSION:
+  const { create, isLoading } = useCreateBooking();
+  const result = await create(data);
+  if (result.success) {
+    toast.success("Success!");
+  } else {
+    toast.error(result.error);
+  }
+
+📂 FOLDER STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+src/
+  hooks/              → React hooks (useAuth, useBookings, etc.)
+  services/           → Service functions (authService, bookingService, etc.)
+  lib/
+    supabase.ts       → Supabase client
+    database.ts       → Utilities & helpers
+    db-errors.ts      → Error handling
+  types/
+    database.ts       → TypeScript interfaces
+
+📊 RESPONSE STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+Check success before using data!
+
+🌍 ENVIRONMENT VARIABLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+VITE_SUPABASE_URL = https://tpyoggegxmhkqupdglab.supabase.co
+VITE_SUPABASE_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+🔗 LINKS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Supabase Docs:     https://supabase.com/docs
+Setup Guide:       SUPABASE_SETUP.txt
+Code Examples:     SUPABASE_EXAMPLES.tsx
+Integration:       INTEGRATION_SUMMARY.txt
+
+✨ KEY POINTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✓ All hooks handle loading/error states
+✓ Full TypeScript support
+✓ Automatic session management
+✓ Error messages in French
+✓ Pagination support built-in
+✓ Real-time capability ready
+✓ RLS (Row Level Security) compatible
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  For more information, see SUPABASE_SETUP.txt or SUPABASE_EXAMPLES.tsx       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
