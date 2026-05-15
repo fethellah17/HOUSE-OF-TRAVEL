@@ -8,6 +8,8 @@ import confetti from "canvas-confetti";
 import LoginModal from "@/components/LoginModal";
 import { useData } from "@/contexts/DataContext";
 import type { HotelRequest, SejourRequest, VisaRequest } from "@/contexts/DataContext";
+import { submitHotelRequest } from "@/lib/formsService";
+import { getCurrentUser } from "@/services/authService";
 
 type ServiceType = "hotel" | "sejour" | "visa" | null;
 type VisaType = "e-visa" | "dossier" | null;
@@ -312,7 +314,7 @@ const DevisPage = () => {
     setVisaType(type);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isLoggedIn) {
@@ -326,6 +328,7 @@ const DevisPage = () => {
 
     // Submit based on active service
     if (activeService === "hotel") {
+      // Save to local state (for demo/fallback)
       addRequest({
         serviceType: "hotel",
         personalInfo: {
@@ -346,6 +349,39 @@ const DevisPage = () => {
         boardBasis: hotelForm.boardBasis,
         message: hotelForm.message,
       } as Omit<HotelRequest, "id" | "createdAt" | "isRead" | "completed">);
+
+      // Also save to Supabase
+      try {
+        const authUser = await getCurrentUser();
+        const userId = authUser.success ? authUser.user?.id : undefined;
+
+        const result = await submitHotelRequest({
+          user_id: userId,
+          nom: personalInfo.nom,
+          prenom: personalInfo.prenom,
+          email: personalInfo.email,
+          phone: personalInfo.telephone,
+          hotel_preference: hotelForm.hotelPreference as "specific" | "suggest",
+          hotel_name: hotelForm.hotelName || undefined,
+          hotel_category: hotelForm.hotelCategory || undefined,
+          city: hotelForm.city,
+          check_in_date: hotelForm.dateArrivee,
+          check_out_date: hotelForm.dateDepart,
+          number_of_rooms: parseInt(hotelForm.nombreChambres) || 1,
+          number_of_people: parseInt(hotelForm.nombrePersonnes) || 1,
+          room_type: hotelForm.roomType || undefined,
+          meal_basis: hotelForm.boardBasis || undefined,
+          special_requests: hotelForm.message || undefined,
+        });
+
+        if (result.success) {
+          console.log("✅ Hotel request saved to Supabase:", result.data);
+        } else {
+          console.error("❌ Hotel request Supabase save failed:", result.error);
+        }
+      } catch (error) {
+        console.error("❌ Error saving hotel request to Supabase:", error);
+      }
     } else if (activeService === "sejour") {
       addRequest({
         serviceType: "sejour",
@@ -1161,10 +1197,10 @@ const DevisPage = () => {
                           className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                         >
                           <option value="">Sélectionner</option>
-                          <option value="breakfast">Petit déjeuner (Bed & Breakfast)</option>
-                          <option value="half-board">Demi-pension (Half Board)</option>
-                          <option value="full-board">Pension complète (Full Board)</option>
-                          <option value="all-inclusive">All Inclusive</option>
+                          <option value="Petit déjeuner">Petit déjeuner</option>
+                          <option value="Demi-pension">Demi-pension</option>
+                          <option value="Pension complète">Pension complète</option>
+                          <option value="All Inclusive">All Inclusive</option>
                         </select>
                       </div>
 

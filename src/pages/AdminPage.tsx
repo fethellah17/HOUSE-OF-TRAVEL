@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Voyage, Message, VoyageCategory, Stage, VoyageStatus } from "@/types";
-import type { BilletterieRequest } from "@/contexts/DataContext";
+import type { BilletterieRequest, HotelRequest } from "@/contexts/DataContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plane, Inbox, Plus, LogOut, Eye, Trash2, X, CheckCircle, Loader2, Menu, Pencil, FileDown, ArrowLeft, Users, Settings2, FileText,
@@ -18,7 +18,7 @@ import { fr } from "date-fns/locale";
 import { formatPrice } from "@/lib/formatters";
 import { generateMessagePDF } from "@/lib/pdfGenerator";
 import InboxView from "@/components/admin/inbox/InboxView";
-import { fetchBilletterieRequests, markRequestAsRead as markRequestAsReadService, updateRequestStatus as updateRequestStatusService, deleteRequest as deleteRequestService } from "@/lib/formsService";
+import { fetchBilletterieRequests, fetchHotelRequests, markRequestAsRead as markRequestAsReadService, updateHotelRequestStatus, updateRequestStatus as updateRequestStatusService, deleteRequest as deleteRequestService } from "@/lib/formsService";
 
 type Tab = "inbox" | "users" | "voyages" | "sejour-config" | "visa-config" | "settings";
 
@@ -56,6 +56,7 @@ const AdminPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [realBilletterieRequests, setRealBilletterieRequests] = useState<BilletterieRequest[]>([]);
+  const [realHotelRequests, setRealHotelRequests] = useState<HotelRequest[]>([]);
   const [loadingBilletterie, setLoadingBilletterie] = useState(false);
 
   // Safety check for critical data
@@ -118,6 +119,45 @@ const AdminPage = () => {
     };
 
     loadBilletterieRequests();
+
+    // Also load hotel requests from Supabase
+    const loadHotelRequests = async () => {
+      try {
+        const supabaseHotelRequests = await fetchHotelRequests();
+        
+        const mappedHotelRequests: HotelRequest[] = supabaseHotelRequests.map((req: any) => ({
+          id: req.id,
+          serviceType: "hotel" as const,
+          createdAt: req.created_at,
+          isRead: req.is_read || false,
+          completed: req.status === "completed",
+          personalInfo: {
+            nom: req.nom || "",
+            prenom: req.prenom || "",
+            email: req.email || "",
+            telephone: req.phone || "",
+          },
+          hotelPreference: req.hotel_preference || "suggest",
+          hotelName: req.hotel_name || "",
+          hotelCategory: req.hotel_category || "",
+          city: req.city || "",
+          dateArrivee: req.check_in_date || "",
+          dateDepart: req.check_out_date || "",
+          nombreChambres: (req.number_of_rooms || 0).toString(),
+          nombrePersonnes: (req.number_of_people || 0).toString(),
+          roomType: req.room_type || "",
+          boardBasis: req.meal_basis || "",
+          message: req.special_requests || "",
+        }));
+
+        setRealHotelRequests(mappedHotelRequests);
+        console.log("🏨 Hotel requests loaded:", mappedHotelRequests.length);
+      } catch (error) {
+        console.error("Error loading hotel requests:", error);
+      }
+    };
+
+    loadHotelRequests();
   }, [loggedIn]);
 
   // Ensure arrays are defined with fallbacks
@@ -132,16 +172,46 @@ const AdminPage = () => {
   
   const handleMarkBilletterieAsRead = async (id: string) => {
     try {
-      // Update Supabase
-      const success = await markRequestAsReadService(id, "billetterie");
-      if (success) {
-        // Optimistically update local state
-        setRealBilletterieRequests((prev) =>
-          prev.map((r) => (r.id === id ? { ...r, isRead: true } : r))
-        );
-        toast.success("Marqué comme lu");
-      } else {
+      // Check if it's a hotel request first
+      const hotelRequest = realHotelRequests.find(r => r.id === id);
+      if (hotelRequest) {
+        // Toggle the current status
+        const newStatus = !hotelRequest.isRead;
+        const success = await updateHotelRequestStatus(id, newStatus);
+        if (success) {
+          setRealHotelRequests((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, isRead: newStatus } : r))
+          );
+          toast.success(newStatus ? "Marqué comme lu" : "Marqué comme non lu");
+          return;
+        }
         toast.error("Erreur lors de la mise à jour");
+        return;
+      }
+
+      // Try billetterie
+      const billetterieRequest = realBilletterieRequests.find(r => r.id === id);
+      if (billetterieRequest) {
+        // Toggle the current status
+        const newStatus = !billetterieRequest.isRead;
+        const success = await markRequestAsReadService(id, "billetterie", newStatus);
+        if (success) {
+          setRealBilletterieRequests((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, isRead: newStatus } : r))
+          );
+          toast.success(newStatus ? "Marqué comme lu" : "Marqué comme non lu");
+          return;
+        }
+        toast.error("Erreur lors de la mise à jour");
+        return;
+      }
+
+      // Fallback to context for other request types (visa, sejour)
+      // For context-based requests, we'll just toggle using the context method
+      const contextRequest = safeRequests.find(r => r.id === id);
+      if (contextRequest) {
+        markRequestAsRead(id);
+        toast.success("Marqué comme lu");
       }
     } catch (error) {
       console.error("Error marking request as read:", error);
@@ -151,15 +221,35 @@ const AdminPage = () => {
 
   const handleDeleteBilletterieRequest = async (id: string) => {
     try {
-      // Update Supabase
-      const success = await deleteRequestService(id, "billetterie");
-      if (success) {
-        // Optimistically update local state
-        setRealBilletterieRequests((prev) => prev.filter((r) => r.id !== id));
-        toast.success("Demande supprimée");
-      } else {
+      // Check if it's a hotel request first
+      const hotelRequest = realHotelRequests.find(r => r.id === id);
+      if (hotelRequest) {
+        const success = await deleteRequestService(id, "hotel");
+        if (success) {
+          setRealHotelRequests((prev) => prev.filter((r) => r.id !== id));
+          toast.success("Demande supprimée");
+          return;
+        }
         toast.error("Erreur lors de la suppression");
+        return;
       }
+
+      // Try billetterie
+      const billetterieRequest = realBilletterieRequests.find(r => r.id === id);
+      if (billetterieRequest) {
+        const success = await deleteRequestService(id, "billetterie");
+        if (success) {
+          setRealBilletterieRequests((prev) => prev.filter((r) => r.id !== id));
+          toast.success("Demande supprimée");
+          return;
+        }
+        toast.error("Erreur lors de la suppression");
+        return;
+      }
+
+      // Fallback to context for other request types
+      deleteRequest(id);
+      toast.success("Demande supprimée");
     } catch (error) {
       console.error("Error deleting request:", error);
       toast.error("Erreur lors de la suppression");
@@ -329,9 +419,14 @@ const AdminPage = () => {
                 </div>
               )}
               <InboxView
-                requests={realBilletterieRequests.length > 0 ? realBilletterieRequests : safeRequests}
-                markRequestAsRead={realBilletterieRequests.length > 0 ? handleMarkBilletterieAsRead : markRequestAsRead}
-                deleteRequest={realBilletterieRequests.length > 0 ? handleDeleteBilletterieRequest : deleteRequest}
+                requests={[
+                  ...(realBilletterieRequests.length > 0 ? realBilletterieRequests : safeRequests.filter(r => r.serviceType === "billetterie")),
+                  ...realHotelRequests,
+                  ...safeRequests.filter(r => r.serviceType === "visa" || r.serviceType === "sejour"),
+                  ...(realBilletterieRequests.length === 0 ? safeRequests.filter(r => r.serviceType === "hotel") : []),
+                ]}
+                markRequestAsRead={realBilletterieRequests.length > 0 || realHotelRequests.length > 0 ? handleMarkBilletterieAsRead : markRequestAsRead}
+                deleteRequest={realBilletterieRequests.length > 0 || realHotelRequests.length > 0 ? handleDeleteBilletterieRequest : deleteRequest}
               />
               {!loadingBilletterie && realBilletterieRequests.length === 0 && (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
@@ -1436,7 +1531,7 @@ const VoyagesView = ({
   setShowAddForm: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
   const [newVoyage, setNewVoyage] = useState({
-    title: "", imageUrl: "", imageUrls: [] as string[], price: "", description: "", category: "Voyage Organisé" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "", features: [] as string[],
+    title: "", imageUrl: "", imageUrls: [] as string[], price: "", description: "", category: "Voyage Organisé" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", features: [] as string[],
   });
   const [newFeatureInput, setNewFeatureInput] = useState("");
   const [newStartDate, setNewStartDate] = useState<Date | undefined>();
@@ -1448,7 +1543,7 @@ const VoyagesView = ({
   
   const [editingVoyage, setEditingVoyage] = useState<Voyage | null>(null);
   const [editForm, setEditForm] = useState({
-    title: "", imageUrl: "", imageUrls: [] as string[], price: "", description: "", category: "Voyage Organisé" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "", features: [] as string[],
+    title: "", imageUrl: "", imageUrls: [] as string[], price: "", description: "", category: "Voyage Organisé" as VoyageCategory, duration: "", date: "", status: "normal" as VoyageStatus, flightType: "", visaRequired: "", roomType: "", mealPlan: "", features: [] as string[],
   });
   const [editFeatureInput, setEditFeatureInput] = useState("");
   const [editStartDate, setEditStartDate] = useState<Date | undefined>();
@@ -1582,7 +1677,7 @@ const VoyagesView = ({
       };
       addVoyage(v);
       setShowAddForm(false);
-      setNewVoyage({ title: "", imageUrl: "", imageUrls: [], price: "", description: "", category: "Voyage Organisé", duration: "", date: "", status: "normal", flightType: "", visaRequired: "", roomType: "", mealPlan: "", departureTime: "", returnTime: "", hotelName: "", starRating: "", features: [] });
+      setNewVoyage({ title: "", imageUrl: "", imageUrls: [], price: "", description: "", category: "Voyage Organisé", duration: "", date: "", status: "normal", flightType: "", visaRequired: "", roomType: "", mealPlan: "", features: [] });
       setNewFeatureInput("");
       setNewStartDate(undefined);
       setNewEndDate(undefined);
@@ -1617,10 +1712,6 @@ const VoyagesView = ({
       visaRequired: voyage.visaRequired || "",
       roomType: voyage.roomType || "",
       mealPlan: voyage.mealPlan || "",
-      departureTime: voyage.departureTime || "",
-      returnTime: voyage.returnTime || "",
-      hotelName: voyage.hotelName || "",
-      starRating: voyage.starRating || "",
     });
     
     // Parser et charger les dates existantes si disponibles

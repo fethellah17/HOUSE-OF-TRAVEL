@@ -305,37 +305,54 @@ export interface HotelRequestInput {
  */
 export const submitHotelRequest = async (data: HotelRequestInput) => {
   try {
+    // Build payload with ONLY columns that exist in hotel_requests table
+    const payload = {
+      user_id: data.user_id || null,
+      nom: data.nom,
+      prenom: data.prenom,
+      email: data.email,
+      phone: data.phone,
+      hotel_preference: data.hotel_preference,
+      hotel_name: data.hotel_name || null,
+      hotel_category: data.hotel_category || null,
+      city: data.city,
+      check_in_date: data.check_in_date,
+      check_out_date: data.check_out_date,
+      number_of_rooms: data.number_of_rooms,
+      number_of_people: data.number_of_people,
+      room_type: data.room_type || null,
+      meal_basis: data.meal_basis || null,
+      special_requests: data.special_requests || null,
+      status: "pending",
+      is_read: false,
+    };
+
+    console.log("📤 Hotel Payload:", payload);
+    console.log("🏨 Hotel preference:", data.hotel_preference);
+    console.log("📍 City:", data.city);
+
     const { data: result, error } = await supabase
       .from("hotel_requests")
-      .insert([
-        {
-          user_id: data.user_id || null,
-          nom: data.nom,
-          prenom: data.prenom,
-          email: data.email,
-          phone: data.phone,
-          hotel_preference: data.hotel_preference,
-          hotel_name: data.hotel_name,
-          hotel_category: data.hotel_category,
-          city: data.city,
-          check_in_date: data.check_in_date,
-          check_out_date: data.check_out_date,
-          number_of_rooms: data.number_of_rooms,
-          number_of_people: data.number_of_people,
-          room_type: data.room_type,
-          meal_basis: data.meal_basis,
-          special_requests: data.special_requests,
-          status: "pending",
-          is_read: false,
-        },
-      ])
+      .insert([payload])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("❌ Supabase Error Details:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+      throw error;
+    }
+
+    console.log("✅ Hotel request submitted successfully:", result);
     return { success: true, data: result };
-  } catch (err) {
-    console.error("Error submitting hotel request:", err);
+  } catch (err: any) {
+    console.error("❌ Error submitting hotel request:", err);
+    console.error("Error message:", err.message);
+    console.error("Error details:", err.details);
     return { success: false, error: err };
   }
 };
@@ -515,17 +532,35 @@ export const fetchDevisRequests = async (status?: string) => {
 };
 
 /**
- * Mark a request as read
+ * Mark a request as read or unread (toggle)
  */
-export const markRequestAsRead = async (id: string, type: string): Promise<boolean> => {
+export const markRequestAsRead = async (id: string, type: string, isRead: boolean = true): Promise<boolean> => {
   try {
     const table = `${type}_requests`;
-    const { error } = await supabase.from(table).update({ is_read: true }).eq("id", id);
+    const { error } = await supabase.from(table).update({ is_read: isRead }).eq("id", id);
 
     if (error) throw error;
     return true;
   } catch (err) {
     console.error("Error marking request as read:", err);
+    return false;
+  }
+};
+
+/**
+ * Update hotel request status (mark as read)
+ */
+export const updateHotelRequestStatus = async (id: string, isRead: boolean): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from("hotel_requests")
+      .update({ is_read: isRead })
+      .eq("id", id);
+
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    console.error("Error updating hotel request status:", err);
     return false;
   }
 };

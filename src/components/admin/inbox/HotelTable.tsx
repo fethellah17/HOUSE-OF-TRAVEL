@@ -86,7 +86,7 @@ const HotelTable = ({ requests, onOpen, onMarkAsRead }: HotelTableProps) => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className={`hover:bg-slate-50 transition-colors ${!req.isRead ? "bg-blue-50/50" : ""}`}
+                className={`hover:bg-slate-50 transition-colors ${!req.isRead ? "bg-blue-50/50 font-medium" : "opacity-60"}`}
               >
                 <td className={`px-2 sm:px-4 py-2 sm:py-3 ${req.completed ? "opacity-60" : ""}`}>
                   <div className="flex items-center gap-2">
@@ -172,7 +172,7 @@ const HotelTable = ({ requests, onOpen, onMarkAsRead }: HotelTableProps) => {
                           ? "bg-green-600 text-white hover:bg-green-700"
                           : "bg-slate-200 text-slate-600 hover:bg-slate-300"
                       }`}
-                      title={req.isRead ? "Marqué comme lu" : "Marquer comme lu"}
+                      title={req.isRead ? "Marquer comme non lu" : "Marquer comme lu"}
                     >
                       <CheckCircle size={16} />
                     </button>

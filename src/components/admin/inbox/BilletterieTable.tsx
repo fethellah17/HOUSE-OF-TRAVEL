@@ -174,7 +174,7 @@ const BilletterieTable = ({ requests, onOpen, onMarkAsRead }: BilletterieTablePr
                           ? "bg-green-600 text-white hover:bg-green-700"
                           : "bg-slate-200 text-slate-600 hover:bg-slate-300"
                       }`}
-                      title={req.isRead ? "Marqué comme lu" : "Marquer comme lu"}
+                      title={req.isRead ? "Marquer comme non lu" : "Marquer comme lu"}
                     >
                       <CheckCircle size={16} />
                     </button>
