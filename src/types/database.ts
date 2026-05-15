@@ -1,5 +1,8 @@
 // Database types and interfaces for House of Travel
 
+// Re-export PaginationParams from lib/database so it can be imported from here
+export type { PaginationParams } from "@/lib/database";
+
 // ============================================
 // USERS & AUTHENTICATION
 // ============================================
@@ -209,7 +212,7 @@ export interface IDevisRequest {
   mealPlan?: string;
   numberOfAdults: number;
   numberOfChildren: number;
-  childrenAges?: string;
+  childrenAge?: string;
   departureDate?: Date;
   returnDate?: Date;
   specialRequests?: string;
@@ -242,7 +245,8 @@ export interface IBilletterieRequest {
   numberOfAdults: number;
   numberOfChildren: number;
   numberOfBabies: number;
-  childrenAges?: string;
+  childrenAge?: string;
+  babiesAge?: string;
   departureDate?: Date;
   returnDate?: Date;
   specialRequests?: string;
@@ -533,7 +537,7 @@ export interface CreateDevisRequest {
   mealPlan?: string;
   numberOfAdults: number;
   numberOfChildren: number;
-  childrenAges?: string;
+  childrenAge?: string;
   departureDate: Date;
   returnDate?: Date;
   specialRequests?: string;
@@ -552,7 +556,8 @@ export interface CreateBilletterieRequest {
   numberOfAdults: number;
   numberOfChildren: number;
   numberOfBabies: number;
-  childrenAges?: string;
+  childrenAge?: string;
+  babiesAge?: string;
   departureDate: Date;
   returnDate?: Date;
   specialRequests?: string;

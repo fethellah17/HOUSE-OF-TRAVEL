@@ -7,7 +7,7 @@ import { toast } from "sonner";
 interface BilletterieTableProps {
   requests: BilletterieRequest[];
   onOpen: (req: BilletterieRequest) => void;
-  onToggleStatus: (id: string) => void;
+  onMarkAsRead: (id: string) => void;
 }
 
 // Helper function to format phone number for WhatsApp
@@ -44,19 +44,19 @@ const openWhatsApp = (phone: string, message: string) => {
 interface BilletterieTableProps {
   requests: BilletterieRequest[];
   onOpen: (req: BilletterieRequest) => void;
-  onToggleStatus: (id: string) => void;
+  onMarkAsRead: (id: string) => void;
 }
 
-const BilletterieTable = ({ requests, onOpen, onToggleStatus }: BilletterieTableProps) => {
+const BilletterieTable = ({ requests, onOpen, onMarkAsRead }: BilletterieTableProps) => {
   const handleExportPDF = (e: React.MouseEvent, req: BilletterieRequest) => {
     e.stopPropagation();
     generateRequestPDF(req);
     toast.success("PDF généré avec succès");
   };
 
-  const handleToggleStatus = (e: React.MouseEvent, id: string) => {
+  const handleMarkAsRead = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    onToggleStatus(id);
+    onMarkAsRead(id);
   };
 
   const handleWhatsApp = (e: React.MouseEvent, req: BilletterieRequest) => {
@@ -168,13 +168,13 @@ const BilletterieTable = ({ requests, onOpen, onToggleStatus }: BilletterieTable
                       <FileDown size={16} />
                     </button>
                     <button
-                      onClick={(e) => handleToggleStatus(e, req.id)}
+                      onClick={(e) => handleMarkAsRead(e, req.id)}
                       className={`inline-flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-lg transition-colors text-sm font-medium ${
-                        req.completed
+                        req.isRead
                           ? "bg-green-600 text-white hover:bg-green-700"
                           : "bg-slate-200 text-slate-600 hover:bg-slate-300"
                       }`}
-                      title={req.completed ? "Marquer comme non traité" : "Marquer comme traité"}
+                      title={req.isRead ? "Marqué comme lu" : "Marquer comme lu"}
                     >
                       <CheckCircle size={16} />
                     </button>

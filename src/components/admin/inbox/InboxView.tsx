@@ -11,13 +11,12 @@ import RequestDetailModal from "./RequestDetailModal";
 interface InboxViewProps {
   requests: ServiceRequest[];
   markRequestAsRead: (id: string) => void;
-  toggleRequestStatus: (id: string) => void;
   deleteRequest: (id: string) => void;
 }
 
 type ServiceTab = "billetterie" | "visa" | "hotel" | "sejour";
 
-const InboxView = ({ requests, markRequestAsRead, toggleRequestStatus, deleteRequest }: InboxViewProps) => {
+const InboxView = ({ requests, markRequestAsRead, deleteRequest }: InboxViewProps) => {
   const [activeServiceTab, setActiveServiceTab] = useState<ServiceTab>("billetterie");
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
 
@@ -108,28 +107,28 @@ const InboxView = ({ requests, markRequestAsRead, toggleRequestStatus, deleteReq
         <BilletterieTable 
           requests={billetterieRequests} 
           onOpen={openRequest}
-          onToggleStatus={toggleRequestStatus}
+          onMarkAsRead={markRequestAsRead}
         />
       )}
       {activeServiceTab === "visa" && (
         <VisaTable 
           requests={visaRequests} 
           onOpen={openRequest}
-          onToggleStatus={toggleRequestStatus}
+          onMarkAsRead={markRequestAsRead}
         />
       )}
       {activeServiceTab === "hotel" && (
         <HotelTable 
           requests={hotelRequests} 
           onOpen={openRequest}
-          onToggleStatus={toggleRequestStatus}
+          onMarkAsRead={markRequestAsRead}
         />
       )}
       {activeServiceTab === "sejour" && (
         <SejourTable 
           requests={sejourRequests} 
           onOpen={openRequest}
-          onToggleStatus={toggleRequestStatus}
+          onMarkAsRead={markRequestAsRead}
         />
       )}
     </div>

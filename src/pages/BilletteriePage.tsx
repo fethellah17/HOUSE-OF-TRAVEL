@@ -489,7 +489,7 @@ const BilletteriePage = () => {
         phone: form.telephone,
         departure_city: form.villeDepart,
         arrival_city: form.villeArrivee,
-        trip_type: form.typeVoyage,
+
         departure_date: form.dateDepart,
         return_date: form.dateRetour,
         number_of_adults: form.nombreAdultes,
@@ -511,7 +511,7 @@ const BilletteriePage = () => {
         phone: form.telephone,
         departure_city: form.villeDepart,
         arrival_city: form.villeArrivee,
-        trip_type: form.typeVoyage,
+
         departure_date: form.dateDepart,
         return_date: form.dateRetour,
         number_of_adults: form.nombreAdultes,
@@ -524,6 +524,7 @@ const BilletteriePage = () => {
         special_requests: form.message,
       });
       
+      console.log("✈️ Airline preference submitted:", form.compagnie);
       console.log("📬 Billetterie submission result:", result);
 
       if (result.success) {
@@ -568,11 +569,10 @@ const BilletteriePage = () => {
 
   // Toggle selection logic
   const handleAirlineClick = (airlineName: string) => {
-    if (form.compagnie === airlineName) {
-      setForm({ ...form, compagnie: "" });
-    } else {
-      setForm({ ...form, compagnie: airlineName });
-    }
+    // Ensure form.compagnie is properly updated
+    const newValue = form.compagnie === airlineName ? "" : airlineName;
+    setForm((prevForm) => ({ ...prevForm, compagnie: newValue }));
+    console.log("Airline selected:", newValue); // Debug log
   };
 
   const airlines = [
@@ -956,12 +956,22 @@ const BilletteriePage = () => {
                               exit={{ opacity: 0, y: -10 }}
                               transition={{ duration: 0.2 }}
                               onClick={(e) => {
-                                e.preventDefault();
+                                // Only prevent default if NOT clicking a date input
+                                const target = e.target as HTMLElement;
+                                const isDateInput = target instanceof HTMLInputElement && target.type === "date";
+                                if (!isDateInput) {
+                                  e.preventDefault();
+                                }
                                 e.stopPropagation();
                                 e.nativeEvent.stopImmediatePropagation();
                               }}
                               onMouseDown={(e) => {
-                                e.preventDefault();
+                                // Only prevent default if NOT clicking a date input
+                                const target = e.target as HTMLElement;
+                                const isDateInput = target instanceof HTMLInputElement && target.type === "date";
+                                if (!isDateInput) {
+                                  e.preventDefault();
+                                }
                                 e.stopPropagation();
                               }}
                               className="hidden md:block absolute left-0 right-0 mt-1 bg-white border-2 border-slate-200 rounded-xl shadow-2xl z-50"
@@ -1124,12 +1134,22 @@ const BilletteriePage = () => {
                                   className="bg-white rounded-t-3xl w-full max-h-[70vh] overflow-y-auto p-6 space-y-6"
                                   style={{ overscrollBehaviorY: "contain" }}
                                   onClick={(e) => {
-                                    e.preventDefault();
+                                    // Only prevent default if NOT clicking a date input
+                                    const target = e.target as HTMLElement;
+                                    const isDateInput = target instanceof HTMLInputElement && target.type === "date";
+                                    if (!isDateInput) {
+                                      e.preventDefault();
+                                    }
                                     e.stopPropagation();
                                     e.nativeEvent.stopImmediatePropagation();
                                   }}
                                   onMouseDown={(e) => {
-                                    e.preventDefault();
+                                    // Only prevent default if NOT clicking a date input
+                                    const target = e.target as HTMLElement;
+                                    const isDateInput = target instanceof HTMLInputElement && target.type === "date";
+                                    if (!isDateInput) {
+                                      e.preventDefault();
+                                    }
                                     e.stopPropagation();
                                   }}
                                   onTouchStart={(e) => {
@@ -1323,14 +1343,26 @@ const BilletteriePage = () => {
                         <div className="flex gap-4" style={{ width: 'max-content' }}>
                           {duplicatedAirlines.map((airline, index) => (
                             <button 
-                              key={`${airline.name}-${index}`} 
-                              type="button" 
-                              onClick={() => handleAirlineClick(airline.name)} 
-                              className={`flex-shrink-0 flex items-center justify-center px-6 py-4 rounded-xl border-2 transition-all duration-300 w-[160px] h-[80px] ${
+                              key={`airline-${airline.name}-${index}`}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleAirlineClick(airline.name);
+                              }}
+                              onMouseDown={(e) => {
+                                // Pause scroll on mouse down for click precision
+                                setIsPaused(true);
+                              }}
+                              onMouseUp={() => {
+                                setIsPaused(false);
+                              }}
+                              className={`flex-shrink-0 flex items-center justify-center px-6 py-4 rounded-xl border-2 transition-all duration-300 w-[160px] h-[80px] cursor-pointer pointer-events-auto select-none ${
                                 form.compagnie === airline.name 
-                                  ? "border-primary bg-primary text-white shadow-lg" 
-                                  : "border-slate-200 bg-white text-slate-700 hover:border-accent hover:shadow-md"
+                                  ? "border-primary bg-primary text-white shadow-lg scale-105" 
+                                  : "border-slate-200 bg-white text-slate-700 hover:border-accent hover:shadow-md hover:scale-100"
                               }`}
+                              title={form.compagnie === airline.name ? "Cliquez pour désélectionner" : "Cliquer pour sélectionner"}
                             >
                               <span className="text-sm font-bold text-center leading-tight">{airline.name}</span>
                             </button>

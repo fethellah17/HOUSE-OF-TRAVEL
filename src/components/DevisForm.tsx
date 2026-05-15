@@ -37,7 +37,7 @@ interface FormData {
   room_count?: number;
   adults_count?: number;
   children_count?: number;
-  children_ages?: string;
+  children_age?: string;
   pension_type?: "none" | "breakfast" | "half" | "full";
   visa_required?: boolean;
   flight_included?: boolean;
@@ -153,8 +153,8 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
           e.adults_count = "Nombre d'adultes requis.";
         }
         if (formData.children_count && formData.children_count > 0) {
-          if (!formData.children_ages?.trim()) {
-            e.children_ages = "Veuillez indiquer l'âge des enfants.";
+          if (!formData.children_age?.trim()) {
+            e.children_age = "Veuillez indiquer l'âge des enfants.";
           }
         }
         
@@ -238,7 +238,7 @@ const DevisForm = ({ prefilledDestination = "", showLayout = false }: DevisFormP
           meal_plan: formData.pension_type,
           number_of_adults: formData.adults_count || 1,
           number_of_children: formData.children_count || 0,
-          children_ages: formData.children_ages,
+          children_age: formData.children_age,
           departure_date: formData.departure_date || "",
           return_date: formData.return_date || "",
           special_requests: formData.message,

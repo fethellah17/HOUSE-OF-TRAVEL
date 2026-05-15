@@ -18,7 +18,7 @@ import { fr } from "date-fns/locale";
 import { formatPrice } from "@/lib/formatters";
 import { generateMessagePDF } from "@/lib/pdfGenerator";
 import InboxView from "@/components/admin/inbox/InboxView";
-import { fetchBilletterieRequests } from "@/lib/formsService";
+import { fetchBilletterieRequests, markRequestAsRead as markRequestAsReadService, updateRequestStatus as updateRequestStatusService, deleteRequest as deleteRequestService } from "@/lib/formsService";
 
 type Tab = "inbox" | "users" | "voyages" | "sejour-config" | "visa-config" | "settings";
 
@@ -92,7 +92,7 @@ const AdminPage = () => {
             email: req.email || "",
             telephone: req.phone || "",
           },
-          tripType: req.trip_type || "",
+          tripType: "",
           destination: `${req.departure_city || ""} → ${req.arrival_city || ""}`,
           villeDepart: req.departure_city || "",
           villeArrivee: req.arrival_city || "",
@@ -126,6 +126,45 @@ const AdminPage = () => {
   const safeEVisaCountries = eVisaCountries || [];
   const safeDossierCountries = dossierCountries || [];
   const safeRequests = requests || [];
+
+  // ========== BILLETTERIE REQUEST HANDLERS ==========
+  // These handlers work with real Supabase data when available, fall back to context
+  
+  const handleMarkBilletterieAsRead = async (id: string) => {
+    try {
+      // Update Supabase
+      const success = await markRequestAsReadService(id, "billetterie");
+      if (success) {
+        // Optimistically update local state
+        setRealBilletterieRequests((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, isRead: true } : r))
+        );
+        toast.success("Marqué comme lu");
+      } else {
+        toast.error("Erreur lors de la mise à jour");
+      }
+    } catch (error) {
+      console.error("Error marking request as read:", error);
+      toast.error("Erreur lors de la mise à jour");
+    }
+  };
+
+  const handleDeleteBilletterieRequest = async (id: string) => {
+    try {
+      // Update Supabase
+      const success = await deleteRequestService(id, "billetterie");
+      if (success) {
+        // Optimistically update local state
+        setRealBilletterieRequests((prev) => prev.filter((r) => r.id !== id));
+        toast.success("Demande supprimée");
+      } else {
+        toast.error("Erreur lors de la suppression");
+      }
+    } catch (error) {
+      console.error("Error deleting request:", error);
+      toast.error("Erreur lors de la suppression");
+    }
+  };
 
   const handleLogout = () => {
     // Nettoyage de la session
@@ -291,9 +330,8 @@ const AdminPage = () => {
               )}
               <InboxView
                 requests={realBilletterieRequests.length > 0 ? realBilletterieRequests : safeRequests}
-                markRequestAsRead={markRequestAsRead}
-                toggleRequestStatus={toggleRequestStatus}
-                deleteRequest={deleteRequest}
+                markRequestAsRead={realBilletterieRequests.length > 0 ? handleMarkBilletterieAsRead : markRequestAsRead}
+                deleteRequest={realBilletterieRequests.length > 0 ? handleDeleteBilletterieRequest : deleteRequest}
               />
               {!loadingBilletterie && realBilletterieRequests.length === 0 && (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">

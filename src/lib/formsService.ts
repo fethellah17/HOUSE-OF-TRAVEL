@@ -161,7 +161,7 @@ export interface BilletterieRequestInput {
   babies_age?: string;
   departure_date: string;
   return_date?: string;
-  trip_type: string;
+
   special_requests?: string;
 }
 
@@ -174,8 +174,7 @@ export const submitBilletterieRequest = async (data: BilletterieRequestInput) =>
     const childrenAgeStr = typeof data.children_age === "string" ? data.children_age : String(data.children_age || "");
     const babiesAgeStr = typeof data.babies_age === "string" ? data.babies_age : String(data.babies_age || "");
 
-    // Build MINIMAL payload - testing with only core fields to verify schema
-    // NOTE: Temporarily excluding trip_type and airline_preference while schema cache refreshes
+    // Build payload with ONLY columns that exist in billetterie_requests table
     const payload = {
       user_id: data.user_id || null,
       nom: data.nom,
@@ -191,14 +190,17 @@ export const submitBilletterieRequest = async (data: BilletterieRequestInput) =>
       number_of_babies: data.number_of_babies,
       children_age: childrenAgeStr || null,
       babies_age: babiesAgeStr || null,
+      airline_preference: data.airline_preference || null,
       visa_needed: data.visa_needed,
       special_requests: data.special_requests || null,
       status: "pending",
       is_read: false,
     };
 
-    console.log("📤 MINIMAL Billetterie Payload being sent to Supabase:", payload);
-    console.log("⚠️ Note: trip_type and airline_preference temporarily excluded for schema testing");
+    console.log("📤 Billetterie Payload:", payload);
+    console.log("✈️ Airline preference:", data.airline_preference);
+    console.log("👧 Children ages:", childrenAgeStr);
+    console.log("👶 Babies ages:", babiesAgeStr);
 
     const { data: result, error } = await supabase
       .from("billetterie_requests")
@@ -354,7 +356,7 @@ export interface DevisRequestInput {
   meal_plan?: string;
   number_of_adults: number;
   number_of_children: number;
-  children_ages?: string;
+  children_age?: string;
   departure_date: string;
   return_date: string;
   special_requests?: string;
@@ -384,7 +386,7 @@ export const submitDevisRequest = async (data: DevisRequestInput) => {
           meal_plan: data.meal_plan,
           number_of_adults: data.number_of_adults,
           number_of_children: data.number_of_children,
-          children_ages: data.children_ages,
+          children_age: data.children_age,
           departure_date: data.departure_date,
           return_date: data.return_date,
           special_requests: data.special_requests,

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 interface SejourTableProps {
   requests: SejourRequest[];
   onOpen: (req: SejourRequest) => void;
-  onToggleStatus: (id: string) => void;
+  onMarkAsRead: (id: string) => void;
 }
 
 // Helper function to format phone number for WhatsApp
@@ -37,16 +37,16 @@ const openWhatsApp = (phone: string, message: string) => {
   window.open(url, '_blank', 'noopener,noreferrer');
 };
 
-const SejourTable = ({ requests, onOpen, onToggleStatus }: SejourTableProps) => {
+const SejourTable = ({ requests, onOpen, onMarkAsRead }: SejourTableProps) => {
   const handleExportPDF = (e: React.MouseEvent, req: SejourRequest) => {
     e.stopPropagation();
     generateRequestPDF(req);
     toast.success("PDF généré avec succès");
   };
 
-  const handleToggleStatus = (e: React.MouseEvent, id: string) => {
+  const handleMarkAsRead = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    onToggleStatus(id);
+    onMarkAsRead(id);
   };
 
   const handleWhatsApp = (e: React.MouseEvent, req: SejourRequest) => {
@@ -171,13 +171,13 @@ const SejourTable = ({ requests, onOpen, onToggleStatus }: SejourTableProps) => 
                       <FileDown size={16} />
                     </button>
                     <button
-                      onClick={(e) => handleToggleStatus(e, req.id)}
+                      onClick={(e) => handleMarkAsRead(e, req.id)}
                       className={`inline-flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 rounded-lg transition-colors text-sm font-medium ${
-                        req.completed
+                        req.isRead
                           ? "bg-green-600 text-white hover:bg-green-700"
                           : "bg-slate-200 text-slate-600 hover:bg-slate-300"
                       }`}
-                      title={req.completed ? "Marquer comme non traité" : "Marquer comme traité"}
+                      title={req.isRead ? "Marqué comme lu" : "Marquer comme lu"}
                     >
                       <CheckCircle size={16} />
                     </button>

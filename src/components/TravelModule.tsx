@@ -17,7 +17,7 @@ interface FormData {
   room_count?: number;
   adults_count?: number;
   children_count?: number;
-  children_ages?: string;
+  children_age?: string;
   pension_type?: "none" | "breakfast" | "half" | "full";
   visa_required?: boolean;
   flight_included?: boolean;
@@ -107,7 +107,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                 room_count: undefined,
                 adults_count: undefined,
                 children_count: undefined,
-                children_ages: undefined,
+                children_age: undefined,
                 pension_type: undefined,
                 visa_required: undefined,
                 flight_included: undefined,
@@ -296,7 +296,7 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                     setFormData({
                       ...formData,
                       children_count: parseInt(e.target.value) || undefined,
-                      children_ages: parseInt(e.target.value) === 0 ? undefined : formData.children_ages,
+                      children_age: parseInt(e.target.value) === 0 ? undefined : formData.children_age,
                     })
                   }
                   className="premium-input w-full h-[52px]"
@@ -323,11 +323,11 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                   </label>
                   <input
                     type="text"
-                    value={formData.children_ages || ""}
+                    value={formData.children_age || ""}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        children_ages: e.target.value,
+                        children_age: e.target.value,
                       })
                     }
                     className="premium-input w-full h-[52px]"
@@ -336,8 +336,8 @@ const TravelModule = ({ formData, setFormData, errors }: TravelModuleProps) => {
                   <p className="text-xs text-muted-foreground mt-1">
                     Séparez les âges par des virgules
                   </p>
-                  {errors.children_ages && (
-                    <p className="text-red-500 text-xs mt-1">{errors.children_ages}</p>
+                  {errors.children_age && (
+                    <p className="text-red-500 text-xs mt-1">{errors.children_age}</p>
                   )}
                 </motion.div>
               )}
