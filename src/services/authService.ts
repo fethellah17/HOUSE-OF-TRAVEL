@@ -164,12 +164,35 @@ export async function login(request: LoginRequest) {
       throw new Error(error.message);
     }
 
-    // Update last login
+    // Update last login - check if user exists in users table first
     if (data.user) {
-      await supabase
+      const { data: userData } = await supabase
         .from("users")
-        .update({ last_login: new Date().toISOString() })
-        .eq("id", data.user.id);
+        .select("id")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (userData) {
+        // Regular user - update last_login in users table
+        await supabase
+          .from("users")
+          .update({ last_login: new Date().toISOString() })
+          .eq("id", data.user.id);
+      } else {
+        // Check if admin and update in admin_profiles
+        const { data: adminProfile } = await supabase
+          .from("admin_profiles")
+          .select("user_id")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+
+        if (adminProfile) {
+          await supabase
+            .from("admin_profiles")
+            .update({ last_login: new Date().toISOString() })
+            .eq("user_id", data.user.id);
+        }
+      }
     }
 
     return { success: true, user: data.user, session: data.session };
@@ -213,21 +236,87 @@ export async function getCurrentUser() {
 }
 
 /**
- * Get user profile from users table
+ * Get user profile from users table, with fallback to admin tables
  */
 export async function getUserProfile(userId: string) {
   try {
+    // First, try to get profile from users table (for regular users)
     const { data, error } = await supabase
       .from("users")
       .select("*")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      throw new Error(error.message);
+      console.error("Error querying users table:", error);
+      // Don't throw - continue to check admin tables
     }
 
-    return { success: true, user: data };
+    if (data) {
+      // Regular user found
+      return { success: true, user: data };
+    }
+
+    // User not found in users table - check if they're an admin
+    // Try admin_profiles first
+    const { data: adminProfile, error: adminProfileError } = await supabase
+      .from("admin_profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (adminProfileError) {
+      console.error("Error querying admin_profiles:", adminProfileError);
+    }
+
+    if (adminProfile) {
+      // Admin found in admin_profiles - map to IUser format
+      const adminUser: IUser = {
+        id: adminProfile.user_id,
+        email: adminProfile.email,
+        nom: adminProfile.full_name?.split(' ')[1] || 'Admin',
+        prenom: adminProfile.full_name?.split(' ')[0] || 'House of Travel',
+        phone: '',
+        is_email_verified: true,
+        is_active: adminProfile.is_active,
+        created_at: adminProfile.created_at,
+        updated_at: adminProfile.updated_at,
+        last_login: adminProfile.last_login,
+      };
+      return { success: true, user: adminUser };
+    }
+
+    // Try admin_users as final fallback
+    const { data: adminUser, error: adminUserError } = await supabase
+      .from("admin_users")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (adminUserError) {
+      console.error("Error querying admin_users:", adminUserError);
+    }
+
+    if (adminUser) {
+      // Admin found in admin_users - get email from auth
+      const { data: authData } = await supabase.auth.getUser();
+      const adminUserProfile: IUser = {
+        id: adminUser.user_id,
+        email: authData.user?.email || '',
+        nom: 'Admin',
+        prenom: 'House of Travel',
+        phone: '',
+        is_email_verified: true,
+        is_active: adminUser.is_active,
+        created_at: adminUser.created_at,
+        updated_at: adminUser.updated_at,
+        last_login: null,
+      };
+      return { success: true, user: adminUserProfile };
+    }
+
+    // User not found in any table
+    throw new Error("Profil utilisateur introuvable");
   } catch (error: any) {
     return { success: false, error: error.message };
   }
