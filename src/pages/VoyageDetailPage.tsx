@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useData } from "@/contexts/DataContext";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Calendar, Clock, Plane, Hotel, Utensils, Users, Wifi, MapPin, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, Plane, Hotel, Utensils, Users, Wifi, MapPin, Star, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/formatters";
 import StageDisplay from "../components/StageDisplay";
 import VoyageStatusBadge from "../components/VoyageStatusBadge";
 import { useMetaTags } from "@/hooks/useMetaTags";
 import logo from "@/assets/logo.png";
+import { supabase } from "@/lib/supabase";
 
 const getFeatureIcon = (feature: string) => {
   const lowerFeature = feature.toLowerCase();
@@ -40,8 +41,114 @@ const VoyageDetailPage = () => {
   const navigate = useNavigate();
   const { voyages } = useData();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [supabaseVoyage, setSupabaseVoyage] = useState<any>(null);
+  const [supabaseStages, setSupabaseStages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const voyage = voyages.find((v) => v.id === id);
+  // Fetch voyage and stages from Supabase
+  useEffect(() => {
+    const fetchVoyageDetails = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
+        
+        // Fetch voyage details
+        const { data: voyageData, error: voyageError } = await supabase
+          .from("voyages")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (voyageError) {
+          console.error("❌ Error fetching voyage:", voyageError);
+          setSupabaseVoyage(null);
+        } else {
+          console.log("✅ Fetched voyage from Supabase:", voyageData);
+          setSupabaseVoyage(voyageData);
+        }
+
+        // Fetch voyage stages
+        const { data: stagesData, error: stagesError } = await supabase
+          .from("voyage_stages")
+          .select("*")
+          .eq("voyage_id", id)
+          .order("stage_number", { ascending: true });
+
+        if (stagesError) {
+          console.error("❌ Error fetching stages:", stagesError);
+          setSupabaseStages([]);
+        } else {
+          console.log("✅ Fetched stages from Supabase:", stagesData);
+          // Map to frontend Stage format
+          const mappedStages = stagesData.map((s: any) => ({
+            id: s.id,
+            name: s.name || s.city || "",
+            hotelName: s.hotel_name || "",
+            googleMapsUrl: s.google_maps_url || "",
+            days: s.duration_days || 0,
+            icon: s.icon || "default",
+            description: s.description || "",
+          }));
+          setSupabaseStages(mappedStages);
+        }
+      } catch (err) {
+        console.error("❌ Unexpected error fetching voyage details:", err);
+        setSupabaseVoyage(null);
+        setSupabaseStages([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVoyageDetails();
+  }, [id]);
+
+  // Use Supabase data if available, fallback to context
+  const contextVoyage = voyages.find((v) => v.id === id);
+  const voyage = supabaseVoyage 
+    ? {
+        id: supabaseVoyage.id,
+        title: supabaseVoyage.title,
+        imageUrl: supabaseVoyage.image_url?.split(",")[0] || "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80",
+        imageUrls: supabaseVoyage.image_url?.includes(",") 
+          ? supabaseVoyage.image_url.split(",") 
+          : [supabaseVoyage.image_url],
+        price: supabaseVoyage.price,
+        description: supabaseVoyage.description || "",
+        category: supabaseVoyage.category,
+        duration: supabaseVoyage.duration || "",
+        date: supabaseVoyage.start_date && supabaseVoyage.end_date
+          ? `${new Date(supabaseVoyage.start_date).toLocaleDateString("fr-FR")} - ${new Date(supabaseVoyage.end_date).toLocaleDateString("fr-FR")}`
+          : "",
+        status: supabaseVoyage.status || "normal",
+        stages: supabaseStages.length > 0 ? supabaseStages : undefined,
+        features: undefined, // Features are embedded in description
+      }
+    : contextVoyage;
+
+  const images = voyage?.imageUrls && voyage.imageUrls.length > 0 ? voyage.imageUrls : voyage ? [voyage.imageUrl] : [];
+  const currentImage = images[currentImageIndex];
+
+  // Configuration des meta tags pour SEO - MUST be called unconditionally at the top
+  useMetaTags({
+    title: voyage?.title || "Voyage",
+    description: voyage?.description || "",
+    image: images[0] || "",
+    url: window.location.href,
+    type: 'website'
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <Loader2 className="animate-spin h-12 w-12 text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Chargement du voyage...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!voyage) {
     return (
@@ -58,18 +165,6 @@ const VoyageDetailPage = () => {
       </div>
     );
   }
-
-  const images = voyage.imageUrls && voyage.imageUrls.length > 0 ? voyage.imageUrls : [voyage.imageUrl];
-  const currentImage = images[currentImageIndex];
-
-  // Configuration des meta tags pour SEO
-  useMetaTags({
-    title: voyage.title,
-    description: voyage.description,
-    image: images[0],
-    url: window.location.href,
-    type: 'website'
-  });
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));

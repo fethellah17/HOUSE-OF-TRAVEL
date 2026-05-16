@@ -1,71 +1,13 @@
 import { Voyage, Message } from "@/types";
 
-export const mockVoyages: Voyage[] = [
-  {
-    id: "1",
-    title: "Sharm El-Sheikh - Vol Direct",
-    imageUrl: "https://images.unsplash.com/photo-1568322445389-f64ac2515020?w=800&q=80",
-    price: 219000,
-    description: "Séjour exceptionnel. Inclus: Hôtel 4*, All Inclusive, Activités, et Transferts.",
-    category: "Voyage Organisé",
-    duration: "7 jours",
-    date: "15 - 22 Janvier 2025",
-    createdAt: "2024-11-01T00:00:00Z",
-    status: "normal",
-    features: ["Vol Direct", "Hôtel 4*", "All Inclusive", "Transferts Inclus", "Activités"],
-  },
-  {
-    id: "2",
-    title: "Voyage Organisé Égypte (Caire + Sharm)",
-    imageUrl: "https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=800&q=80",
-    price: 274000,
-    description: "05 nuits Sharm (Soft All Inclusive) + 02 nuits Le Caire (Hôtel 5*). Inclus: Pyramides & Dîner Croisière.",
-    category: "Voyage Organisé",
-    duration: "7 jours",
-    date: "20 - 27 Février 2025",
-    createdAt: "2024-11-05T00:00:00Z",
-    status: "almost-full",
-    features: ["Hôtel 5*", "Soft All Inclusive", "Visite Pyramides", "Dîner Croisière", "Guide Francophone"],
-    stages: [
-      {
-        id: "stage-2-1",
-        name: "Sharm El-Sheikh",
-        hotelName: "",
-        googleMapsUrl: "",
-        days: 5,
-      },
-      {
-        id: "stage-2-2",
-        name: "Le Caire",
-        hotelName: "",
-        googleMapsUrl: "",
-        days: 2,
-      },
-    ],
-  },
-  {
-    id: "3",
-    title: "Istanbul Autumn Trip",
-    imageUrl: "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=800&q=80",
-    price: 153900,
-    description: "8 Jours / 7 Nuitées. Inclus: Billet d'avion, Hôtel 4*, Croisière sur le Bosphore et City Tour.",
-    category: "Voyage Organisé",
-    duration: "8 jours",
-    date: "10 - 18 Mars 2025",
-    createdAt: "2024-11-10T00:00:00Z",
-    status: "normal",
-    features: ["Billet d'avion", "Hôtel 4*", "Croisière Bosphore", "City Tour", "Wifi Gratuit"],
-    stages: [
-      {
-        id: "stage-3-1",
-        name: "Istanbul",
-        hotelName: "",
-        googleMapsUrl: "",
-        days: 8,
-      },
-    ],
-  },
-];
+// ============================================================================
+// MOCK DATA REMOVED - ALL VOYAGES NOW COME FROM SUPABASE DATABASE
+// ============================================================================
+// The 3 legacy mock trips (Sharm El-Sheikh, Égypte, Istanbul) have been
+// permanently removed. The application now relies exclusively on dynamic
+// data fetched from Supabase.
+// ============================================================================
+export const mockVoyages: Voyage[] = [];
 
 export const mockMessages: Message[] = [
   {

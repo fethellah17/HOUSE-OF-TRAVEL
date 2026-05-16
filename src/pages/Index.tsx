@@ -5,6 +5,7 @@ import { ArrowRight, Shield, Plane, Ticket, Hotel, Globe, CheckCircle, MapPin, C
 import { useState, useEffect, useRef } from "react";
 import { useData } from "@/contexts/DataContext";
 import TripCard from "@/components/TripCard";
+import { supabase } from "@/lib/supabase";
 
 const Index = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -13,6 +14,8 @@ const Index = () => {
   const isStatsInView = useInView(statsRef, { once: true, amount: 0.3 });
   const navigate = useNavigate();
   const { voyages } = useData();
+  const [supabaseVoyages, setSupabaseVoyages] = useState<any[]>([]);
+  const [loadingVoyages, setLoadingVoyages] = useState(true);
   
   const photos = [
     "/photos/3.jpg",
@@ -22,8 +25,55 @@ const Index = () => {
     "/photos/8.jpg"
   ];
 
-  // Filter only "Voyage Organisé" trips dynamically
-  const organizedTrips = voyages.filter(v => v.category === "Voyage Organisé");
+  // Fetch "Voyage Organisé" trips from Supabase dynamically
+  useEffect(() => {
+    const fetchOrganizedTrips = async () => {
+      try {
+        setLoadingVoyages(true);
+        const { data, error } = await supabase
+          .from("voyages")
+          .select("*")
+          .eq("category", "Voyage Organisé")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("❌ Error fetching voyages from Supabase:", error);
+          setSupabaseVoyages([]);
+        } else {
+          console.log("✅ Fetched voyages from Supabase for homepage:", data);
+          // Map Supabase data to frontend format
+          const mappedVoyages = data.map((v: any) => ({
+            id: v.id,
+            title: v.title,
+            imageUrl: v.image_url?.split(",")[0] || "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80",
+            imageUrls: v.image_url?.includes(",") ? v.image_url.split(",") : [v.image_url],
+            price: v.price,
+            description: v.description || "",
+            category: v.category,
+            duration: v.duration || "",
+            date: v.start_date && v.end_date 
+              ? `${new Date(v.start_date).toLocaleDateString("fr-FR")} - ${new Date(v.end_date).toLocaleDateString("fr-FR")}`
+              : "",
+            status: v.status || "normal",
+            createdAt: v.created_at,
+          }));
+          setSupabaseVoyages(mappedVoyages);
+        }
+      } catch (err) {
+        console.error("❌ Unexpected error fetching voyages:", err);
+        setSupabaseVoyages([]);
+      } finally {
+        setLoadingVoyages(false);
+      }
+    };
+
+    fetchOrganizedTrips();
+  }, []);
+
+  // Use Supabase data if available, fallback to context
+  const organizedTrips = supabaseVoyages.length > 0 
+    ? supabaseVoyages 
+    : voyages.filter(v => v.category === "Voyage Organisé");
 
   // Auto-advance slides: increment by 1 every 5 seconds
   useEffect(() => {

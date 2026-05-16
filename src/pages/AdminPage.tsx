@@ -19,6 +19,8 @@ import { formatPrice } from "@/lib/formatters";
 import { generateMessagePDF } from "@/lib/pdfGenerator";
 import InboxView from "@/components/admin/inbox/InboxView";
 import { fetchBilletterieRequests, fetchHotelRequests, fetchVisaRequests, markRequestAsRead as markRequestAsReadService, updateHotelRequestStatus, updateRequestStatus as updateRequestStatusService, deleteRequest as deleteRequestService, fetchVisaConfigs as fetchVisaConfigsService, createVisaConfig, updateVisaConfig, deleteVisaConfig as deleteVisaConfigService, parseDocuments, type VisaConfig, fetchStayRequests, toggleStayRequestRead, deleteStayRequest as deleteStayRequestService, fetchStaySettings, addStaySetting, deleteStaySetting } from "@/lib/formsService";
+import { uploadImagesToCloudinary } from "@/services/cloudinaryService";
+import { createVoyageWithStages, updateVoyageWithStages } from "@/services/voyageService";
 
 type Tab = "inbox" | "users" | "voyages" | "sejour-config" | "visa-config" | "settings";
 
@@ -60,6 +62,93 @@ const AdminPage = () => {
   const [realVisaRequests, setRealVisaRequests] = useState<VisaRequest[]>([]);
   const [realStayRequests, setRealStayRequests] = useState<any[]>([]);
   const [loadingBilletterie, setLoadingBilletterie] = useState(false);
+  const [loadingVoyages, setLoadingVoyages] = useState(false);
+
+  // ============================================================================
+  // REFETCH VOYAGES FROM SUPABASE
+  // ============================================================================
+  // Utility function to reload voyages after CRUD operations
+  const refetchVoyages = async () => {
+    try {
+      console.log("� Refetching voyages from Supabase...");
+      
+      const { data, error } = await supabase
+        .from("voyages")
+        .select(`
+          *,
+          voyage_stages (
+            id,
+            name,
+            city,
+            hotel_name,
+            google_maps_url,
+            duration_days,
+            icon,
+            description
+          )
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("❌ Error refetching voyages:", error);
+        return;
+      }
+
+      console.log("✅ Refetched voyages from Supabase:", data);
+
+      // Map Supabase data to frontend Voyage format
+      const mappedVoyages = data.map((v: any) => ({
+        id: v.id,
+        title: v.title,
+        imageUrl: v.image_url?.split(",")[0] || "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80",
+        imageUrls: v.image_url?.includes(",") ? v.image_url.split(",") : [v.image_url],
+        price: v.price,
+        description: v.description || "",
+        category: v.category,
+        duration: v.duration || "",
+        date: v.start_date && v.end_date 
+          ? `${new Date(v.start_date).toLocaleDateString("fr-FR")} - ${new Date(v.end_date).toLocaleDateString("fr-FR")}`
+          : "",
+        status: v.status || "normal",
+        createdAt: v.created_at,
+        points_forts: v.points_forts || "",
+        features: v.points_forts 
+          ? v.points_forts.split(",").map((f: string) => f.trim()).filter(Boolean)
+          : [],
+        stages: v.voyage_stages?.length > 0 
+          ? v.voyage_stages.map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                hotelName: s.hotel_name || "",
+                googleMapsUrl: s.google_maps_url || "",
+                days: s.duration_days,
+                icon: s.icon,
+                description: s.description || "",
+              }))
+          : undefined,
+      }));
+
+      // Clear existing voyages and reload from database
+      voyages.forEach(v => deleteVoyage(v.id));
+      mappedVoyages.forEach((voyage: any) => {
+        addVoyage(voyage);
+      });
+
+      console.log("✅ Voyages reloaded into context:", mappedVoyages.length);
+    } catch (err) {
+      console.error("❌ Unexpected error refetching voyages:", err);
+    }
+  };
+
+  // ============================================================================
+  // FETCH VOYAGES FROM SUPABASE ON MOUNT
+  // ============================================================================
+  // Load all voyages from Supabase database to replace hardcoded mock data
+  useEffect(() => {
+    if (loggedIn) {
+      refetchVoyages();
+    }
+  }, [loggedIn]);
 
   // Safety check for critical data
   if (!voyages || !messages || !requests) {
@@ -678,6 +767,7 @@ const AdminPage = () => {
               addVoyage={addVoyage}
               updateVoyage={updateVoyage}
               deleteVoyage={deleteVoyage}
+              refetchVoyages={refetchVoyages}
               showAddForm={showAddForm}
               setShowAddForm={setShowAddForm}
             />
@@ -1733,12 +1823,13 @@ const RequestsView = () => {
 
 /* Voyages */
 const VoyagesView = ({
-  voyages, addVoyage, updateVoyage, deleteVoyage, showAddForm, setShowAddForm,
+  voyages, addVoyage, updateVoyage, deleteVoyage, refetchVoyages, showAddForm, setShowAddForm,
 }: {
   voyages: Voyage[];
   addVoyage: (voyage: Voyage) => void;
   updateVoyage: (id: string, voyage: Partial<Voyage>) => void;
   deleteVoyage: (id: string) => void;
+  refetchVoyages: () => Promise<void>;
   showAddForm: boolean;
   setShowAddForm: React.Dispatch<React.SetStateAction<boolean>>;
 }) => {
@@ -1767,6 +1858,9 @@ const VoyagesView = ({
   
   const [saving, setSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  // Raw File objects collected from MultiImageUpload for Cloudinary upload
+  const [rawFiles, setRawFiles] = useState<File[]>([]);
+  const [editRawFiles, setEditRawFiles] = useState<File[]>([]);
 
   // Helper function to add a new stage
   const addNewStage = () => {
@@ -1842,73 +1936,184 @@ const VoyagesView = ({
     return true;
   };
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newVoyage.title || !newVoyage.price) return;
-    
+    if (saving) return; // Block double submissions
+
     // Pour "Voyage à la Carte", utiliser des valeurs par défaut
-    let duration, date;
+    let duration: string, date: string;
     let totalDays = 0;
-    
+
     if (newVoyage.category === "Voyage à la Carte") {
       duration = "Sur mesure";
       date = "Dates flexibles";
     } else {
+      if (!newStartDate || !newEndDate) {
+        toast.error("Veuillez sélectionner les dates du voyage");
+        return;
+      }
       const calculated = calculateDurationAndDate(newStartDate, newEndDate);
       duration = calculated.duration;
       date = calculated.date;
       totalDays = getTotalDays(newStartDate, newEndDate);
-      
-      // Valider les étapes si nécessaire
+
       if (needsStages(newVoyage.category) && !validateStages(newStages, totalDays, newVoyage.category)) {
         return;
       }
     }
-    
+
     setSaving(true);
-    
-    setTimeout(() => {
-      const v: Voyage = {
-        id: String(Date.now()),
-        title: newVoyage.title,
-        imageUrl: newVoyage.imageUrls[0] || newVoyage.imageUrl || "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80",
-        imageUrls: newVoyage.imageUrls.length > 0 ? newVoyage.imageUrls : undefined,
-        price: Number(newVoyage.price),
-        description: newVoyage.description,
-        category: newVoyage.category,
-        duration: duration || newVoyage.duration,
-        date: date || newVoyage.date,
-        createdAt: new Date().toISOString(),
-        stages: needsStages(newVoyage.category) ? newStages : undefined,
-        status: newVoyage.status,
-        features: newVoyage.features.length > 0 ? newVoyage.features : undefined,
-        flightType: newVoyage.flightType || undefined,
-        visaRequired: newVoyage.visaRequired || undefined,
-        roomType: newVoyage.roomType || undefined,
-        mealPlan: newVoyage.mealPlan || undefined,
+
+    try {
+      // ── Step A: Upload images to Cloudinary ─────────────────────────────
+      let secureUrls: string[] = [];
+      if (rawFiles.length > 0) {
+        toast.loading("📤 Upload des photos en cours...", { id: "cloudinary-upload" });
+        secureUrls = await uploadImagesToCloudinary(rawFiles);
+        toast.dismiss("cloudinary-upload");
+        if (secureUrls.length === 0) {
+          toast.error("L'upload Cloudinary a échoué. Vérifiez votre connexion et réessayez.");
+          setSaving(false);
+          return;
+        }
+        console.log("✅ Cloudinary secure URLs:", secureUrls);
+      }
+
+      // ── Step B: Assemble voyage payload ───────────────────────────────
+      // Use first Cloudinary URL as primary, join all URLs with comma for slideshow
+      const primaryUrl = secureUrls[0] ?? newVoyage.imageUrl ?? "";
+      const allUrlsJoined = secureUrls.length > 0 ? secureUrls.join(",") : primaryUrl;
+
+      // Store points_forts separately in database instead of appending to description
+      const pointsFortsString = newVoyage.features.length > 0 
+        ? newVoyage.features.join(", ") 
+        : "";
+
+      const voyagePayload = {
+        title:            newVoyage.title,
+        description:      newVoyage.description.trim(),
+        category:         "Voyage Organisé", // Strictly set to match database constraint
+        price:            Number(newVoyage.price),
+        duration:         duration,
+        start_date:       newStartDate ? format(newStartDate, "yyyy-MM-dd") : new Date().toISOString().slice(0, 10),
+        end_date:         newEndDate   ? format(newEndDate,   "yyyy-MM-dd") : new Date().toISOString().slice(0, 10),
+        status:           newVoyage.status as string, // Maps to 'normal', 'almost-full', 'full', 'limited-offer'
+        image_url:        allUrlsJoined,
+        points_forts:     pointsFortsString,
+        max_capacity:     0,
+        current_bookings: 0,
       };
-      addVoyage(v);
+
+      // Map front-end Stage[] to VoyageStageInsertPayload[]
+      const stagesPayload = needsStages(newVoyage.category)
+        ? newStages.map((s) => ({
+            name:            s.name,
+            city:            s.name,
+            hotel_name:      s.hotelName  || undefined,
+            google_maps_url: s.googleMapsUrl || undefined,
+            duration_days:   s.days,
+            icon:            (s.icon ?? "default") as "kaaba" | "dome" | "default",
+            description:     "",
+          }))
+        : [];
+
+      console.log("📦 Voyage Payload:", voyagePayload);
+      console.log("📦 Stages Payload:", stagesPayload);
+
+      // ── Step C: Write to Supabase transactionally ─────────────────────────
+      const newVoyageRecord = await createVoyageWithStages(voyagePayload, stagesPayload);
+      console.log("✅ Voyage enregistré en base:", newVoyageRecord);
+
+      // Mirror new record into local context so the grid refreshes immediately
+      addVoyage({
+        id:          newVoyageRecord.id,
+        title:       newVoyageRecord.title,
+        imageUrl:    primaryUrl || "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80",
+        imageUrls:   secureUrls.length > 0 ? secureUrls : undefined,
+        price:       Number(newVoyageRecord.price),
+        description: newVoyageRecord.description ?? "",
+        category:    newVoyageRecord.category,
+        duration:    newVoyageRecord.duration ?? duration,
+        date:        date,
+        createdAt:   newVoyageRecord.created_at ?? new Date().toISOString(),
+        stages:      needsStages(newVoyage.category) ? newStages : undefined,
+        status:      (newVoyageRecord.status ?? "normal") as VoyageStatus,
+        features:    newVoyage.features.length > 0 ? newVoyage.features : undefined,
+      });
+
+      // Reset form state
       setShowAddForm(false);
       setNewVoyage({ title: "", imageUrl: "", imageUrls: [], price: "", description: "", category: "Voyage Organisé", duration: "", date: "", status: "normal", flightType: "", visaRequired: "", roomType: "", mealPlan: "", features: [] });
       setNewFeatureInput("");
       setNewStartDate(undefined);
       setNewEndDate(undefined);
-      setNewStages([
-        { id: "stage-1", name: "", hotelName: "", googleMapsUrl: "", days: 0 },
-      ]);
+      setNewStages([{ id: "stage-1", name: "", hotelName: "", googleMapsUrl: "", days: 0 }]);
+      setRawFiles([]);
+
+      toast.success("✅ Voyage enregistré avec succès !");
+    } catch (err: any) {
+      console.error("❌ Erreur lors de la création du voyage:", err);
+      toast.error("Erreur : " + (err?.message ?? "Veuillez réessayer."));
+    } finally {
       setSaving(false);
-      toast.success("Voyage ajouté avec succès");
-    }, 800);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    deleteVoyage(id);
-    setDeleteConfirmId(null);
-    toast.success("Voyage supprimé avec succès");
+  const handleDelete = async (id: string) => {
+    try {
+      console.log("🗑️ Deleting voyage with ID:", id);
+      
+      // ── Step 1: Delete child records from voyage_stages (cascade) ──────────
+      const { error: stagesError } = await supabase
+        .from('voyage_stages')
+        .delete()
+        .eq('voyage_id', id);
+      
+      if (stagesError) {
+        console.error("❌ Error deleting voyage_stages:", stagesError);
+        toast.error("Erreur lors de la suppression des étapes du voyage");
+        return;
+      }
+      
+      console.log("✅ Voyage stages deleted successfully");
+      
+      // ── Step 2: Delete the voyage record from voyages table ────────────────
+      const { error: voyageError } = await supabase
+        .from('voyages')
+        .delete()
+        .eq('id', id);
+      
+      if (voyageError) {
+        console.error("❌ Error deleting voyage:", voyageError);
+        toast.error("Erreur lors de la suppression du voyage");
+        return;
+      }
+      
+      console.log("✅ Voyage deleted from Supabase successfully");
+      
+      // ── Step 3: Update local state to reflect deletion ─────────────────────
+      deleteVoyage(id);
+      setDeleteConfirmId(null);
+      
+      // ── Step 4: Refetch voyages from Supabase to sync UI ───────────────────
+      await refetchVoyages();
+      
+      toast.success("✅ Voyage supprimé avec succès");
+    } catch (err: any) {
+      console.error("❌ Unexpected error during voyage deletion:", err);
+      toast.error("Erreur inattendue lors de la suppression");
+    }
   };
 
   const openEditModal = (voyage: Voyage) => {
     setEditingVoyage(voyage);
+    
+    // Parse points_forts from database: convert comma-separated string to array
+    const featuresArray = voyage.points_forts 
+      ? voyage.points_forts.split(",").map(f => f.trim()).filter(Boolean)
+      : (voyage.features || []);
+    
     setEditForm({
       title: voyage.title,
       imageUrl: voyage.imageUrl,
@@ -1919,7 +2124,7 @@ const VoyagesView = ({
       duration: voyage.duration || "",
       date: voyage.date || "",
       status: voyage.status || "normal",
-      features: voyage.features || [],
+      features: featuresArray,
       flightType: voyage.flightType || "",
       visaRequired: voyage.visaRequired || "",
       roomType: voyage.roomType || "",
@@ -1960,9 +2165,10 @@ const VoyagesView = ({
     ]);
   };
 
-  const handleEdit = (e: React.FormEvent) => {
+  const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editForm.title || !editForm.price || !editingVoyage) return;
+    if (saving) return; // Block double submissions
     
     // Pour "Voyage à la Carte", utiliser des valeurs par défaut
     let duration, date;
@@ -1991,32 +2197,90 @@ const VoyagesView = ({
     }
     
     setSaving(true);
-    
-    setTimeout(() => {
-      updateVoyage(editingVoyage.id, {
-        title: editForm.title,
-        imageUrl: editForm.imageUrls[0] || editForm.imageUrl || editingVoyage.imageUrl,
-        imageUrls: editForm.imageUrls.length > 0 ? editForm.imageUrls : undefined,
-        price: Number(editForm.price),
-        description: editForm.description,
-        category: editForm.category,
-        duration: duration || editForm.duration,
-        date: date || editForm.date,
-        stages: needsStages(editForm.category) ? editStages : undefined,
-        status: editForm.status,
-        features: editForm.features.length > 0 ? editForm.features : undefined,
-        flightType: editForm.flightType || undefined,
-        visaRequired: editForm.visaRequired || undefined,
-        roomType: editForm.roomType || undefined,
-        mealPlan: editForm.mealPlan || undefined,
-      });
+
+    try {
+      // ── Step A: Upload new images to Cloudinary if any ────────────────────
+      let secureUrls: string[] = [];
+      if (editRawFiles && editRawFiles.length > 0) {
+        toast.loading("📤 Upload des photos en cours...", { id: "cloudinary-upload-edit" });
+        secureUrls = await uploadImagesToCloudinary(editRawFiles);
+        toast.dismiss("cloudinary-upload-edit");
+        if (secureUrls.length === 0) {
+          toast.error("L'upload Cloudinary a échoué. Vérifiez votre connexion et réessayez.");
+          setSaving(false);
+          return;
+        }
+        console.log("✅ Cloudinary secure URLs (edit):", secureUrls);
+      }
+
+      // ── Step B: Assemble voyage update payload ────────────────────────────
+      // Use new Cloudinary URLs if uploaded, otherwise keep existing
+      const primaryUrl = secureUrls.length > 0 
+        ? secureUrls[0] 
+        : (editForm.imageUrls[0] || editForm.imageUrl || editingVoyage.imageUrl);
+      const allUrlsJoined = secureUrls.length > 0 
+        ? secureUrls.join(",") 
+        : (editForm.imageUrls.length > 0 ? editForm.imageUrls.join(",") : primaryUrl);
+
+      // Store points_forts separately in database instead of appending to description
+      const pointsFortsString = editForm.features.length > 0 
+        ? editForm.features.join(", ") 
+        : "";
+
+      const voyagePayload = {
+        title:            editForm.title,
+        description:      editForm.description.trim(),
+        category:         "Voyage Organisé", // Strictly set to match database constraint
+        price:            Number(editForm.price),
+        duration:         duration || editForm.duration,
+        start_date:       editStartDate ? format(editStartDate, "yyyy-MM-dd") : editingVoyage.date.split(" - ")[0],
+        end_date:         editEndDate   ? format(editEndDate,   "yyyy-MM-dd") : editingVoyage.date.split(" - ")[1],
+        status:           editForm.status as string,
+        image_url:        allUrlsJoined,
+        points_forts:     pointsFortsString,
+      };
+
+      // Map front-end Stage[] to VoyageStageInsertPayload[]
+      const stagesPayload = needsStages(editForm.category)
+        ? editStages.map((s) => ({
+            name:            s.name,
+            city:            s.name,
+            hotel_name:      s.hotelName  || undefined,
+            google_maps_url: s.googleMapsUrl || undefined,
+            duration_days:   s.days,
+            icon:            (s.icon ?? "default") as "kaaba" | "dome" | "default",
+            description:     "",
+          }))
+        : [];
+
+      console.log("🔄 Update Voyage Payload:", voyagePayload);
+      console.log("🔄 Update Stages Payload:", stagesPayload);
+
+      // ── Step C: Call the UPDATE service method ────────────────────────────
+      const updatedVoyageRecord = await updateVoyageWithStages(
+        editingVoyage.id,
+        voyagePayload,
+        stagesPayload
+      );
+      console.log("✅ Voyage mis à jour en base:", updatedVoyageRecord);
+
+      // ── Step D: Refetch voyages to sync UI ────────────────────────────────
+      await refetchVoyages();
+
+      // ── Step E: Reset form state and close modal ──────────────────────────
       setEditingVoyage(null);
       setEditFeatureInput("");
       setEditStartDate(undefined);
       setEditEndDate(undefined);
+      setEditRawFiles([]);
+
+      toast.success("✅ Voyage modifié avec succès !");
+    } catch (err: any) {
+      console.error("❌ Erreur lors de la modification du voyage:", err);
+      toast.error("Erreur : " + (err?.message ?? "Veuillez réessayer."));
+    } finally {
       setSaving(false);
-      toast.success("Voyage modifié avec succès");
-    }, 800);
+    }
   };
 
   return (
@@ -2102,6 +2366,7 @@ const VoyagesView = ({
             <MultiImageUpload
               value={newVoyage.imageUrls}
               onChange={(imageUrls) => setNewVoyage({ ...newVoyage, imageUrls })}
+              onFilesSelected={(files) => setRawFiles((prev) => [...prev, ...files])}
               maxFiles={10}
               label="Photos du voyage"
             />
@@ -2308,6 +2573,7 @@ const VoyagesView = ({
                 <MultiImageUpload
                   value={editForm.imageUrls}
                   onChange={(imageUrls) => setEditForm({ ...editForm, imageUrls })}
+                  onFilesSelected={setEditRawFiles}
                   maxFiles={10}
                   label="Photos du voyage"
                 />

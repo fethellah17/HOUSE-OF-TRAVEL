@@ -8,6 +8,7 @@ import { LoadingSpinner } from "./LoadingSpinner";
 interface MultiImageUploadProps {
   value: string[];
   onChange: (images: string[]) => void;
+  onFilesSelected?: (files: File[]) => void; // exposes raw File[] to parent for Cloudinary
   maxFiles?: number;
   label?: string;
 }
@@ -17,6 +18,7 @@ const ACCEPTED_FORMATS = ["image/jpeg", "image/png", "image/heic", "image/heif"]
 export const MultiImageUpload = ({
   value,
   onChange,
+  onFilesSelected,
   maxFiles = 10,
   label = "Photos du voyage",
 }: MultiImageUploadProps) => {
@@ -30,6 +32,14 @@ export const MultiImageUpload = ({
       toast.error("Format non accepté. Utilisez JPG, JPEG, PNG ou HEIC.");
       return false;
     }
+    
+    // 10MB file size limit for Cloudinary free tier
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(`${file.name} dépasse la limite de 10MB. Veuillez choisir une image plus petite.`);
+      return false;
+    }
+    
     return true;
   };
 
@@ -44,6 +54,11 @@ export const MultiImageUpload = ({
 
     const remainingSlots = maxFiles - value.length;
     const filesToProcess = validFiles.slice(0, remainingSlots);
+
+    // Expose raw File objects to parent (for Cloudinary upload)
+    if (onFilesSelected) {
+      onFilesSelected(filesToProcess);
+    }
 
     setIsLoading(true);
     setProcessingMessage(`Traitement de ${filesToProcess.length} image(s)...`);

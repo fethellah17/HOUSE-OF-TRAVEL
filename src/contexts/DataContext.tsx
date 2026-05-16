@@ -410,7 +410,8 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   // ============================================================================
   // PERSISTENT STATE (LOCALSTORAGE ENABLED)
   // ============================================================================
-  const [voyages, setVoyages] = useState<Voyage[]>(mockVoyages);
+  // Initialize voyages with empty array - all data comes from Supabase
+  const [voyages, setVoyages] = useState<Voyage[]>([]);
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [sejourServices, setSejourServices] = useState<SejourService[]>(defaultServices);
   const [dossierCountries, setDossierCountries] = useState<DossierCountry[]>(defaultDossierCountries);

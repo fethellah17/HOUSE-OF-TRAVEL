@@ -3,7 +3,9 @@ import TripCard from "@/components/TripCard";
 import { useData } from "@/contexts/DataContext";
 import { VoyageCategory } from "@/types";
 import { motion } from "framer-motion";
-import { Plane, Camera, Map } from "lucide-react";
+import { Plane, Camera, Map, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface VoyageListPageProps {
   category: VoyageCategory;
@@ -13,7 +15,58 @@ interface VoyageListPageProps {
 
 const VoyageListPage = ({ category, title, description }: VoyageListPageProps) => {
   const { voyages } = useData();
-  const trips = voyages.filter((v) => v.category === category);
+  const [supabaseVoyages, setSupabaseVoyages] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch voyages from Supabase dynamically
+  useEffect(() => {
+    const fetchVoyages = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("voyages")
+          .select("*")
+          .eq("category", "Voyage Organisé")
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("❌ Error fetching voyages from Supabase:", error);
+          setSupabaseVoyages([]);
+        } else {
+          console.log("✅ Fetched voyages from Supabase:", data);
+          // Map Supabase data to frontend format
+          const mappedVoyages = data.map((v: any) => ({
+            id: v.id,
+            title: v.title,
+            imageUrl: v.image_url?.split(",")[0] || "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80",
+            imageUrls: v.image_url?.includes(",") ? v.image_url.split(",") : [v.image_url],
+            price: v.price,
+            description: v.description || "",
+            category: v.category,
+            duration: v.duration || "",
+            date: v.start_date && v.end_date 
+              ? `${new Date(v.start_date).toLocaleDateString("fr-FR")} - ${new Date(v.end_date).toLocaleDateString("fr-FR")}`
+              : "",
+            status: v.status || "normal",
+            createdAt: v.created_at,
+          }));
+          setSupabaseVoyages(mappedVoyages);
+        }
+      } catch (err) {
+        console.error("❌ Unexpected error fetching voyages:", err);
+        setSupabaseVoyages([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVoyages();
+  }, [category]);
+
+  // Use Supabase data if available, fallback to context
+  const trips = supabaseVoyages.length > 0 
+    ? supabaseVoyages 
+    : voyages.filter((v) => v.category === category);
 
   return (
     <Layout>
@@ -148,7 +201,14 @@ const VoyageListPage = ({ category, title, description }: VoyageListPageProps) =
           </motion.div>
 
           {/* Staggered Card Entrance */}
-          {trips.length > 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="text-center">
+                <Loader2 className="animate-spin h-12 w-12 text-primary mx-auto mb-4" />
+                <p className="text-muted-foreground">Chargement des voyages...</p>
+              </div>
+            </div>
+          ) : trips.length > 0 ? (
             <motion.div
               initial="hidden"
               animate="visible"

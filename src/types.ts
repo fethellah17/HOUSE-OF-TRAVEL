@@ -33,6 +33,7 @@ export interface Voyage {
   stages?: Stage[];
   status?: VoyageStatus;
   features?: string[]; // Points Forts du voyage (ex: "Vol Direct", "Hôtel 4*", "All Inclusive")
+  points_forts?: string; // Points Forts stored in database as comma-separated string or raw text
   // Champs de contrôle Admin pour Omrah et Voyage Organisé
   flightType?: string; // Type de vol (ex: "Avec vol", "Sans vol", "")
   visaRequired?: string; // Besoin VISA (ex: "Oui", "Non", "")
