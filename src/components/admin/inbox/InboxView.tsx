@@ -14,11 +14,13 @@ interface InboxViewProps {
   deleteRequest: (id: string) => Promise<void> | void;
   markVisaAsRead?: (id: string, e?: React.MouseEvent) => void;
   deleteVisaRequest?: (id: string) => Promise<void> | void;
+  markStayAsRead?: (id: string, e?: React.MouseEvent) => void;
+  deleteStayRequest?: (id: string) => Promise<void> | void;
 }
 
 type ServiceTab = "billetterie" | "visa" | "hotel" | "sejour";
 
-const InboxView = ({ requests, markRequestAsRead, deleteRequest, markVisaAsRead, deleteVisaRequest }: InboxViewProps) => {
+const InboxView = ({ requests, markRequestAsRead, deleteRequest, markVisaAsRead, deleteVisaRequest, markStayAsRead, deleteStayRequest }: InboxViewProps) => {
   const [activeServiceTab, setActiveServiceTab] = useState<ServiceTab>("billetterie");
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
 
@@ -103,6 +105,8 @@ const InboxView = ({ requests, markRequestAsRead, deleteRequest, markVisaAsRead,
           onDelete={
             selectedRequest.serviceType === "visa" && deleteVisaRequest
               ? deleteVisaRequest
+              : selectedRequest.serviceType === "sejour" && deleteStayRequest
+              ? deleteStayRequest
               : deleteRequest
           }
         />
@@ -134,7 +138,13 @@ const InboxView = ({ requests, markRequestAsRead, deleteRequest, markVisaAsRead,
         <SejourTable 
           requests={sejourRequests} 
           onOpen={openRequest}
-          onMarkAsRead={markRequestAsRead}
+          onMarkAsRead={(id, e) => {
+            if (markStayAsRead) {
+              markStayAsRead(id, e);
+            } else {
+              markRequestAsRead(id);
+            }
+          }}
         />
       )}
     </div>

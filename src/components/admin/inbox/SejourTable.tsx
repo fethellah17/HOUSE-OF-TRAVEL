@@ -6,7 +6,7 @@ import { toast } from "sonner";
 interface SejourTableProps {
   requests: SejourRequest[];
   onOpen: (req: SejourRequest) => void;
-  onMarkAsRead: (id: string) => void;
+  onMarkAsRead: (id: string, e?: React.MouseEvent) => void;
 }
 
 // Helper function to format phone number for WhatsApp
@@ -44,8 +44,9 @@ const SejourTable = ({ requests, onOpen, onMarkAsRead }: SejourTableProps) => {
   };
 
   const handleMarkAsRead = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
     e.stopPropagation();
-    onMarkAsRead(id);
+    onMarkAsRead(id, e);
   };
 
   const handleWhatsApp = (e: React.MouseEvent, req: SejourRequest) => {

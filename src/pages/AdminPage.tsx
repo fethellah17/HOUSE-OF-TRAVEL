@@ -18,7 +18,7 @@ import { fr } from "date-fns/locale";
 import { formatPrice } from "@/lib/formatters";
 import { generateMessagePDF } from "@/lib/pdfGenerator";
 import InboxView from "@/components/admin/inbox/InboxView";
-import { fetchBilletterieRequests, fetchHotelRequests, fetchVisaRequests, markRequestAsRead as markRequestAsReadService, updateHotelRequestStatus, updateRequestStatus as updateRequestStatusService, deleteRequest as deleteRequestService, fetchVisaConfigs as fetchVisaConfigsService, createVisaConfig, updateVisaConfig, deleteVisaConfig as deleteVisaConfigService, parseDocuments, type VisaConfig } from "@/lib/formsService";
+import { fetchBilletterieRequests, fetchHotelRequests, fetchVisaRequests, markRequestAsRead as markRequestAsReadService, updateHotelRequestStatus, updateRequestStatus as updateRequestStatusService, deleteRequest as deleteRequestService, fetchVisaConfigs as fetchVisaConfigsService, createVisaConfig, updateVisaConfig, deleteVisaConfig as deleteVisaConfigService, parseDocuments, type VisaConfig, fetchStayRequests, toggleStayRequestRead, deleteStayRequest as deleteStayRequestService, fetchStaySettings, addStaySetting, deleteStaySetting } from "@/lib/formsService";
 
 type Tab = "inbox" | "users" | "voyages" | "sejour-config" | "visa-config" | "settings";
 
@@ -58,6 +58,7 @@ const AdminPage = () => {
   const [realBilletterieRequests, setRealBilletterieRequests] = useState<BilletterieRequest[]>([]);
   const [realHotelRequests, setRealHotelRequests] = useState<HotelRequest[]>([]);
   const [realVisaRequests, setRealVisaRequests] = useState<VisaRequest[]>([]);
+  const [realStayRequests, setRealStayRequests] = useState<any[]>([]);
   const [loadingBilletterie, setLoadingBilletterie] = useState(false);
 
   // Safety check for critical data
@@ -194,6 +195,39 @@ const AdminPage = () => {
     };
 
     loadVisaRequests();
+
+    // Load stay requests from Supabase
+    const loadStayRequests = async () => {
+      try {
+        const raw = await fetchStayRequests();
+        const mapped = raw.map((req: any) => ({
+          id: req.id,
+          serviceType: 'sejour' as const,
+          createdAt: req.created_at,
+          isRead: req.is_read === true,
+          is_read: req.is_read === true,
+          completed: false,
+          personalInfo: {
+            nom: req.nom || '',
+            prenom: req.prenom || '',
+            email: req.email || '',
+            telephone: req.phone || '',
+          },
+          destination: req.destination || '',
+          budget: req.budget_estime?.toString() || '',
+          dateDepart: req.date_depart || '',
+          dateRetour: req.date_retour || '',
+          servicesInclus: Array.isArray(req.services_inclus) ? req.services_inclus : [],
+          preferences: req.preferences_particulieres || '',
+        }));
+        setRealStayRequests(mapped);
+        console.log('🏝️ Stay requests loaded:', mapped.length);
+      } catch (error) {
+        console.error('Error loading stay requests:', error);
+      }
+    };
+
+    loadStayRequests();
   }, [loggedIn]);
 
   // Ensure arrays are defined with fallbacks
@@ -350,12 +384,58 @@ const AdminPage = () => {
         return;
       }
 
-      // Fallback to context for other request types (sejour)
+      // Fallback to context for legacy context-only requests
       deleteRequest(id);
       toast.success("Demande supprimée");
     } catch (error) {
       console.error("Error deleting request:", error);
       toast.error("Erreur lors de la suppression");
+    }
+  };
+
+  // ========== DEDICATED SÉJOUR TOGGLE HANDLER (Bug 2) ==========
+  const handleMarkStayAsRead = async (id: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    const current = realStayRequests.find(r => r.id === id);
+    if (!current) return;
+
+    const currentIsRead = current.isRead === true || current.is_read === true;
+    console.log('✅ Stay Toggle → ID:', id, '| from:', currentIsRead, '→ to:', !currentIsRead);
+
+    try {
+      await toggleStayRequestRead(id, currentIsRead);
+      setRealStayRequests(prev =>
+        prev.map(r =>
+          r.id === id ? { ...r, isRead: !currentIsRead, is_read: !currentIsRead } : r
+        )
+      );
+      toast.success(!currentIsRead ? 'Marqué comme lu ✓' : 'Marqué comme non lu');
+    } catch (err: any) {
+      console.error('❌ Error toggling stay request read status:', err?.message ?? err);
+      toast.error('Erreur lors de la mise à jour');
+    }
+  };
+
+  // ========== DEDICATED SÉJOUR DELETE HANDLER (Bug 3) ==========
+  const handleDeleteStayRequest = async (id: string) => {
+    try {
+      console.log('🗑️ Deleting stay_request ID:', id);
+      // Optimistic UI
+      setRealStayRequests(prev => prev.filter(r => r.id !== id));
+
+      const success = await deleteStayRequestService(id);
+      if (success) {
+        toast.success('Demande de séjour supprimée');
+      } else {
+        toast.error('Erreur lors de la suppression en base de données');
+      }
+    } catch (err) {
+      console.error('❌ Crash during stay request deletion:', err);
+      toast.error('Erreur inattendue lors de la suppression');
     }
   };
 
@@ -407,7 +487,8 @@ const AdminPage = () => {
       safeRequests.filter((r) => !r.isRead).length +
       realBilletterieRequests.filter((r) => !r.isRead).length +
       realHotelRequests.filter((r) => !r.isRead).length +
-      realVisaRequests.filter((r) => !r.isRead).length
+      realVisaRequests.filter((r) => !r.isRead).length +
+      realStayRequests.filter((r) => !r.isRead).length
     },
     { id: "users", label: "Gérer les Comptes", icon: Users },
     { id: "voyages", label: "Gérer les Voyages Organisés", icon: Plane },
@@ -560,13 +641,15 @@ const AdminPage = () => {
                   ...(realBilletterieRequests.length > 0 ? realBilletterieRequests : safeRequests.filter(r => r.serviceType === "billetterie")),
                   ...realHotelRequests,
                   ...(realVisaRequests.length > 0 ? realVisaRequests : safeRequests.filter(r => r.serviceType === "visa")),
-                  ...safeRequests.filter(r => r.serviceType === "sejour"),
+                  ...(realStayRequests.length > 0 ? realStayRequests : safeRequests.filter(r => r.serviceType === "sejour")),
                   ...(realBilletterieRequests.length === 0 ? safeRequests.filter(r => r.serviceType === "hotel") : []),
                 ]}
                 markRequestAsRead={handleMarkBilletterieAsRead}
                 markVisaAsRead={handleMarkVisaAsRead}
+                markStayAsRead={handleMarkStayAsRead}
                 deleteRequest={handleDeleteBilletterieRequest}
                 deleteVisaRequest={handleDeleteVisaRequest}
+                deleteStayRequest={handleDeleteStayRequest}
               />
               {!loadingBilletterie && realBilletterieRequests.length === 0 && (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
@@ -583,11 +666,7 @@ const AdminPage = () => {
           ) : tab === "users" ? (
             <UsersView />
           ) : tab === "sejour-config" ? (
-            <SejourConfigView
-              services={safeSejourServices}
-              addService={addSejourService}
-              deleteService={deleteSejourService}
-            />
+            <SejourConfigView />
           ) : tab === "visa-config" ? (
             <VisaConfigView />
 
@@ -2440,32 +2519,64 @@ const VoyagesView = ({
 };
 
 /* Séjour Configuration View */
-interface SejourConfigViewProps {
-  services: { id: string; label: string }[];
-  addService: (service: { label: string }) => void;
-  deleteService: (id: string) => void;
-}
-
-const SejourConfigView = ({
-  services,
-  addService,
-  deleteService,
-}: SejourConfigViewProps) => {
+const SejourConfigView = () => {
+  const [services, setServices] = useState<{ id: string; name: string }[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
   const [newServiceLabel, setNewServiceLabel] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleAddService = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newServiceLabel.trim()) {
-      addService({ label: newServiceLabel.trim() });
-      setNewServiceLabel("");
-      toast.success("Service ajouté avec succès");
+  // Load services from Supabase on mount
+  const loadServices = async () => {
+    try {
+      setLoadingServices(true);
+      const data = await fetchStaySettings();
+      setServices(data);
+    } catch (err) {
+      console.error('Error loading stay_settings:', err);
+      toast.error('Erreur lors du chargement des services');
+    } finally {
+      setLoadingServices(false);
     }
   };
 
-  const handleDeleteService = (id: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce service ?")) {
-      deleteService(id);
-      toast.success("Service supprimé");
+  useEffect(() => {
+    loadServices();
+  }, []);
+
+  const handleAddService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newServiceLabel.trim() || saving) return;
+    setSaving(true);
+    try {
+      const result = await addStaySetting(newServiceLabel.trim());
+      if (result) {
+        setServices(prev => [...prev, result]);
+        setNewServiceLabel("");
+        toast.success("Service ajouté avec succès");
+      } else {
+        toast.error('Erreur lors de l\'ajout du service');
+      }
+    } catch (err) {
+      console.error('Error adding stay setting:', err);
+      toast.error('Erreur lors de l\'ajout du service');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteService = async (id: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce service ?")) return;
+    try {
+      const success = await deleteStaySetting(id);
+      if (success) {
+        setServices(prev => prev.filter(s => s.id !== id));
+        toast.success("Service supprimé");
+      } else {
+        toast.error('Erreur lors de la suppression');
+      }
+    } catch (err) {
+      console.error('Error deleting stay setting:', err);
+      toast.error('Erreur lors de la suppression');
     }
   };
 
@@ -2502,17 +2613,22 @@ const SejourConfigView = ({
             />
             <button
               type="submit"
-              className="w-full sm:w-auto px-6 py-3 sm:py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 font-medium touch-manipulation min-h-[48px]"
+              disabled={saving || !newServiceLabel.trim()}
+              className="w-full sm:w-auto px-6 py-3 sm:py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 font-medium touch-manipulation min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Plus size={20} />
-              Ajouter
+              {saving ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} />}
+              {saving ? 'Ajout...' : 'Ajouter'}
             </button>
           </div>
         </form>
 
         {/* Services List */}
         <div className="space-y-2">
-          {services.length === 0 ? (
+          {loadingServices ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="animate-spin h-6 w-6 text-primary" />
+            </div>
+          ) : services.length === 0 ? (
             <p className="text-slate-500 text-center py-4 text-sm sm:text-base">Aucun service configuré</p>
           ) : (
             services.map((service) => (
@@ -2523,7 +2639,7 @@ const SejourConfigView = ({
                 className="flex items-center justify-between p-3 sm:p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-primary/50 transition-all"
               >
                 <span className="text-slate-700 font-medium text-sm sm:text-base">
-                  {service.label}
+                  {service.name}
                 </span>
                 <button
                   onClick={() => handleDeleteService(service.id)}

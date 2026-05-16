@@ -444,6 +444,182 @@ export const submitHotelRequest = async (data: HotelRequestInput) => {
   }
 };
 
+/**
+ * Submit a Séjour à la Carte request
+ */
+export const submitStayRequest = async (formData: any) => {
+  try {
+    console.log("✈️ Submitting Séjour Request Payload:", formData);
+
+    const { data, error } = await supabase
+      .from('stay_requests')
+      .insert([
+        {
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          phone: formData.phone,
+          destination: formData.destination,
+          budget_estime: formData.budget_estime ? parseFloat(formData.budget_estime) : null,
+          date_depart: formData.date_depart,
+          date_retour: formData.date_retour,
+          services_inclus: formData.services_inclus || [],
+          preferences_particulieres: formData.preferences_particulieres || '',
+          is_read: false,
+          user_id: formData.user_id || null
+        }
+      ])
+      .select();
+
+    if (error) {
+      console.error("❌ Supabase Insertion Error in stay_requests:", error.message, error.details);
+      throw error;
+    }
+
+    console.log("✅ Séjour Request Saved Successfully:", data);
+    return data;
+  } catch (err) {
+    console.error("❌ Crash in submitStayRequest Service:", err);
+    throw err;
+  }
+};
+
+// ============================================================================
+// STAY SETTINGS - Configuration Séjour (stay_settings table)
+// ============================================================================
+
+/**
+ * Fetch all active stay service settings
+ */
+export const fetchStaySettings = async (): Promise<{ id: string; name: string }[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('stay_settings')
+      .select('id, service_name')
+      .order('service_name', { ascending: true });
+
+    if (error) throw error;
+    // Map DB column 'service_name' → frontend property 'name'
+    return (data || []).map((row: any) => ({ id: row.id, name: row.service_name }));
+  } catch (err) {
+    console.error('❌ Error fetching stay_settings:', err);
+    return [];
+  }
+};
+
+/**
+ * Add a new service option to stay_settings
+ */
+export const addStaySetting = async (serviceName: string): Promise<{ id: string; name: string } | null> => {
+  try {
+    console.log('➕ Adding stay setting:', serviceName);
+
+    const { data, error } = await supabase
+      .from('stay_settings')
+      .insert([{ service_name: serviceName.trim() }])
+      .select('id, service_name')
+      .single();
+
+    if (error) {
+      console.error('❌ Supabase Error adding stay_setting:', error.message, error.details);
+      throw error;
+    }
+
+    console.log('✅ Stay setting added:', data);
+    // Map DB column 'service_name' → frontend property 'name'
+    return data ? { id: data.id, name: (data as any).service_name } : null;
+  } catch (err) {
+    console.error('❌ Crash in addStaySetting:', err);
+    return null;
+  }
+};
+
+/**
+ * Delete a service option from stay_settings by id
+ */
+export const deleteStaySetting = async (id: string): Promise<boolean> => {
+  try {
+    console.log('🗑️ Deleting stay setting ID:', id);
+
+    const { error } = await supabase
+      .from('stay_settings')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('❌ Supabase Error deleting stay_setting:', error.message, error.details);
+      throw error;
+    }
+
+    console.log('✅ Stay setting deleted, ID:', id);
+    return true;
+  } catch (err) {
+    console.error('❌ Crash in deleteStaySetting:', err);
+    return false;
+  }
+};
+
+// ============================================================================
+// STAY REQUESTS - Admin Inbox Operations
+// ============================================================================
+
+/**
+ * Fetch all stay_requests for Admin inbox
+ */
+export const fetchStayRequests = async (): Promise<any[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('stay_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('❌ Error fetching stay_requests:', err);
+    return [];
+  }
+};
+
+/**
+ * Toggle is_read status on a stay_request row
+ */
+export const toggleStayRequestRead = async (id: string, currentStatus: boolean): Promise<any[]> => {
+  const { data, error } = await supabase
+    .from('stay_requests')
+    .update({ is_read: !currentStatus })
+    .eq('id', id)
+    .select();
+
+  if (error) throw error;
+  return data ?? [];
+};
+
+/**
+ * Delete a stay_request row by id
+ */
+export const deleteStayRequest = async (id: string): Promise<boolean> => {
+  try {
+    console.log('🗑️ Supabase DELETE stay_request ID:', id);
+
+    const { error } = await supabase
+      .from('stay_requests')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('❌ Supabase Error deleting stay_request:', error.message, error.details);
+      throw error;
+    }
+
+    console.log('✅ stay_request deleted, ID:', id);
+    return true;
+  } catch (err) {
+    console.error('❌ Crash in deleteStayRequest:', err);
+    return false;
+  }
+};
+
 export interface DevisRequestInput {
   user_id?: string;
   nom: string;

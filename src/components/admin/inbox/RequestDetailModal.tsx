@@ -36,11 +36,6 @@ const openWhatsApp = (phone: string, message: string) => {
   window.open(url, '_blank', 'noopener,noreferrer');
 };
 
-interface RequestDetailModalProps {
-  request: ServiceRequest | null;
-  onClose: () => void;
-  onDelete: (id: string) => Promise<void> | void;
-}
 
 const RequestDetailModal = ({ request, onClose, onDelete }: RequestDetailModalProps) => {
   if (!request) return null;

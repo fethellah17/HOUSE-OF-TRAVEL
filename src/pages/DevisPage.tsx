@@ -8,7 +8,7 @@ import confetti from "canvas-confetti";
 import LoginModal from "@/components/LoginModal";
 import { useData } from "@/contexts/DataContext";
 import type { HotelRequest, SejourRequest, VisaRequest } from "@/contexts/DataContext";
-import { submitHotelRequest, submitVisaRequest, fetchVisaConfigs, type VisaConfig } from "@/lib/formsService";
+import { submitHotelRequest, submitVisaRequest, submitStayRequest, fetchVisaConfigs, fetchStaySettings, type VisaConfig } from "@/lib/formsService";
 import { getCurrentUser } from "@/services/authService";
 
 type ServiceType = "hotel" | "sejour" | "visa" | null;
@@ -64,8 +64,33 @@ const DevisPage = () => {
   
   // Safety checks for data
   const safeSejourDestinations = sejourDestinations || [];
-  const safeSejourServices = sejourServices || [];
   const safeEVisaCountries = eVisaCountries || [];
+
+  // Dynamic stay services from Supabase (replaces stale context)
+  const [dynamicStayServices, setDynamicStayServices] = useState<{ id: string; label: string }[]>([]);
+  const [stayServicesLoaded, setStayServicesLoaded] = useState(false);
+
+  useEffect(() => {
+    const loadStayServices = async () => {
+      try {
+        const settings = await fetchStaySettings();
+        if (settings.length > 0) {
+          // Map { id, name } from Supabase → { id, label } for checkbox rendering
+          setDynamicStayServices(settings.map(s => ({ id: s.id, label: s.name })));
+        }
+      } catch (error) {
+        console.error('Error loading stay settings for form:', error);
+      } finally {
+        setStayServicesLoaded(true);
+      }
+    };
+    loadStayServices();
+  }, []);
+
+  // Use Supabase services if loaded, fall back to context defaults
+  const safeSejourServices = stayServicesLoaded && dynamicStayServices.length > 0
+    ? dynamicStayServices
+    : (sejourServices || []);
   const safeDossierCountries = dossierCountries || [];
   
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -414,6 +439,7 @@ const DevisPage = () => {
         console.error("❌ Error saving hotel request to Supabase:", error);
       }
     } else if (activeService === "sejour") {
+      // Save to local state (for demo/fallback)
       addRequest({
         serviceType: "sejour",
         personalInfo: {
@@ -429,6 +455,31 @@ const DevisPage = () => {
         servicesInclus: sejourForm.servicesInclus,
         preferences: sejourForm.preferences,
       } as Omit<SejourRequest, "id" | "createdAt" | "isRead" | "completed">);
+
+      // Also save to Supabase with explicit flat column mapping
+      try {
+        const authUser = await getCurrentUser();
+        const userId = authUser.success ? authUser.user?.id : undefined;
+
+        const payload = {
+          nom: personalInfo.nom,
+          prenom: personalInfo.prenom,
+          email: personalInfo.email,
+          phone: personalInfo.telephone,
+          destination: sejourForm.destination,
+          budget_estime: sejourForm.budget,
+          date_depart: sejourForm.dateDepart,
+          date_retour: sejourForm.dateRetour,
+          services_inclus: sejourForm.servicesInclus,
+          preferences_particulieres: sejourForm.preferences,
+          user_id: userId,
+        };
+
+        await submitStayRequest(payload);
+        console.log("✅ Séjour request saved to Supabase");
+      } catch (error) {
+        console.error("❌ Error saving séjour request to Supabase:", error);
+      }
     } else if (activeService === "visa" && visaType) {
       // Save to local state (for demo/fallback)
       addRequest({
@@ -1405,20 +1456,20 @@ const DevisPage = () => {
                               <motion.button
                                 key={service.id}
                                 type="button"
-                                onClick={() => handleServiceToggle(service.id)}
+                                onClick={() => handleServiceToggle(service.label)}
                                 className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                                  sejourForm.servicesInclus.includes(service.id)
+                                  sejourForm.servicesInclus.includes(service.label)
                                     ? "border-primary bg-primary/5"
                                     : "border-slate-200 hover:border-primary/50"
                                 }`}
                                 whileTap={{ scale: 0.98 }}
                               >
                                 <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                  sejourForm.servicesInclus.includes(service.id)
+                                  sejourForm.servicesInclus.includes(service.label)
                                     ? "border-primary bg-primary"
                                     : "border-slate-400"
                                 }`}>
-                                  {sejourForm.servicesInclus.includes(service.id) && (
+                                  {sejourForm.servicesInclus.includes(service.label) && (
                                     <motion.div
                                       initial={{ scale: 0 }}
                                       animate={{ scale: 1 }}
@@ -1428,7 +1479,7 @@ const DevisPage = () => {
                                   )}
                                 </div>
                                 <span className={`text-sm font-medium ${
-                                  sejourForm.servicesInclus.includes(service.id) ? "text-primary" : "text-slate-700"
+                                  sejourForm.servicesInclus.includes(service.label) ? "text-primary" : "text-slate-700"
                                 }`}>
                                   {service.label}
                                 </span>
