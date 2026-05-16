@@ -1241,6 +1241,37 @@ const DevisPage = () => {
                         />
                       </div>
 
+                      {/* Duration Display */}
+                      {(() => {
+                        // Calculate duration only if both dates are valid and departure is after arrival
+                        if (hotelForm.dateArrivee && hotelForm.dateDepart) {
+                          const arrivalDate = new Date(hotelForm.dateArrivee);
+                          const departureDate = new Date(hotelForm.dateDepart);
+                          
+                          if (departureDate > arrivalDate) {
+                            const timeDiff = departureDate.getTime() - arrivalDate.getTime();
+                            const nights = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                            const days = nights + 1;
+                            
+                            return (
+                              <div className="md:col-span-2">
+                                <motion.div
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className="inline-flex items-center gap-2 bg-gradient-to-r from-primary/10 to-accent/10 border-2 border-primary/20 text-primary px-4 py-2.5 rounded-xl font-semibold text-sm shadow-sm"
+                                >
+                                  <Calendar size={16} className="text-accent" />
+                                  <span>
+                                    {days} {days === 1 ? 'jour' : 'jours'} / {nights} {nights === 1 ? 'nuit' : 'nuits'}
+                                  </span>
+                                </motion.div>
+                              </div>
+                            );
+                          }
+                        }
+                        return null;
+                      })()}
+
                       <div>
                         <label className="block text-sm font-semibold text-primary mb-2">Nombre de chambres</label>
                         <input
