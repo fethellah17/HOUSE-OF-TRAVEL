@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useData } from "@/contexts/DataContext";
 import { Voyage, Message, VoyageCategory, Stage, VoyageStatus } from "@/types";
-import type { BilletterieRequest, HotelRequest } from "@/contexts/DataContext";
+import type { BilletterieRequest, HotelRequest, VisaRequest } from "@/contexts/DataContext";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plane, Inbox, Plus, LogOut, Eye, Trash2, X, CheckCircle, Loader2, Menu, Pencil, FileDown, ArrowLeft, Users, Settings2, FileText,
@@ -18,7 +18,7 @@ import { fr } from "date-fns/locale";
 import { formatPrice } from "@/lib/formatters";
 import { generateMessagePDF } from "@/lib/pdfGenerator";
 import InboxView from "@/components/admin/inbox/InboxView";
-import { fetchBilletterieRequests, fetchHotelRequests, markRequestAsRead as markRequestAsReadService, updateHotelRequestStatus, updateRequestStatus as updateRequestStatusService, deleteRequest as deleteRequestService } from "@/lib/formsService";
+import { fetchBilletterieRequests, fetchHotelRequests, fetchVisaRequests, markRequestAsRead as markRequestAsReadService, updateHotelRequestStatus, updateRequestStatus as updateRequestStatusService, deleteRequest as deleteRequestService, fetchVisaConfigs as fetchVisaConfigsService, createVisaConfig, updateVisaConfig, deleteVisaConfig as deleteVisaConfigService, parseDocuments, type VisaConfig } from "@/lib/formsService";
 
 type Tab = "inbox" | "users" | "voyages" | "sejour-config" | "visa-config" | "settings";
 
@@ -57,6 +57,7 @@ const AdminPage = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [realBilletterieRequests, setRealBilletterieRequests] = useState<BilletterieRequest[]>([]);
   const [realHotelRequests, setRealHotelRequests] = useState<HotelRequest[]>([]);
+  const [realVisaRequests, setRealVisaRequests] = useState<VisaRequest[]>([]);
   const [loadingBilletterie, setLoadingBilletterie] = useState(false);
 
   // Safety check for critical data
@@ -158,6 +159,41 @@ const AdminPage = () => {
     };
 
     loadHotelRequests();
+
+    // Load visa requests from Supabase
+    const loadVisaRequests = async () => {
+      try {
+        const supabaseVisaRequests = await fetchVisaRequests();
+        
+        const mappedVisaRequests: VisaRequest[] = supabaseVisaRequests.map((req: any) => ({
+          id: req.id,
+          serviceType: "visa" as const,
+          createdAt: req.created_at,
+          isRead: req.is_read === true,
+          completed: req.status === "approved" || req.status === "rejected",
+          personalInfo: {
+            nom: req.nom || "",
+            prenom: req.prenom || "",
+            email: req.email || "",
+            telephone: req.phone || "",
+          },
+          visaType: req.visa_type || "e-visa",
+          pays: req.destination_country || "",
+          dateVoyage: req.travel_date || "",
+          passeportValide: req.passport_valid === true,
+          situationPro: req.professional_status || "",
+          situationGarant: req.guarantor_status || "",
+          message: req.special_requests || "",
+        }));
+
+        setRealVisaRequests(mappedVisaRequests);
+        console.log("📄 Visa requests loaded:", mappedVisaRequests.length);
+      } catch (error) {
+        console.error("Error loading visa requests:", error);
+      }
+    };
+
+    loadVisaRequests();
   }, [loggedIn]);
 
   // Ensure arrays are defined with fallbacks
@@ -206,7 +242,23 @@ const AdminPage = () => {
         return;
       }
 
-      // Fallback to context for other request types (visa, sejour)
+      // Try visa
+      const visaRequest = realVisaRequests.find(r => r.id === id);
+      if (visaRequest) {
+        const newStatus = !visaRequest.isRead;
+        const success = await markRequestAsReadService(id, "visa", newStatus);
+        if (success) {
+          setRealVisaRequests((prev) =>
+            prev.map((r) => (r.id === id ? { ...r, isRead: newStatus } : r))
+          );
+          toast.success(newStatus ? "Marqué comme lu" : "Marqué comme non lu");
+          return;
+        }
+        toast.error("Erreur lors de la mise à jour");
+        return;
+      }
+
+      // Fallback to context for other request types (sejour)
       // For context-based requests, we'll just toggle using the context method
       const contextRequest = safeRequests.find(r => r.id === id);
       if (contextRequest) {
@@ -216,6 +268,57 @@ const AdminPage = () => {
     } catch (error) {
       console.error("Error marking request as read:", error);
       toast.error("Erreur lors de la mise à jour");
+    }
+  };
+
+  // ========== DEDICATED VISA TOGGLE HANDLER ==========
+  const handleMarkVisaAsRead = async (id: string, e?: React.MouseEvent) => {
+    // Freeze the event chain immediately so the browser channel stays open
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // 1. Find the current item directly from the state
+    const currentItem = realVisaRequests.find(r => r.id === id);
+    if (!currentItem) return;
+
+    // Determine next status — check both camelCase and snake_case to be safe
+    const currentIsRead = currentItem.isRead === true || (currentItem as any).is_read === true;
+    const nextStatus = !currentIsRead;
+
+    console.log("✅ Visa Toggle → ID:", id, "| from:", currentIsRead, "→ to:", nextStatus);
+
+    try {
+      // 2. Direct Supabase update targeting visa_requests.is_read
+      const { error } = await supabase
+        .from('visa_requests')
+        .update({ is_read: nextStatus })
+        .eq('id', id);
+
+      if (error) {
+        console.error("❌ Supabase Toggle Error:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        toast.error("Erreur lors de la mise à jour");
+        return;
+      }
+
+      console.log("✅ Supabase updated is_read →", nextStatus, "for ID:", id);
+
+      // 3. Force state sync — update both field names so UI never shows stale value
+      setRealVisaRequests(prev =>
+        prev.map(r =>
+          r.id === id ? { ...r, isRead: nextStatus, is_read: nextStatus } : r
+        )
+      );
+      toast.success(nextStatus ? "Marqué comme lu ✓" : "Marqué comme non lu");
+    } catch (err: any) {
+      console.error("❌ Unhandled error in handleMarkVisaAsRead:", err?.message ?? err);
+      toast.error("Erreur inattendue lors de la mise à jour");
     }
   };
 
@@ -247,12 +350,41 @@ const AdminPage = () => {
         return;
       }
 
-      // Fallback to context for other request types
+      // Fallback to context for other request types (sejour)
       deleteRequest(id);
       toast.success("Demande supprimée");
     } catch (error) {
       console.error("Error deleting request:", error);
       toast.error("Erreur lors de la suppression");
+    }
+  };
+
+  // ========== DEDICATED VISA DELETE HANDLER ==========
+  const handleDeleteVisaRequest = async (id: string) => {
+    try {
+      console.log("🗑️ Supabase DELETE Triggered for Visa ID:", id);
+
+      // Optimistic UI: remove from local state immediately so the row
+      // disappears at once — even if Supabase has a transient issue
+      setRealVisaRequests(prev => prev.filter(r => r.id !== id));
+
+      const { error } = await supabase
+        .from('visa_requests')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error("❌ Supabase Visa Delete Error Details:", error.message, error.details);
+        // Row is already gone from UI; show error so admin is aware
+        toast.error("Erreur lors de la suppression en base de données");
+        return;
+      }
+
+      console.log("✅ Visa request deleted from Supabase, ID:", id);
+      toast.success("Demande de visa supprimée");
+    } catch (err) {
+      console.error("❌ Crash during Visa deletion execution:", err);
+      toast.error("Erreur inattendue lors de la suppression");
     }
   };
 
@@ -271,7 +403,12 @@ const AdminPage = () => {
   }
 
   const sidebarItems: { id: Tab; label: string; icon: React.ElementType; count?: number }[] = [
-    { id: "inbox", label: "Boîte de Réception", icon: Inbox, count: safeRequests.filter((r) => !r.isRead).length },
+    { id: "inbox", label: "Boîte de Réception", icon: Inbox, count: 
+      safeRequests.filter((r) => !r.isRead).length +
+      realBilletterieRequests.filter((r) => !r.isRead).length +
+      realHotelRequests.filter((r) => !r.isRead).length +
+      realVisaRequests.filter((r) => !r.isRead).length
+    },
     { id: "users", label: "Gérer les Comptes", icon: Users },
     { id: "voyages", label: "Gérer les Voyages Organisés", icon: Plane },
     { id: "sejour-config", label: "Configuration Séjour", icon: Settings2 },
@@ -422,11 +559,14 @@ const AdminPage = () => {
                 requests={[
                   ...(realBilletterieRequests.length > 0 ? realBilletterieRequests : safeRequests.filter(r => r.serviceType === "billetterie")),
                   ...realHotelRequests,
-                  ...safeRequests.filter(r => r.serviceType === "visa" || r.serviceType === "sejour"),
+                  ...(realVisaRequests.length > 0 ? realVisaRequests : safeRequests.filter(r => r.serviceType === "visa")),
+                  ...safeRequests.filter(r => r.serviceType === "sejour"),
                   ...(realBilletterieRequests.length === 0 ? safeRequests.filter(r => r.serviceType === "hotel") : []),
                 ]}
-                markRequestAsRead={realBilletterieRequests.length > 0 || realHotelRequests.length > 0 ? handleMarkBilletterieAsRead : markRequestAsRead}
-                deleteRequest={realBilletterieRequests.length > 0 || realHotelRequests.length > 0 ? handleDeleteBilletterieRequest : deleteRequest}
+                markRequestAsRead={handleMarkBilletterieAsRead}
+                markVisaAsRead={handleMarkVisaAsRead}
+                deleteRequest={handleDeleteBilletterieRequest}
+                deleteVisaRequest={handleDeleteVisaRequest}
               />
               {!loadingBilletterie && realBilletterieRequests.length === 0 && (
                 <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
@@ -449,15 +589,8 @@ const AdminPage = () => {
               deleteService={deleteSejourService}
             />
           ) : tab === "visa-config" ? (
-            <VisaConfigView
-              eVisaCountries={safeEVisaCountries}
-              dossierCountries={safeDossierCountries}
-              addEVisaCountry={addEVisaCountry}
-              deleteEVisaCountry={deleteEVisaCountry}
-              addDossierCountry={addDossierCountry}
-              updateDossierCountry={updateDossierCountry}
-              deleteDossierCountry={deleteDossierCountry}
-            />
+            <VisaConfigView />
+
           ) : tab === "settings" ? (
             <AdminSettingsView />
           ) : (
@@ -2408,97 +2541,173 @@ const SejourConfigView = ({
   );
 };
 
-/* Visa Configuration View */
-interface VisaConfigViewProps {
-  eVisaCountries: { id: string; name: string }[];
-  dossierCountries: { id: string; name: string; documents: string[] }[];
-  addEVisaCountry: (country: { name: string }) => void;
-  deleteEVisaCountry: (id: string) => void;
-  addDossierCountry: (country: { name: string; documents: string[] }) => void;
-  updateDossierCountry: (id: string, country: Partial<{ name: string; documents: string[] }>) => void;
-  deleteDossierCountry: (id: string) => void;
-}
-
-const VisaConfigView = ({
-  eVisaCountries,
-  dossierCountries,
-  addEVisaCountry,
-  deleteEVisaCountry,
-  addDossierCountry,
-  updateDossierCountry,
-  deleteDossierCountry,
-}: VisaConfigViewProps) => {
+/* Visa Configuration View - Supabase-backed */
+const VisaConfigView = () => {
   const [activeTab, setActiveTab] = useState<"evisa" | "dossier">("evisa");
-  const [newEVisaCountry, setNewEVisaCountry] = useState("");
-  const [newDossierCountry, setNewDossierCountry] = useState("");
-  const [newDocument, setNewDocument] = useState("");
+  const [configs, setConfigs] = useState<VisaConfig[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Form state
+  const [newCountryName, setNewCountryName] = useState("");
+  const [newCountryType, setNewCountryType] = useState<"e-visa" | "dossier" | "both">("e-visa");
+  const [newDocuments, setNewDocuments] = useState("");
   const [editingCountry, setEditingCountry] = useState<string | null>(null);
+  const [newDocument, setNewDocument] = useState("");
 
-  // Safety checks
-  const safeEVisaCountries = eVisaCountries || [];
-  const safeDossierCountries = dossierCountries || [];
+  // Load configs from Supabase
+  const loadConfigs = async () => {
+    try {
+      setLoading(true);
+      const data = await fetchVisaConfigsService();
+      setConfigs(data);
+    } catch (error) {
+      console.error("Error loading visa configs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const handleAddEVisaCountry = (e: React.FormEvent) => {
+  useEffect(() => {
+    loadConfigs();
+  }, []);
+
+  // Derived lists
+  const eVisaCountries = configs.filter(c => c.visa_type === "e-visa" || c.visa_type === "both");
+  const dossierCountries = configs.filter(c => c.visa_type === "dossier" || c.visa_type === "both");
+
+  // ADD country to Supabase
+  const handleAddCountry = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newEVisaCountry.trim()) {
-      addEVisaCountry({ name: newEVisaCountry.trim() });
-      setNewEVisaCountry("");
-      toast.success("Pays ajouté avec succès");
+    e.stopPropagation();
+    if (!newCountryName.trim() || saving) return;
+
+    const visaType = activeTab === "evisa" ? "e-visa" as const : "dossier" as const;
+    // Parse documents from newlines
+    const docs = newDocuments.trim()
+      ? newDocuments.split("\n").map(d => d.trim()).filter(Boolean)
+      : [];
+
+    setSaving(true);
+    try {
+      const result = await createVisaConfig({
+        country_name: newCountryName.trim(),
+        visa_type: visaType,
+        required_documents: docs,
+        is_active: true,
+      });
+
+      if (result) {
+        toast.success(`Pays "${newCountryName.trim()}" ajouté avec succès`);
+        setNewCountryName("");
+        setNewDocuments("");
+        // Optimistically push normalized result so required_documents is always string[]
+        const normalizedResult: VisaConfig = {
+          ...result,
+          required_documents: Array.isArray(result.required_documents)
+            ? result.required_documents
+            : typeof result.required_documents === 'string'
+              ? (result.required_documents as string).split('\n').filter(Boolean)
+              : [],
+        };
+        setConfigs(prev => [...prev, normalizedResult]);
+        // Then re-fetch to get authoritative server state
+        await loadConfigs();
+      } else {
+        toast.error("Erreur lors de l'ajout. Vérifiez les permissions Supabase.");
+      }
+    } catch (error) {
+      console.error("Error adding country:", error);
+      toast.error("Erreur lors de l'ajout du pays");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDeleteEVisaCountry = (id: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce pays ?")) {
-      deleteEVisaCountry(id);
-      toast.success("Pays supprimé");
-    }
-  };
-
-  const handleAddDossierCountry = (e: React.FormEvent) => {
+  // DELETE country from Supabase
+  const handleDeleteCountry = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
-    if (newDossierCountry.trim()) {
-      addDossierCountry({ name: newDossierCountry.trim(), documents: [] });
-      setNewDossierCountry("");
-      toast.success("Pays ajouté avec succès");
+    e.stopPropagation();
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce pays ?")) return;
+
+    try {
+      const success = await deleteVisaConfigService(id);
+      if (success) {
+        toast.success("Pays supprimé");
+        setEditingCountry(null);
+        await loadConfigs();
+      } else {
+        toast.error("Erreur lors de la suppression");
+      }
+    } catch (error) {
+      console.error("Error deleting country:", error);
+      toast.error("Erreur lors de la suppression");
     }
   };
 
-  const handleAddDocument = (countryId: string) => {
-    if (newDocument.trim()) {
-      const country = safeDossierCountries.find(c => c.id === countryId);
-      if (country) {
-        updateDossierCountry(countryId, {
-          documents: [...(country.documents || []), newDocument.trim()]
-        });
+  // ADD document to existing country
+  const handleAddDocument = async (e: React.MouseEvent, configId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!newDocument.trim()) return;
+
+    const config = configs.find(c => c.id === configId);
+    if (!config) return;
+
+    try {
+      const currentDocs = parseDocuments(config.required_documents);
+      const updatedDocs = [...currentDocs, newDocument.trim()];
+      const result = await updateVisaConfig(configId, { required_documents: updatedDocs });
+      if (result) {
         setNewDocument("");
         toast.success("Document ajouté");
+        await loadConfigs();
+      } else {
+        toast.error("Erreur lors de l'ajout du document");
       }
+    } catch (error) {
+      console.error("Error adding document:", error);
+      toast.error("Erreur lors de l'ajout du document");
     }
   };
 
-  const handleDeleteDocument = (countryId: string, docIndex: number) => {
-    const country = safeDossierCountries.find(c => c.id === countryId);
-    if (country && country.documents) {
-      const newDocs = country.documents.filter((_, index) => index !== docIndex);
-      updateDossierCountry(countryId, { documents: newDocs });
-      toast.success("Document supprimé");
+  // DELETE document from existing country
+  const handleDeleteDocument = async (e: React.MouseEvent, configId: string, docIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const config = configs.find(c => c.id === configId);
+    if (!config) return;
+
+    try {
+      const currentDocs = parseDocuments(config.required_documents);
+      const updatedDocs = currentDocs.filter((_, i) => i !== docIndex);
+      const result = await updateVisaConfig(configId, { required_documents: updatedDocs });
+      if (result) {
+        toast.success("Document supprimé");
+        await loadConfigs();
+      } else {
+        toast.error("Erreur lors de la suppression");
+      }
+    } catch (error) {
+      console.error("Error deleting document:", error);
     }
   };
 
-  const handleDeleteDossierCountry = (id: string) => {
-    if (confirm("Êtes-vous sûr de vouloir supprimer ce pays et tous ses documents ?")) {
-      deleteDossierCountry(id);
-      setEditingCountry(null);
-      toast.success("Pays supprimé");
-    }
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="animate-spin h-8 w-8 text-primary" />
+        <span className="ml-3 text-slate-600">Chargement des configurations...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8">
       <div>
         <h2 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-6 text-primary">Configuration Assistant Visa</h2>
         <p className="text-sm sm:text-base text-slate-600 mb-4 sm:mb-6">
-          Gérez les pays disponibles pour les demandes de visa E-visa et Visa Dossier.
+          Gérez les pays disponibles pour les demandes de visa. Les modifications sont sauvegardées dans Supabase.
         </p>
       </div>
 
@@ -2512,7 +2721,7 @@ const VisaConfigView = ({
               : "text-slate-600 hover:text-primary"
           }`}
         >
-          E-visa
+          E-visa ({eVisaCountries.length})
         </button>
         <button
           onClick={() => setActiveTab("dossier")}
@@ -2522,172 +2731,149 @@ const VisaConfigView = ({
               : "text-slate-600 hover:text-primary"
           }`}
         >
-          Visa Dossier
+          Visa Dossier ({dossierCountries.length})
         </button>
       </div>
 
-      {/* E-visa Tab */}
-      {activeTab === "evisa" && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6"
-        >
-          <h3 className="text-lg sm:text-xl font-bold text-primary mb-4">Pays E-visa</h3>
-
-          {/* Add Country Form */}
-          <form onSubmit={handleAddEVisaCountry} className="mb-4 sm:mb-6">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="text"
-                value={newEVisaCountry}
-                onChange={(e) => setNewEVisaCountry(e.target.value)}
-                placeholder="Ex: Turquie"
-                className="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base touch-manipulation"
-              />
-              <button
-                type="submit"
-                className="w-full sm:w-auto px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 font-medium touch-manipulation min-h-[48px]"
-              >
-                <Plus size={20} />
-                Ajouter
-              </button>
-            </div>
-          </form>
-
-          {/* Countries List */}
-          <div className="space-y-2">
-            {safeEVisaCountries.length === 0 ? (
-              <p className="text-slate-500 text-center py-4 text-sm sm:text-base">Aucun pays configuré</p>
-            ) : (
-              safeEVisaCountries.map((country) => (
-                <motion.div
-                  key={country.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-primary/50 transition-all"
-                >
-                  <span className="text-slate-700 font-medium text-sm sm:text-base">{country.name}</span>
-                  <button
-                    onClick={() => handleDeleteEVisaCountry(country.id)}
-                    className="text-slate-400 hover:text-red-500 transition-colors p-2 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
-                    aria-label="Supprimer"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </motion.div>
-              ))
-            )}
+      {/* Add Country Form */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6"
+      >
+        <h3 className="text-lg sm:text-xl font-bold text-primary mb-4">
+          Ajouter un pays ({activeTab === "evisa" ? "E-visa" : "Visa Dossier"})
+        </h3>
+        <form onSubmit={handleAddCountry} className="space-y-4">
+          <div>
+            <input
+              type="text"
+              value={newCountryName}
+              onChange={(e) => setNewCountryName(e.target.value)}
+              placeholder="Ex: France"
+              className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base touch-manipulation"
+            />
           </div>
-        </motion.div>
-      )}
 
-      {/* Visa Dossier Tab */}
-      {activeTab === "dossier" && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-4"
-        >
-          {/* Add Country Form */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6">
-            <h3 className="text-lg sm:text-xl font-bold text-primary mb-4">Ajouter un pays</h3>
-            <form onSubmit={handleAddDossierCountry}>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="text"
-                  value={newDossierCountry}
-                  onChange={(e) => setNewDossierCountry(e.target.value)}
-                  placeholder="Ex: France"
-                  className="flex-1 px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-base touch-manipulation"
-                />
+          {activeTab === "dossier" && (
+            <div>
+              <label className="block text-sm font-semibold text-primary mb-2">
+                Documents requis (un par ligne)
+              </label>
+              <textarea
+                value={newDocuments}
+                onChange={(e) => setNewDocuments(e.target.value)}
+                placeholder={"Passeport valide (minimum 6 mois)\n2 photos d'identité récentes\nJustificatif de domicile\nRelevés bancaires (3 derniers mois)"}
+                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all min-h-[120px] resize-y text-sm"
+              />
+              <p className="text-xs text-slate-500 mt-1">Chaque ligne sera un document séparé dans la liste.</p>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={saving || !newCountryName.trim()}
+            className="w-full sm:w-auto px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 font-medium touch-manipulation min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {saving ? (
+              <><Loader2 size={18} className="animate-spin" /> Enregistrement...</>
+            ) : (
+              <><Plus size={20} /> Ajouter</>
+            )}
+          </button>
+        </form>
+      </motion.div>
+
+      {/* Countries List */}
+      <div className="space-y-4">
+        {(() => {
+          const list = activeTab === "evisa" ? eVisaCountries : dossierCountries;
+          if (list.length === 0) {
+            return <p className="text-slate-500 text-center py-4 text-sm sm:text-base">Aucun pays configuré pour ce type</p>;
+          }
+          return list.map((config) => (
+            <motion.div
+              key={config.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h4 className="text-lg font-bold text-primary">{config.country_name}</h4>
+                  <p className="text-xs text-slate-500">
+                    Type: {config.visa_type === "e-visa" ? "E-visa" : config.visa_type === "dossier" ? "Visa Dossier" : "Les deux"}
+                  </p>
+                </div>
                 <button
-                  type="submit"
-                  className="w-full sm:w-auto px-6 py-3 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 font-medium touch-manipulation min-h-[48px]"
+                  onClick={(e) => handleDeleteCountry(e, config.id)}
+                  className="text-slate-400 hover:text-red-500 transition-colors p-2 touch-manipulation"
+                  aria-label="Supprimer le pays"
                 >
-                  <Plus size={20} />
-                  Ajouter
+                  <Trash2 size={18} />
                 </button>
               </div>
-            </form>
-          </div>
 
-          {/* Countries List with Documents */}
-          <div className="space-y-4">
-            {safeDossierCountries.length === 0 ? (
-              <p className="text-slate-500 text-center py-4 text-sm sm:text-base">Aucun pays configuré</p>
-            ) : (
-              safeDossierCountries.map((country) => (
-                <motion.div
-                  key={country.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-white rounded-2xl shadow-lg border border-slate-200 p-4 sm:p-6"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-bold text-primary">{country.name}</h4>
+              {/* Add Document Form (for dossier type) */}
+              {(config.visa_type === "dossier" || config.visa_type === "both") && (
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-primary mb-2">Ajouter un document requis</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={editingCountry === config.id ? newDocument : ""}
+                      onChange={(e) => {
+                        setEditingCountry(config.id);
+                        setNewDocument(e.target.value);
+                      }}
+                      placeholder="Ex: Passeport valide"
+                      className="flex-1 px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
+                    />
                     <button
-                      onClick={() => handleDeleteDossierCountry(country.id)}
-                      className="text-slate-400 hover:text-red-500 transition-colors p-2 touch-manipulation"
-                      aria-label="Supprimer le pays"
+                      type="button"
+                      onClick={(e) => handleAddDocument(e, config.id)}
+                      className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all text-sm font-medium"
                     >
-                      <Trash2 size={18} />
+                      <Plus size={16} />
                     </button>
                   </div>
+                </div>
+              )}
 
-                  {/* Add Document Form */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-semibold text-primary mb-2">Ajouter un document requis</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={editingCountry === country.id ? newDocument : ""}
-                        onChange={(e) => {
-                          setEditingCountry(country.id);
-                          setNewDocument(e.target.value);
-                        }}
-                        placeholder="Ex: Passeport valide"
-                        className="flex-1 px-4 py-2 border-2 border-slate-200 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleAddDocument(country.id)}
-                        className="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all text-sm font-medium"
-                      >
-                        <Plus size={16} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Documents List */}
+              {/* Documents List - parseDocuments guards against string/null from DB */}
+              {(() => {
+                const docsArray: string[] =
+                  typeof config.required_documents === 'string'
+                    ? (config.required_documents as string).split('\n').filter(Boolean)
+                    : Array.isArray(config.required_documents)
+                      ? (config.required_documents as string[])
+                      : [];
+                if (docsArray.length === 0) return null;
+                return (
                   <div className="space-y-2">
-                    <p className="text-sm font-semibold text-slate-700">Documents requis ({(country.documents || []).length})</p>
-                    {(!country.documents || country.documents.length === 0) ? (
-                      <p className="text-slate-500 text-sm italic">Aucun document ajouté</p>
-                    ) : (
-                      country.documents.map((doc, index) => (
-                        <div
-                          key={index}
-                          className="flex items-start justify-between p-2 bg-slate-50 rounded-lg border border-slate-200"
+                    <p className="text-sm font-semibold text-slate-700">Documents requis ({docsArray.length})</p>
+                    {docsArray.map((doc, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start justify-between p-2 bg-slate-50 rounded-lg border border-slate-200"
+                      >
+                        <span className="text-sm text-slate-700 flex-1">{doc}</span>
+                        <button
+                          onClick={(e) => handleDeleteDocument(e, config.id, index)}
+                          className="text-slate-400 hover:text-red-500 transition-colors p-1 ml-2"
+                          aria-label="Supprimer"
                         >
-                          <span className="text-sm text-slate-700 flex-1">{doc}</span>
-                          <button
-                            onClick={() => handleDeleteDocument(country.id, index)}
-                            className="text-slate-400 hover:text-red-500 transition-colors p-1 ml-2"
-                            aria-label="Supprimer"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ))
-                    )}
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                </motion.div>
-              ))
-            )}
-          </div>
-        </motion.div>
-      )}
+                );
+              })()}
+            </motion.div>
+          ));
+        })()}
+      </div>
     </div>
   );
 };

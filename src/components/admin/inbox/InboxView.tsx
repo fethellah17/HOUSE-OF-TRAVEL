@@ -11,12 +11,14 @@ import RequestDetailModal from "./RequestDetailModal";
 interface InboxViewProps {
   requests: ServiceRequest[];
   markRequestAsRead: (id: string) => void;
-  deleteRequest: (id: string) => void;
+  deleteRequest: (id: string) => Promise<void> | void;
+  markVisaAsRead?: (id: string, e?: React.MouseEvent) => void;
+  deleteVisaRequest?: (id: string) => Promise<void> | void;
 }
 
 type ServiceTab = "billetterie" | "visa" | "hotel" | "sejour";
 
-const InboxView = ({ requests, markRequestAsRead, deleteRequest }: InboxViewProps) => {
+const InboxView = ({ requests, markRequestAsRead, deleteRequest, markVisaAsRead, deleteVisaRequest }: InboxViewProps) => {
   const [activeServiceTab, setActiveServiceTab] = useState<ServiceTab>("billetterie");
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
 
@@ -98,7 +100,11 @@ const InboxView = ({ requests, markRequestAsRead, deleteRequest }: InboxViewProp
         <RequestDetailModal
           request={selectedRequest}
           onClose={() => setSelectedRequest(null)}
-          onDelete={deleteRequest}
+          onDelete={
+            selectedRequest.serviceType === "visa" && deleteVisaRequest
+              ? deleteVisaRequest
+              : deleteRequest
+          }
         />
       )}
 
@@ -114,7 +120,7 @@ const InboxView = ({ requests, markRequestAsRead, deleteRequest }: InboxViewProp
         <VisaTable 
           requests={visaRequests} 
           onOpen={openRequest}
-          onMarkAsRead={markRequestAsRead}
+          onMarkAsRead={markVisaAsRead ?? markRequestAsRead}
         />
       )}
       {activeServiceTab === "hotel" && (

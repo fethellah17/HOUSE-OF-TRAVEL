@@ -8,7 +8,7 @@ import confetti from "canvas-confetti";
 import LoginModal from "@/components/LoginModal";
 import { useData } from "@/contexts/DataContext";
 import type { HotelRequest, SejourRequest, VisaRequest } from "@/contexts/DataContext";
-import { submitHotelRequest } from "@/lib/formsService";
+import { submitHotelRequest, submitVisaRequest, fetchVisaConfigs, type VisaConfig } from "@/lib/formsService";
 import { getCurrentUser } from "@/services/authService";
 
 type ServiceType = "hotel" | "sejour" | "visa" | null;
@@ -72,6 +72,10 @@ const DevisPage = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [activeService, setActiveService] = useState<ServiceType>(null);
   const [visaType, setVisaType] = useState<VisaType>(null);
+  
+  // Visa configs from Supabase (visa_configs table)
+  const [visaConfigs, setVisaConfigs] = useState<VisaConfig[]>([]);
+  const [visaConfigsLoaded, setVisaConfigsLoaded] = useState(false);
   
   // Refs for autocomplete
   const cityInputRef = useRef<HTMLInputElement>(null);
@@ -207,6 +211,23 @@ const DevisPage = () => {
     };
   }, []);
 
+  // Load visa configs from Supabase on mount
+  useEffect(() => {
+    const loadVisaConfigs = async () => {
+      try {
+        const configs = await fetchVisaConfigs();
+        if (configs.length > 0) {
+          setVisaConfigs(configs);
+        }
+      } catch (error) {
+        console.error("Error loading visa configs:", error);
+      } finally {
+        setVisaConfigsLoaded(true);
+      }
+    };
+    loadVisaConfigs();
+  }, []);
+
   // Handle city autocomplete
   const handleCityChange = (value: string) => {
     setHotelForm({ ...hotelForm, city: value });
@@ -311,7 +332,17 @@ const DevisPage = () => {
   };
 
   const handleVisaTypeClick = (type: VisaType) => {
+    if (type === visaType) return; // no-op if same type
     setVisaType(type);
+    // Reset visa form fields so dossier/e-visa sub-fields don't bleed across
+    setVisaForm({
+      pays: "",
+      dateVoyage: "",
+      passeportValide: false,
+      situationPro: "",
+      situationGarant: "",
+      message: "",
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -399,6 +430,7 @@ const DevisPage = () => {
         preferences: sejourForm.preferences,
       } as Omit<SejourRequest, "id" | "createdAt" | "isRead" | "completed">);
     } else if (activeService === "visa" && visaType) {
+      // Save to local state (for demo/fallback)
       addRequest({
         serviceType: "visa",
         personalInfo: {
@@ -415,6 +447,37 @@ const DevisPage = () => {
         situationGarant: visaForm.situationGarant,
         message: visaForm.message,
       } as Omit<VisaRequest, "id" | "createdAt" | "isRead" | "completed">);
+
+      // Also save to Supabase
+      try {
+        const authUser = await getCurrentUser();
+        const userId = authUser.success ? authUser.user?.id : undefined;
+
+        const result = await submitVisaRequest({
+          user_id: userId,
+          nom: personalInfo.nom,
+          prenom: personalInfo.prenom,
+          email: personalInfo.email,
+          phone: personalInfo.telephone,
+          visa_type: visaType,
+          destination_country: visaForm.pays,
+          passport_number: "",
+          passport_expiry: "",
+          passport_valid: !!visaForm.passeportValide,
+          travel_date: visaForm.dateVoyage,
+          professional_status: visaForm.situationPro || undefined,
+          guarantor_status: visaForm.situationGarant || undefined,
+          special_requests: visaForm.message || undefined,
+        });
+
+        if (result.success) {
+          console.log("✅ Visa request saved to Supabase:", result.data);
+        } else {
+          console.error("❌ Visa request Supabase save failed:", result.error);
+        }
+      } catch (error) {
+        console.error("❌ Error saving visa request to Supabase:", error);
+      }
     }
 
     toast.success("Votre demande a été envoyée avec succès !");
@@ -867,15 +930,18 @@ const DevisPage = () => {
                     }`}
                   >
                     {/* Glow effect on hover */}
-                    {hoveredCard === service.id && !isActive && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl blur-xl"
-                        style={{ zIndex: -1 }}
-                      />
-                    )}
+                    <AnimatePresence>
+                      {hoveredCard === service.id && !isActive && (
+                        <motion.div
+                          key={`glow-${service.id}`}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 rounded-2xl blur-xl"
+                          style={{ zIndex: -1 }}
+                        />
+                      )}
+                    </AnimatePresence>
 
                     <div className={`w-14 h-14 mb-4 rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center transition-transform ${
                       isActive ? "scale-110" : "group-hover:scale-110"
@@ -1468,15 +1534,50 @@ const DevisPage = () => {
                             required
                           >
                             <option value="">Sélectionner un pays</option>
-                            {safeEVisaCountries.length === 0 ? (
-                              <option value="" disabled>Aucun pays disponible</option>
-                            ) : (
-                              safeEVisaCountries.map((country) => (
+                            {(() => {
+                              // Use Supabase visa_configs if loaded, else fallback to DataContext
+                              const eVisaConfigCountries = visaConfigs.filter(c => c.visa_type === 'e-visa' || c.visa_type === 'both');
+                              if (eVisaConfigCountries.length > 0) {
+                                return eVisaConfigCountries.map((config) => (
+                                  <option key={config.id} value={config.country_name}>{config.country_name}</option>
+                                ));
+                              }
+                              if (safeEVisaCountries.length === 0) {
+                                return <option value="" disabled>Aucun pays disponible</option>;
+                              }
+                              return safeEVisaCountries.map((country) => (
                                 <option key={country.id} value={country.name}>{country.name}</option>
-                              ))
-                            )}
+                              ));
+                            })()}
                           </select>
                         </div>
+
+                        {/* Document Requirements - Show when e-visa country is selected */}
+                        {visaForm.pays && (() => {
+                          const supabaseConfig = visaConfigs.find(c => c.country_name === visaForm.pays);
+                          const docs = supabaseConfig?.required_documents || [];
+                          if (docs.length === 0) return null;
+                          return (
+                            <motion.div
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-primary/5 rounded-xl p-6 border-2 border-primary/20"
+                            >
+                              <h4 className="font-bold text-primary mb-4">Documents requis pour {visaForm.pays}</h4>
+                              <ul className="space-y-2">
+                                {docs.flatMap((doc: string, index: number) => {
+                                  const lines = doc.split("\n").map(l => l.trim()).filter(Boolean);
+                                  return lines.map((line, lineIdx) => (
+                                    <li key={`${index}-${lineIdx}`} className="flex items-start gap-2 text-sm text-slate-700">
+                                      <CheckCircle size={16} className="text-accent mt-0.5 flex-shrink-0" />
+                                      <span>{line}</span>
+                                    </li>
+                                  ));
+                                })}
+                              </ul>
+                            </motion.div>
+                          );
+                        })()}
 
                         {/* Date de voyage prévue */}
                         <div>
@@ -1564,34 +1665,53 @@ const DevisPage = () => {
                             required
                           >
                             <option value="">Sélectionner un pays</option>
-                            {safeDossierCountries.length === 0 ? (
-                              <option value="" disabled>Aucun pays disponible</option>
-                            ) : (
-                              safeDossierCountries.map((country) => (
+                            {(() => {
+                              // Use Supabase visa_configs if loaded, else fallback to DataContext
+                              const dossierConfigCountries = visaConfigs.filter(c => c.visa_type === 'dossier' || c.visa_type === 'both');
+                              if (dossierConfigCountries.length > 0) {
+                                return dossierConfigCountries.map((config) => (
+                                  <option key={config.id} value={config.country_name}>{config.country_name}</option>
+                                ));
+                              }
+                              if (safeDossierCountries.length === 0) {
+                                return <option value="" disabled>Aucun pays disponible</option>;
+                              }
+                              return safeDossierCountries.map((country) => (
                                 <option key={country.id} value={country.name}>{country.name}</option>
-                              ))
-                            )}
+                              ));
+                            })()}
                           </select>
                         </div>
 
                         {/* Document Requirements - Show when country is selected */}
-                        {visaForm.pays && safeDossierCountries.find(c => c.name === visaForm.pays) && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-primary/5 rounded-xl p-6 border-2 border-primary/20"
-                          >
-                            <h4 className="font-bold text-primary mb-4">Documents requis pour {visaForm.pays}</h4>
-                            <ul className="space-y-2">
-                              {(safeDossierCountries.find(c => c.name === visaForm.pays)?.documents || []).map((req, index) => (
-                                <li key={index} className="flex items-start gap-2 text-sm text-slate-700">
-                                  <CheckCircle size={16} className="text-accent mt-0.5 flex-shrink-0" />
-                                  <span>{req}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </motion.div>
-                        )}
+                        {visaForm.pays && (() => {
+                          // Try Supabase visa_configs first, then fallback to DataContext
+                          const supabaseConfig = visaConfigs.find(c => c.country_name === visaForm.pays);
+                          const contextConfig = safeDossierCountries.find(c => c.name === visaForm.pays);
+                          const docs = supabaseConfig?.required_documents || contextConfig?.documents || [];
+                          if (docs.length === 0) return null;
+                          return (
+                            <motion.div
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-primary/5 rounded-xl p-6 border-2 border-primary/20"
+                            >
+                              <h4 className="font-bold text-primary mb-4">Documents requis pour {visaForm.pays}</h4>
+                              <ul className="space-y-2">
+                                {docs.flatMap((req: string, index: number) => {
+                                  // Parse newline-separated documents into individual items
+                                  const lines = req.split("\n").map(l => l.trim()).filter(Boolean);
+                                  return lines.map((line, lineIdx) => (
+                                    <li key={`${index}-${lineIdx}`} className="flex items-start gap-2 text-sm text-slate-700">
+                                      <CheckCircle size={16} className="text-accent mt-0.5 flex-shrink-0" />
+                                      <span>{line}</span>
+                                    </li>
+                                  ));
+                                })}
+                              </ul>
+                            </motion.div>
+                          );
+                        })()}
 
                         {/* Date de voyage prévue */}
                         <div>

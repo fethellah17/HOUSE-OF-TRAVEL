@@ -190,3 +190,15 @@
     padding-right: 2.5rem;
   }
 }
+
+/* Table row entrance animation (replaces framer-motion motion.tr) */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

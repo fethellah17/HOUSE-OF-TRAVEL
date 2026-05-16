@@ -1,12 +1,11 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Trash2, Mail, Phone, Calendar, Users, Plane, FileText, Hotel, Map, CheckCircle, XCircle, MessageCircle } from "lucide-react";
 import type { ServiceRequest, BilletterieRequest, VisaRequest, HotelRequest, SejourRequest } from "@/contexts/DataContext";
-import { toast } from "sonner";
 
 interface RequestDetailModalProps {
   request: ServiceRequest | null;
   onClose: () => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<void> | void;
 }
 
 // Helper function to format phone number for WhatsApp
@@ -40,17 +39,16 @@ const openWhatsApp = (phone: string, message: string) => {
 interface RequestDetailModalProps {
   request: ServiceRequest | null;
   onClose: () => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => Promise<void> | void;
 }
 
 const RequestDetailModal = ({ request, onClose, onDelete }: RequestDetailModalProps) => {
   if (!request) return null;
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (confirm("Êtes-vous sûr de vouloir supprimer cette demande ?")) {
-      onDelete(request.id);
+      await onDelete(request.id);
       onClose();
-      toast.success("Demande supprimée");
     }
   };
 

@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { Eye, Calendar, Map as MapIcon, DollarSign, Heart, Users as UsersIcon, Briefcase, Compass, FileDown, CheckCircle, MessageCircle } from "lucide-react";
 import type { SejourRequest } from "@/contexts/DataContext";
 import { generateRequestPDF } from "@/lib/requestPdfGenerator";
@@ -95,11 +94,9 @@ const SejourTable = ({ requests, onOpen, onMarkAsRead }: SejourTableProps) => {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {requests.map((req, index) => (
-              <motion.tr
+              <tr
                 key={req.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                style={{ animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both` }}
                 className={`hover:bg-slate-50 transition-colors ${!req.isRead ? "bg-blue-50/50" : ""}`}
               >
                 <td className={`px-2 sm:px-4 py-2 sm:py-3 ${req.completed ? "opacity-60" : ""}`}>
@@ -190,7 +187,7 @@ const SejourTable = ({ requests, onOpen, onMarkAsRead }: SejourTableProps) => {
                     </button>
                   </div>
                 </td>
-              </motion.tr>
+              </tr>
             ))}
           </tbody>
         </table>

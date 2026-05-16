@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { Eye, Calendar, FileText, CheckCircle, XCircle, FileDown, CheckCircle as CheckIcon, MessageCircle } from "lucide-react";
 import type { VisaRequest } from "@/contexts/DataContext";
 import { generateRequestPDF } from "@/lib/requestPdfGenerator";
@@ -7,7 +6,7 @@ import { toast } from "sonner";
 interface VisaTableProps {
   requests: VisaRequest[];
   onOpen: (req: VisaRequest) => void;
-  onMarkAsRead: (id: string) => void;
+  onMarkAsRead: (id: string, e?: React.MouseEvent) => void;
 }
 
 // Helper function to format phone number for WhatsApp
@@ -45,8 +44,9 @@ const VisaTable = ({ requests, onOpen, onMarkAsRead }: VisaTableProps) => {
   };
 
   const handleMarkAsRead = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
     e.stopPropagation();
-    onMarkAsRead(id);
+    onMarkAsRead(id, e); // Pass event so handler can kill the channel
   };
 
   const handleWhatsApp = (e: React.MouseEvent, req: VisaRequest) => {
@@ -80,11 +80,9 @@ const VisaTable = ({ requests, onOpen, onMarkAsRead }: VisaTableProps) => {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {requests.map((req, index) => (
-              <motion.tr
+              <tr
                 key={req.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
+                style={{ animation: `fadeInUp 0.3s ease-out ${index * 0.05}s both` }}
                 className={`hover:bg-slate-50 transition-colors ${!req.isRead ? "bg-blue-50/50" : ""}`}
               >
                 <td className={`px-2 sm:px-4 py-2 sm:py-3 ${req.completed ? "opacity-60" : ""}`}>
@@ -167,7 +165,7 @@ const VisaTable = ({ requests, onOpen, onMarkAsRead }: VisaTableProps) => {
                     </button>
                   </div>
                 </td>
-              </motion.tr>
+              </tr>
             ))}
           </tbody>
         </table>

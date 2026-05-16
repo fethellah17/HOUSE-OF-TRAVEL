@@ -14,7 +14,6 @@ export interface VisaConfig {
   country_name: string;
   visa_type: "e-visa" | "dossier" | "both";
   required_documents: string[];
-  processing_days: number;
   is_active: boolean;
 }
 
@@ -29,20 +28,43 @@ export interface SejourConfig {
 }
 
 /**
+ * Safely parse required_documents from Supabase.
+ * It may come as a TEXT string (newline-separated), a JSON array, or null.
+ */
+export const parseDocuments = (raw: unknown): string[] => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter((d): d is string => typeof d === 'string' && d.trim() !== '');
+  if (typeof raw === 'string') {
+    // Try JSON parse first (Supabase may store as JSON text)
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter((d): d is string => typeof d === 'string' && d.trim() !== '');
+    } catch {
+      // Not JSON, treat as newline-separated text
+    }
+    return raw.split('\n').map(d => d.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+/**
  * Fetch all active visa configurations for the Visa Assistant
  */
 export const fetchVisaConfigs = async (): Promise<VisaConfig[]> => {
   try {
     const { data, error } = await supabase
-      .from("visa_configs")
+      .from("visa_settings")
       .select("*")
-      .eq("is_active", true)
       .order("country_name", { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []).map((item: any) => ({
+      ...item,
+      required_documents: parseDocuments(item.required_documents),
+      is_active: item.is_active !== false,
+    }));
   } catch (err) {
-    console.error("Error fetching visa configs:", err);
+    console.error("Error fetching visa settings:", err);
     return [];
   }
 };
@@ -52,16 +74,38 @@ export const fetchVisaConfigs = async (): Promise<VisaConfig[]> => {
  */
 export const createVisaConfig = async (config: Omit<VisaConfig, "id">): Promise<VisaConfig | null> => {
   try {
+    // Convert array to newline-joined string for TEXT column
+    const docsArray = parseDocuments(config.required_documents);
+    const payload = {
+      country_name: config.country_name,
+      visa_type: config.visa_type,
+      required_documents: docsArray.join('\n'),
+      is_active: config.is_active !== false,
+    };
+
+    console.log("📤 Creating visa config:", payload);
+
     const { data, error } = await supabase
-      .from("visa_configs")
-      .insert([config])
+      .from("visa_settings")
+      .insert([payload])
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
-  } catch (err) {
-    console.error("Error creating visa config:", err);
+    if (error) {
+      console.error("❌ Supabase Error:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+      throw error;
+    }
+    
+    console.log("✅ Visa config created:", data);
+    // Normalize required_documents to string[] so callers always get an array
+    return data ? { ...data, required_documents: parseDocuments(data.required_documents) } : null;
+  } catch (err: any) {
+    console.error("Error creating visa setting:", err?.message || err);
     return null;
   }
 };
@@ -72,15 +116,43 @@ export const createVisaConfig = async (config: Omit<VisaConfig, "id">): Promise<
 export const deleteVisaConfig = async (id: string): Promise<boolean> => {
   try {
     const { error } = await supabase
-      .from("visa_configs")
+      .from("visa_settings")
       .delete()
       .eq("id", id);
 
     if (error) throw error;
     return true;
   } catch (err) {
-    console.error("Error deleting visa config:", err);
+    console.error("Error deleting visa setting:", err);
     return false;
+  }
+};
+
+/**
+ * Update an existing visa configuration (Admin only)
+ */
+export const updateVisaConfig = async (id: string, updates: Partial<Omit<VisaConfig, "id">>): Promise<VisaConfig | null> => {
+  try {
+    // Convert documents array to newline-joined string if present
+    const payload = { ...updates } as Record<string, unknown>;
+    if (updates.required_documents !== undefined) {
+      const docsArray = parseDocuments(updates.required_documents);
+      payload.required_documents = docsArray.join('\n');
+    }
+
+    const { data, error } = await supabase
+      .from("visa_settings")
+      .update(payload)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    // Normalize the returned data
+    return data ? { ...data, required_documents: parseDocuments(data.required_documents) } : null;
+  } catch (err) {
+    console.error("Error updating visa setting:", err);
+    return null;
   }
 };
 
@@ -236,8 +308,9 @@ export interface VisaRequestInput {
   phone: string;
   visa_type: "e-visa" | "dossier";
   destination_country: string;
-  passport_number: string;
-  passport_expiry: string;
+  passport_number?: string;
+  passport_expiry?: string;
+  passport_valid?: boolean;
   travel_date: string;
   professional_status?: string;
   guarantor_status?: string;
@@ -249,34 +322,48 @@ export interface VisaRequestInput {
  */
 export const submitVisaRequest = async (data: VisaRequestInput) => {
   try {
+    const payload = {
+      user_id: data.user_id || null,
+      nom: data.nom,
+      prenom: data.prenom,
+      email: data.email,
+      phone: data.phone,
+      visa_type: data.visa_type,
+      destination_country: data.destination_country,
+      passport_number: data.passport_number || null,
+      passport_expiry: data.passport_expiry || null,
+      passport_valid: data.passport_valid === true ? true : false,
+      travel_date: data.travel_date,
+      professional_status: data.professional_status || null,
+      guarantor_status: data.guarantor_status || null,
+      special_requests: data.special_requests || null,
+      status: "pending",
+      is_read: false,
+    };
+
+    console.log("📤 Visa Payload:", payload);
+
     const { data: result, error } = await supabase
       .from("visa_requests")
-      .insert([
-        {
-          user_id: data.user_id || null,
-          nom: data.nom,
-          prenom: data.prenom,
-          email: data.email,
-          phone: data.phone,
-          visa_type: data.visa_type,
-          destination_country: data.destination_country,
-          passport_number: data.passport_number,
-          passport_expiry: data.passport_expiry,
-          travel_date: data.travel_date,
-          professional_status: data.professional_status,
-          guarantor_status: data.guarantor_status,
-          special_requests: data.special_requests,
-          status: "pending",
-          is_read: false,
-        },
-      ])
+      .insert([payload])
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("❌ Supabase Error Details:", {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+      throw error;
+    }
+
+    console.log("✅ Visa request submitted successfully:", result);
     return { success: true, data: result };
-  } catch (err) {
-    console.error("Error submitting visa request:", err);
+  } catch (err: any) {
+    console.error("❌ Error submitting visa request:", err);
+    console.error("Error message:", err.message);
     return { success: false, error: err };
   }
 };
