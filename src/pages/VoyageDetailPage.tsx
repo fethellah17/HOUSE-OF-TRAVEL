@@ -123,7 +123,10 @@ const VoyageDetailPage = () => {
           : "",
         status: supabaseVoyage.status || "normal",
         stages: supabaseStages.length > 0 ? supabaseStages : undefined,
-        features: undefined, // Features are embedded in description
+        points_forts: supabaseVoyage.points_forts || "",
+        features: supabaseVoyage.points_forts 
+          ? supabaseVoyage.points_forts.split(",").map((f: string) => f.trim()).filter(Boolean)
+          : [],
       }
     : contextVoyage;
 
@@ -283,21 +286,27 @@ const VoyageDetailPage = () => {
               </p>
             </div>
 
-            {/* Points Forts du Voyage */}
+            {/* Points Forts du Voyage - Now from dedicated database column */}
             {voyage.features && voyage.features.length > 0 && (
               <div className="mb-8 pb-8 border-b border-accent/20">
-                <h2 className="text-xl font-bold text-primary mb-4">Points Forts</h2>
+                <h2 className="text-xl font-bold text-primary mb-4 flex items-center gap-2">
+                  <Star size={24} className="text-accent" />
+                  Points Forts
+                </h2>
                 <div className="flex flex-wrap gap-3">
                   {voyage.features.map((feature, idx) => {
                     const icon = getFeatureIcon(feature);
                     return (
-                      <span
+                      <motion.span
                         key={idx}
-                        className="inline-flex items-center gap-2 bg-purple-50 text-purple-700 px-4 py-2 rounded-full text-sm font-semibold shadow-sm"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 px-4 py-2.5 rounded-full text-sm font-semibold shadow-sm hover:shadow-md transition-shadow"
                       >
-                        {icon}
+                        {icon && <span className="text-purple-600">{icon}</span>}
                         <span>{feature}</span>
-                      </span>
+                      </motion.span>
                     );
                   })}
                 </div>
