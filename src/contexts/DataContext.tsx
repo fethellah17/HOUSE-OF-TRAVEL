@@ -244,25 +244,6 @@ const GOLD_MASTER_REQUESTS: ServiceRequest[] = [
     message: "Nous préférons un vol direct si possible. Merci."
   },
   {
-    id: "demo-visa-001",
-    serviceType: "visa",
-    createdAt: "2026-05-05T14:20:00.000Z",
-    isRead: true,
-    completed: false,
-    personalInfo: {
-      nom: "Mansouri",
-      prenom: "Amina",
-      email: "amina.mansouri@email.dz",
-      telephone: "+213 666 789 012"
-    },
-    visaType: "e-visa",
-    pays: "Turquie",
-    dateVoyage: "2026-07-10",
-    passeportValide: true,
-    situationPro: "Employée",
-    message: "Besoin urgent pour voyage d'affaires."
-  },
-  {
     id: "demo-hotel-001",
     serviceType: "hotel",
     createdAt: "2026-05-04T09:15:00.000Z",
