@@ -3,6 +3,7 @@ import { Upload, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { processImageToBase64, isHeicFormat } from "@/lib/imageProcessor";
+import { compressImage } from "@/lib/imageCompression";
 import { LoadingSpinner } from "./LoadingSpinner";
 
 interface MultiImageUploadProps {
@@ -33,10 +34,11 @@ export const MultiImageUpload = ({
       return false;
     }
     
-    // 10MB file size limit for Cloudinary free tier
-    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
-    if (file.size > MAX_FILE_SIZE) {
-      toast.error(`${file.name} dépasse la limite de 10MB. Veuillez choisir une image plus petite.`);
+    // Note: We'll compress images before upload, so we allow larger files here
+    // The compression will happen before sending to Cloudinary
+    const MAX_INITIAL_FILE_SIZE = 50 * 1024 * 1024; // 50MB initial limit (will be compressed)
+    if (file.size > MAX_INITIAL_FILE_SIZE) {
+      toast.error(`${file.name} est trop volumineux (max 50MB avant compression).`);
       return false;
     }
     
@@ -55,20 +57,60 @@ export const MultiImageUpload = ({
     const remainingSlots = maxFiles - value.length;
     const filesToProcess = validFiles.slice(0, remainingSlots);
 
-    // Expose raw File objects to parent (for Cloudinary upload)
-    if (onFilesSelected) {
-      onFilesSelected(filesToProcess);
-    }
-
     setIsLoading(true);
-    setProcessingMessage(`Traitement de ${filesToProcess.length} image(s)...`);
+    setProcessingMessage(`Compression et traitement de ${filesToProcess.length} image(s)...`);
     
     try {
-      const base64Images = await Promise.all(
-        filesToProcess.map((file) => processImageToBase64(file))
+      // Step 1: Compress images for Cloudinary upload
+      const compressedFiles = await Promise.all(
+        filesToProcess.map(async (file) => {
+          try {
+            return await compressImage(file, {
+              maxSizeMB: 2,
+              maxWidthOrHeight: 1920,
+              initialQuality: 0.85,
+            });
+          } catch (error) {
+            console.error(`Failed to compress ${file.name}:`, error);
+            return file; // fallback to original if compression fails
+          }
+        })
       );
+
+      // Step 2: Validate compressed files are under 10MB
+      const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB Cloudinary limit
+      const oversizedFiles = compressedFiles.filter(file => file.size > MAX_FILE_SIZE);
+      
+      if (oversizedFiles.length > 0) {
+        const fileNames = oversizedFiles.map(f => f.name).join(", ");
+        toast.error(
+          `La taille de l'image est trop grande. Maximum 10 Mo après compression automatique. Fichiers: ${fileNames}`
+        );
+        // Filter out oversized files
+        const validCompressedFiles = compressedFiles.filter(file => file.size <= MAX_FILE_SIZE);
+        if (validCompressedFiles.length === 0) {
+          setIsLoading(false);
+          setProcessingMessage("");
+          return;
+        }
+        // Continue with valid files
+        compressedFiles.length = 0;
+        compressedFiles.push(...validCompressedFiles);
+      }
+
+      // Step 3: Expose compressed File objects to parent (for Cloudinary upload)
+      if (onFilesSelected) {
+        onFilesSelected(compressedFiles);
+      }
+
+      // Step 4: Generate base64 previews for UI
+      setProcessingMessage(`Génération des aperçus...`);
+      const base64Images = await Promise.all(
+        compressedFiles.map((file) => processImageToBase64(file))
+      );
+      
       onChange([...value, ...base64Images]);
-      toast.success(`${base64Images.length} image(s) ajoutée(s) et optimisée(s)`);
+      toast.success(`${base64Images.length} image(s) ajoutée(s) et compressée(s)`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erreur lors du traitement des images");
       console.error(error);
@@ -193,7 +235,7 @@ export const MultiImageUpload = ({
               ou glisser-déposer des images
             </p>
             <p className="text-xs text-muted-foreground">
-              JPG, JPEG, PNG, HEIC • Compression auto
+              JPG, JPEG, PNG, HEIC • Compression auto vers ~2MB
             </p>
             <p className="text-xs text-accent font-medium mt-2">
               {maxFiles - value.length} photo(s) restante(s)
