@@ -180,7 +180,10 @@ const SejourTable = ({ requests, onOpen, onMarkAsRead }: SejourTableProps) => {
                       <CheckCircle size={16} />
                     </button>
                     <button
-                      onClick={() => onOpen(req)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpen(req);
+                      }}
                       className="inline-flex items-center gap-1 p-1.5 sm:px-3 sm:py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
                       title="Voir les détails"
                     >

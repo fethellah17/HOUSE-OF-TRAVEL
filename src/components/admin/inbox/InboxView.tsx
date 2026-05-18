@@ -34,9 +34,6 @@ const InboxView = ({ requests, markRequestAsRead, deleteRequest, markVisaAsRead,
 
   const openRequest = (req: ServiceRequest) => {
     setSelectedRequest(req);
-    if (!req.isRead) {
-      markRequestAsRead(req.id);
-    }
   };
 
   const serviceTabs = [
