@@ -1811,7 +1811,7 @@ const UsersView = () => {
                     <p><strong>Prénom:</strong> {selectedUser.prenom || "---"}</p>
                     <p><strong>Email:</strong> {selectedUser.email || "---"}</p>
                     <p><strong>Téléphone:</strong> {selectedUser.phone || "---"}</p>
-                    <p><strong>Date d'inscription:</strong> {selectedUser.dateInsc || formatDate(selectedUser.createdAt)}</p>
+                    <p><strong>Date d'inscription:</strong> {selectedUser.dateInsc || formatDate(selectedUser.created_at)}</p>
                   </div>
                 </div>
               </div>
@@ -1880,7 +1880,7 @@ const UsersView = () => {
                       </span>
                     </td>
                     <td className="px-2 sm:px-3 py-2.5 text-sm text-slate-600 whitespace-nowrap">
-                      {user.dateInsc || formatDate(user.createdAt)}
+                      {user.dateInsc || formatDate(user.created_at)}
                     </td>
                     <td className="px-2 sm:px-3 py-2.5 sticky right-0 bg-white shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.05)]">
                       <div className="flex items-center justify-center gap-2">
